@@ -1,3 +1,7 @@
+using System;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 using CameraCaptureApp.Models;
 using DALSA.SaperaLT.SapClassBasic;
 using DALSA.SaperaLT.SapClassGui;
@@ -6,13 +10,17 @@ namespace CameraCaptureApp.Services
 {
     public class CameraService : ICameraService
     {
-        private CameraSettings _settings;
+        private const int PreviewIntervalMilliseconds = 200;
+
         private readonly CameraStatus _status;
+        private readonly object _frameSync = new object();
+        private CameraSettings _settings;
         private SapLocation _serverLocation;
         private string _configFileName;
         private SapAcquisition _acquisition;
         private SapBuffer _buffers;
         private SapAcqToBuf _transfer;
+        private DateTime _lastPreviewFrameUtc;
 
         public CameraService()
         {
@@ -24,10 +32,12 @@ namespace CameraCaptureApp.Services
                 CameraName = _settings.CameraName,
                 UpdateRateHz = 5,
                 FollowLatestLine = true,
-                ScanStateText = "待命",
-                LastMessage = "Line-scan camera scaffold ready. SDK integration pending."
+                ScanStateText = "Idle",
+                LastMessage = "Sapera camera service is ready."
             };
         }
+
+        public event EventHandler<CameraFrameEventArgs> FrameReady;
 
         public CameraStatus Status
         {
@@ -40,7 +50,7 @@ namespace CameraCaptureApp.Services
             _status.FrameWidth = _settings.Width;
             _status.FrameHeight = _settings.Height;
             _status.CameraName = _settings.CameraName;
-            _status.LastMessage = "線掃描設定已套用。";
+            _status.LastMessage = "Camera settings applied.";
         }
 
         public bool Connect()
@@ -49,7 +59,7 @@ namespace CameraCaptureApp.Services
             {
                 if (!EnsureConnectionSettings())
                 {
-                    _status.LastMessage = "已取消 Sapera 相機設定。";
+                    _status.LastMessage = "Camera connection was cancelled.";
                     return false;
                 }
 
@@ -78,7 +88,7 @@ namespace CameraCaptureApp.Services
                 {
                     DestroySdkObjects();
                     DisposeSdkObjects();
-                    _status.LastMessage = "Sapera 取像物件建立失敗。";
+                    _status.LastMessage = "Sapera objects could not be created.";
                     return false;
                 }
 
@@ -87,18 +97,18 @@ namespace CameraCaptureApp.Services
                 _status.CameraName = _serverLocation.ServerName;
                 _status.FrameWidth = _buffers.Width;
                 _status.FrameHeight = _buffers.Height;
-                _status.ScanStateText = "已連線";
-                _status.LastMessage = "Sapera 線掃描相機已連線。";
+                _status.ScanStateText = "Connected";
+                _status.LastMessage = "Camera connected successfully.";
                 return true;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 DestroySdkObjects();
                 DisposeSdkObjects();
                 _status.IsConnected = false;
                 _status.HasSignal = false;
-                _status.ScanStateText = "連線失敗";
-                _status.LastMessage = "Sapera 連線失敗: " + ex.Message;
+                _status.ScanStateText = "Error";
+                _status.LastMessage = "Camera connect failed: " + ex.Message;
                 return false;
             }
         }
@@ -110,27 +120,27 @@ namespace CameraCaptureApp.Services
             _status.IsPreviewing = false;
             _status.IsConnected = false;
             _status.HasSignal = false;
-            _status.ScanStateText = "已斷線";
-            _status.LastMessage = "線掃描相機已斷線。";
+            _status.ScanStateText = "Disconnected";
+            _status.LastMessage = "Camera disconnected.";
         }
 
         public bool StartPreview()
         {
             if (!_status.IsConnected || _transfer == null)
             {
-                _status.LastMessage = "請先連線，再開始掃描。";
+                _status.LastMessage = "Connect the camera before starting preview.";
                 return false;
             }
 
             if (_transfer.Grab())
             {
                 _status.IsPreviewing = true;
-                _status.ScanStateText = "掃描中";
-                _status.LastMessage = "Sapera 掃描已開始。";
+                _status.ScanStateText = "Preview";
+                _status.LastMessage = "Preview started.";
                 return true;
             }
 
-            _status.LastMessage = "Sapera 無法開始掃描。";
+            _status.LastMessage = "Preview could not be started.";
             return false;
         }
 
@@ -142,26 +152,26 @@ namespace CameraCaptureApp.Services
             }
 
             _status.IsPreviewing = false;
-            _status.ScanStateText = "已停止";
-            _status.LastMessage = "Sapera 掃描已停止。";
+            _status.ScanStateText = "Stopped";
+            _status.LastMessage = "Preview stopped.";
         }
 
         public bool CaptureFrame()
         {
             if (!_status.IsConnected || _transfer == null)
             {
-                _status.LastMessage = "請先連線，再執行單次擷取。";
+                _status.LastMessage = "Connect the camera before grabbing a frame.";
                 return false;
             }
 
             if (_transfer.Snap())
             {
-                _status.ScanStateText = "單次擷取";
-                _status.LastMessage = "Sapera 已觸發單次擷取。";
+                _status.ScanStateText = "Snap";
+                _status.LastMessage = "Single frame capture requested.";
                 return true;
             }
 
-            _status.LastMessage = "Sapera 無法執行單次擷取。";
+            _status.LastMessage = "Single frame capture could not be started.";
             return false;
         }
 
@@ -261,10 +271,15 @@ namespace CameraCaptureApp.Services
         private void OnTransferNotify(object sender, SapXferNotifyEventArgs argsNotify)
         {
             _status.ScannedLineCount = argsNotify.EventCount;
-            _status.ScanStateText = argsNotify.Trash ? "背景累積" : "更新中";
+            _status.ScanStateText = argsNotify.Trash ? "Trash" : "Receiving";
             _status.LastMessage = argsNotify.Trash
-                ? "Sapera 正在背景累積線掃描資料。"
-                : "Sapera 已收到新的取像更新。";
+                ? "Frame landed in trash buffer."
+                : "Frame received from Sapera.";
+
+            if (!argsNotify.Trash)
+            {
+                PublishPreviewFrame();
+            }
         }
 
         private void OnSignalNotify(object sender, SapSignalNotifyEventArgs argsSignal)
@@ -272,8 +287,152 @@ namespace CameraCaptureApp.Services
             _status.HasSignal = argsSignal.SignalStatus != SapAcquisition.AcqSignalStatus.None;
             if (!_status.HasSignal)
             {
-                _status.LastMessage = "Sapera 已連線，但目前沒有相機訊號。";
+                _status.LastMessage = "No camera signal detected.";
             }
+        }
+
+        private void PublishPreviewFrame()
+        {
+            lock (_frameSync)
+            {
+                var elapsed = DateTime.UtcNow - _lastPreviewFrameUtc;
+                if (elapsed.TotalMilliseconds < PreviewIntervalMilliseconds)
+                {
+                    return;
+                }
+
+                _lastPreviewFrameUtc = DateTime.UtcNow;
+            }
+
+            Bitmap previewFrame = null;
+            try
+            {
+                previewFrame = TryCreatePreviewBitmap();
+                if (previewFrame == null)
+                {
+                    return;
+                }
+
+                var handler = FrameReady;
+                if (handler != null)
+                {
+                    handler(this, new CameraFrameEventArgs(previewFrame));
+                    previewFrame = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _status.LastMessage = "Preview conversion failed: " + ex.Message;
+            }
+            finally
+            {
+                if (previewFrame != null)
+                {
+                    previewFrame.Dispose();
+                }
+            }
+        }
+
+        private Bitmap TryCreatePreviewBitmap()
+        {
+            if (_buffers == null || !_buffers.Initialized)
+            {
+                return null;
+            }
+
+            var width = _buffers.Width;
+            var height = _buffers.Height;
+            if (width <= 0 || height <= 0)
+            {
+                return null;
+            }
+
+            int pixelDepth;
+            int pitch;
+            if (!_buffers.GetParameter(SapBuffer.Prm.PIXEL_DEPTH, out pixelDepth) ||
+                !_buffers.GetParameter(SapBuffer.Prm.PITCH, out pitch))
+            {
+                return null;
+            }
+
+            var bytesPerPixel = Math.Max(1, (pixelDepth + 7) / 8);
+            if (bytesPerPixel != 1 && bytesPerPixel != 3)
+            {
+                bytesPerPixel = 1;
+            }
+
+            var expectedStride = width * bytesPerPixel;
+            if (pitch < expectedStride)
+            {
+                pitch = expectedStride;
+            }
+
+            var rawBytes = new byte[pitch * height];
+            var handle = GCHandle.Alloc(rawBytes, GCHandleType.Pinned);
+            try
+            {
+                if (!_buffers.ReadRect(0, 0, width, height, handle.AddrOfPinnedObject()))
+                {
+                    return null;
+                }
+            }
+            finally
+            {
+                handle.Free();
+            }
+
+            if (bytesPerPixel == 3)
+            {
+                return CreateRgbBitmap(rawBytes, width, height, pitch);
+            }
+
+            return CreateMonoBitmap(rawBytes, width, height, pitch);
+        }
+
+        private static Bitmap CreateMonoBitmap(byte[] rawBytes, int width, int height, int sourceStride)
+        {
+            var bitmap = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
+            var palette = bitmap.Palette;
+            for (var i = 0; i < 256; i++)
+            {
+                palette.Entries[i] = Color.FromArgb(i, i, i);
+            }
+
+            bitmap.Palette = palette;
+            var data = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, bitmap.PixelFormat);
+            try
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    Marshal.Copy(rawBytes, y * sourceStride, data.Scan0 + (y * data.Stride), width);
+                }
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
+
+            return bitmap;
+        }
+
+        private static Bitmap CreateRgbBitmap(byte[] rawBytes, int width, int height, int sourceStride)
+        {
+            var bitmap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+            var data = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, bitmap.PixelFormat);
+            try
+            {
+                var rowLength = width * 3;
+                for (var y = 0; y < height; y++)
+                {
+                    Marshal.Copy(rawBytes, y * sourceStride, data.Scan0 + (y * data.Stride), rowLength);
+                }
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
+
+            return bitmap;
         }
     }
 }

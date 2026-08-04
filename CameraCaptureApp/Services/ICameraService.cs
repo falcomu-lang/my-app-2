@@ -4,6 +4,8 @@ namespace CameraCaptureApp.Services
 {
     public interface ICameraService
     {
+        event System.EventHandler<CameraFrameEventArgs> FrameReady;
+
         CameraStatus Status { get; }
 
         void ApplySettings(CameraSettings settings);
