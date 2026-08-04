@@ -1,32 +1,39 @@
 # my-app-2
 
-Camera image capture project scaffold.
+Camera image capture application based on WinForms and .NET Framework 4.7.2.
 
-## Overview
+## Current State
 
-This repository is the starting point for a camera-related application.
-It currently contains only documentation and ignore rules, not runnable code.
+The repository now contains a runnable desktop application scaffold with:
 
-## Start Here
+- a modular WinForms project
+- a line-scan oriented main dashboard
+- a camera settings dialog
+- service and model layers separated from `MainForm`
+- placeholder line-scan camera service ready for Sapera SDK integration
 
-Read [PROJECT_HANDOFF.md](./PROJECT_HANDOFF.md) for the current project state, what is missing, and the recommended next steps.
+## Project Structure
 
-## Current Status
+- `CameraCaptureApp.sln`: Visual Studio solution
+- `CameraCaptureApp/Forms`: main window and settings dialog
+- `CameraCaptureApp/Controls`: reusable UI controls
+- `CameraCaptureApp/Services`: camera and settings service abstractions
+- `CameraCaptureApp/Models`: shared data models
 
-- No application source code has been added yet
-- No build or runtime configuration is defined yet
-- The repository is ready for the first real implementation
+## Build
 
-## Repository Contents
+This project targets `.NET Framework 4.7.2`.
 
-- [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md): handoff notes for the next person
-- [`README.md`](./README.md): short project overview
-- [`.gitignore`](./.gitignore): common ignore rules for generated files
+Example build command on this machine:
+
+```powershell
+& 'C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe' CameraCaptureApp.sln /t:Build /p:Configuration=Debug
+```
 
 ## Next Steps
 
-1. Decide the application stack and target framework.
-2. Add the first runnable project.
-3. Define the camera input and processing flow.
-4. Document how to build and run the application.
-5. Commit the first working baseline and push it to GitHub.
+1. Replace the placeholder `CameraService` with a real line-scan Sapera integration.
+2. Stream incoming scan lines into a long-image buffer instead of replacing full frames.
+3. Implement save flow for long images and intermediate scan snapshots.
+4. Add config persistence to disk.
+5. Refine the Designer layout around scan progress and diagnostics.
