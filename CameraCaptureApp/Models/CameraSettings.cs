@@ -16,9 +16,13 @@ namespace CameraCaptureApp.Models
 
         public int Height { get; set; }
 
+        public int Length { get; set; }
+
         public decimal ExposureTime { get; set; }
 
         public decimal Gain { get; set; }
+
+        public decimal InternalLineRate { get; set; }
 
         public decimal FrameRate { get; set; }
 
@@ -45,8 +49,10 @@ namespace CameraCaptureApp.Models
                 ResourceIndex = 0,
                 Width = 1280,
                 Height = 720,
+                Length = 720,
                 ExposureTime = 1200,
                 Gain = 1,
+                InternalLineRate = 30,
                 FrameRate = 30,
                 PixelFormat = "Mono8",
                 TriggerMode = TriggerMode.Continuous,

@@ -18,6 +18,7 @@ namespace CameraCaptureApp.Services
         private CameraSettings _settings;
         private SapLocation _serverLocation;
         private string _configFileName;
+        private SapAcqDevice _acqDevice;
         private SapAcquisition _acquisition;
         private SapBuffer _buffers;
         private SapAcqToBuf _transfer;
@@ -54,8 +55,13 @@ namespace CameraCaptureApp.Services
         {
             _settings = settings.Clone();
             _status.FrameWidth = _settings.Width;
-            _status.FrameHeight = _settings.Height;
+            _status.FrameHeight = _settings.Length > 0 ? _settings.Length : _settings.Height;
             _status.CameraName = _settings.CameraName;
+            if (_status.IsConnected)
+            {
+                ApplyWritableCameraSettings();
+            }
+
             _status.LastMessage = "Camera settings applied.";
         }
 
@@ -220,6 +226,11 @@ namespace CameraCaptureApp.Services
 
         private bool CreateSdkObjects()
         {
+            if (_acqDevice != null && !_acqDevice.Initialized && !_acqDevice.Create())
+            {
+                return false;
+            }
+
             if (_acquisition != null && !_acquisition.Initialized && !_acquisition.Create())
             {
                 return false;
@@ -264,6 +275,12 @@ namespace CameraCaptureApp.Services
 
         private void DisposeSdkObjects()
         {
+            if (_acqDevice != null)
+            {
+                _acqDevice.Dispose();
+                _acqDevice = null;
+            }
+
             if (_transfer != null)
             {
                 _transfer.XferNotify -= OnTransferNotify;
@@ -459,6 +476,7 @@ namespace CameraCaptureApp.Services
             DestroySdkObjects();
             DisposeSdkObjects();
 
+            _acqDevice = new SapAcqDevice(_serverLocation, _configFileName);
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
@@ -482,6 +500,8 @@ namespace CameraCaptureApp.Services
                 throw new InvalidOperationException("Sapera objects could not be created.");
             }
 
+            ApplyWritableCameraSettings();
+
             _status.IsConnected = true;
             _status.HasSignal = _acquisition.SignalStatus != SapAcquisition.AcqSignalStatus.None;
             _status.CameraName = _serverLocation.ServerName;
@@ -498,6 +518,257 @@ namespace CameraCaptureApp.Services
             }
             _status.ScanStateText = "Connected";
             return true;
+        }
+
+        private void ApplyWritableCameraSettings()
+        {
+            if (_acqDevice == null || !_acqDevice.Initialized)
+            {
+                return;
+            }
+
+            var applied = false;
+            var notes = new System.Collections.Generic.List<string>();
+
+            if (TrySetNumericFeature(_settings.ExposureTime, notes, "ExposureTime", "ExposureTimeAbs", "Exposure"))
+            {
+                applied = true;
+            }
+
+            if (TrySetNumericFeature(_settings.Gain, notes, "Gain", "GainRaw", "AnalogGain"))
+            {
+                applied = true;
+            }
+
+            if (TrySetIntegralFeature(_settings.Length, notes, "Height", "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount"))
+            {
+                _status.FrameHeight = _settings.Length;
+                applied = true;
+            }
+
+            if (TrySetInternalLineRate(notes))
+            {
+                applied = true;
+            }
+
+            if (ApplyTriggerMode(notes))
+            {
+                applied = true;
+            }
+
+            if (notes.Count > 0)
+            {
+                _status.LastMessage = string.Join(" | ", notes.ToArray());
+            }
+            else if (applied)
+            {
+                _status.LastMessage = "Camera parameters written to Sapera device.";
+            }
+        }
+
+        private bool TrySetNumericFeature(decimal value, System.Collections.Generic.List<string> notes, params string[] featureNames)
+        {
+            var appliedFeature = string.Empty;
+            if (TrySetDeviceFeature(featureNames, (double)value, out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied");
+                return true;
+            }
+
+            notes.Add(featureNames[0] + " not supported");
+            return false;
+        }
+
+        private bool TrySetIntegralFeature(int value, System.Collections.Generic.List<string> notes, params string[] featureNames)
+        {
+            var appliedFeature = string.Empty;
+            if (TrySetDeviceFeature(featureNames, value, out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied");
+                return true;
+            }
+
+            notes.Add(featureNames[0] + " not supported");
+            return false;
+        }
+
+        private bool ApplyTriggerMode(System.Collections.Generic.List<string> notes)
+        {
+            switch (_settings.TriggerMode)
+            {
+                case TriggerMode.Continuous:
+                    if (TryConfigureTriggerSelector("FrameStart", false, null) |
+                        TryConfigureTriggerSelector("LineStart", false, null) |
+                        TrySetDeviceFeature(new[] { "TriggerMode" }, "Off"))
+                    {
+                        notes.Add("TriggerMode continuous applied");
+                        return true;
+                    }
+
+                    notes.Add("TriggerMode continuous not supported");
+                    return false;
+
+                case TriggerMode.SoftwareTrigger:
+                    if (TryConfigureTriggerSelector("FrameStart", true, "Software") |
+                        TryConfigureTriggerSelector("LineStart", true, "Software"))
+                    {
+                        notes.Add("TriggerMode software applied");
+                        return true;
+                    }
+
+                    notes.Add("TriggerMode software not supported");
+                    return false;
+
+                case TriggerMode.ExternalTrigger:
+                    if (TryConfigureTriggerSelector("LineStart", true, "Line1") |
+                        TryConfigureTriggerSelector("FrameStart", true, "Line1") |
+                        TryConfigureTriggerSelector("FrameStart", true, "Input1"))
+                    {
+                        notes.Add("TriggerMode external applied");
+                        return true;
+                    }
+
+                    notes.Add("TriggerMode external not supported");
+                    return false;
+
+                case TriggerMode.SingleFrame:
+                    if (TryConfigureTriggerSelector("FrameStart", true, "Software") |
+                        TryConfigureTriggerSelector("AcquisitionStart", true, "Software"))
+                    {
+                        notes.Add("TriggerMode single-frame applied");
+                        return true;
+                    }
+
+                    notes.Add("TriggerMode single-frame not supported");
+                    return false;
+
+                default:
+                    return false;
+            }
+        }
+
+        private bool TrySetInternalLineRate(System.Collections.Generic.List<string> notes)
+        {
+            var acquisitionRate = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate));
+            if (TrySetAcquisitionIntParameter(SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ, acquisitionRate))
+            {
+                notes.Add("INT_LINE_TRIGGER_FREQ applied");
+                return true;
+            }
+
+            var appliedFeature = string.Empty;
+            if (TrySetDeviceFeature(
+                new[] { "AcquisitionLineRate", "LineRate", "DeviceLineRate", "InternalLineRate" },
+                (double)_settings.InternalLineRate,
+                out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied");
+                return true;
+            }
+
+            notes.Add("InternalLineRate not supported");
+            return false;
+        }
+
+        private bool TryConfigureTriggerSelector(string selector, bool enabled, string source)
+        {
+            var selectorApplied = TrySetDeviceFeature(new[] { "TriggerSelector" }, selector);
+            var modeApplied = TrySetDeviceFeature(new[] { "TriggerMode" }, enabled ? "On" : "Off");
+            var sourceApplied = !enabled || string.IsNullOrWhiteSpace(source) || TrySetDeviceFeature(new[] { "TriggerSource" }, source);
+            return selectorApplied && modeApplied && sourceApplied;
+        }
+
+        private bool TrySetDeviceFeature(string[] featureNames, double value, out string appliedFeature)
+        {
+            appliedFeature = string.Empty;
+            if (_acqDevice == null || !_acqDevice.Initialized)
+            {
+                return false;
+            }
+
+            foreach (var featureName in featureNames)
+            {
+                if (!_acqDevice.IsFeatureAvailable(featureName))
+                {
+                    continue;
+                }
+
+                if (_acqDevice.SetFeatureValue(featureName, value))
+                {
+                    _acqDevice.UpdateFeaturesToDevice();
+                    appliedFeature = featureName;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TrySetDeviceFeature(string[] featureNames, int value, out string appliedFeature)
+        {
+            appliedFeature = string.Empty;
+            if (_acqDevice == null || !_acqDevice.Initialized)
+            {
+                return false;
+            }
+
+            foreach (var featureName in featureNames)
+            {
+                if (!_acqDevice.IsFeatureAvailable(featureName))
+                {
+                    continue;
+                }
+
+                if (_acqDevice.SetFeatureValue(featureName, value))
+                {
+                    _acqDevice.UpdateFeaturesToDevice();
+                    appliedFeature = featureName;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TrySetAcquisitionIntParameter(SapAcquisition.Prm parameter, int value)
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return false;
+            }
+
+            try
+            {
+                return _acquisition.SetParameter(parameter, value, true);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool TrySetDeviceFeature(string[] featureNames, string value)
+        {
+            if (_acqDevice == null || !_acqDevice.Initialized)
+            {
+                return false;
+            }
+
+            foreach (var featureName in featureNames)
+            {
+                if (!_acqDevice.IsFeatureAvailable(featureName))
+                {
+                    continue;
+                }
+
+                if (_acqDevice.SetFeatureValue(featureName, value))
+                {
+                    _acqDevice.UpdateFeaturesToDevice();
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

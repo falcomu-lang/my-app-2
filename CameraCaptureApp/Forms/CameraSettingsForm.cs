@@ -22,23 +22,6 @@ namespace CameraCaptureApp.Forms
 
         private void BindSettings()
         {
-            comboBoxCameraName.Items.Clear();
-            comboBoxCameraName.Items.AddRange(new object[]
-            {
-                "Default Camera",
-                "Line Scan Camera 01",
-                "Area Camera 01"
-            });
-
-            comboBoxPixelFormat.Items.Clear();
-            comboBoxPixelFormat.Items.AddRange(new object[]
-            {
-                "Mono8",
-                "Mono16",
-                "RGB24",
-                "Unknown"
-            });
-
             comboBoxTriggerMode.Items.Clear();
             comboBoxTriggerMode.Items.AddRange(new object[]
             {
@@ -48,15 +31,15 @@ namespace CameraCaptureApp.Forms
                 "External Trigger"
             });
 
-            comboBoxCameraName.Text = Settings.CameraName;
+            textBoxCameraName.Text = Settings.CameraName;
             textBoxConfigFile.Text = Settings.ConfigFilePath;
             textBoxServerName.Text = Settings.ServerName;
             textBoxServerIndex.Text = Settings.ServerIndex >= 0 ? Settings.ServerIndex.ToString() : string.Empty;
             textBoxResourceIndex.Text = Settings.ResourceIndex.ToString();
             numericExposure.Value = Settings.ExposureTime;
             numericGain.Value = Settings.Gain;
-            numericFrameRate.Value = Settings.FrameRate;
-            comboBoxPixelFormat.Text = string.IsNullOrWhiteSpace(Settings.PixelFormat) ? "Unknown" : Settings.PixelFormat;
+            numericLength.Value = Settings.Length > 0 ? Settings.Length : 1;
+            numericInternalLineRate.Value = Settings.InternalLineRate > 0 ? Settings.InternalLineRate : 1;
             comboBoxTriggerMode.SelectedIndex = (int)Settings.TriggerMode;
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
             checkBoxAutoSave.Checked = Settings.AutoSave;
@@ -80,7 +63,7 @@ namespace CameraCaptureApp.Forms
             textBoxServerName.Text = Settings.ServerName;
             textBoxServerIndex.Text = Settings.ServerIndex >= 0 ? Settings.ServerIndex.ToString() : string.Empty;
             textBoxResourceIndex.Text = Settings.ResourceIndex.ToString();
-            comboBoxCameraName.Text = Settings.CameraName;
+            textBoxCameraName.Text = Settings.CameraName;
             labelReadResult.Text = "Sapera acquisition settings loaded.";
         }
 
@@ -110,12 +93,10 @@ namespace CameraCaptureApp.Forms
                         return;
                     }
 
-                    comboBoxPixelFormat.Text = ReadPixelFormat(acquisition);
-                    numericFrameRate.Value = ClampDecimal(ReadFrameRate(acquisition), numericFrameRate.Minimum, numericFrameRate.Maximum, numericFrameRate.Value);
                     comboBoxTriggerMode.SelectedIndex = (int)ReadTriggerMode(acquisition);
 
                     acquisition.Destroy();
-                    labelReadResult.Text = "Mapped available CCF values to supported fields.";
+                    labelReadResult.Text = "Mapped available CCF trigger values to supported fields.";
                 }
             }
             catch (Exception ex)
@@ -144,15 +125,15 @@ namespace CameraCaptureApp.Forms
 
         private void SaveSettings()
         {
-            Settings.CameraName = comboBoxCameraName.Text.Trim();
+            Settings.CameraName = textBoxCameraName.Text.Trim();
             Settings.ConfigFilePath = textBoxConfigFile.Text.Trim();
             Settings.ServerName = textBoxServerName.Text.Trim();
             Settings.ServerIndex = ParseInt(textBoxServerIndex.Text, Settings.ServerIndex);
             Settings.ResourceIndex = ParseInt(textBoxResourceIndex.Text, Settings.ResourceIndex);
             Settings.ExposureTime = numericExposure.Value;
             Settings.Gain = numericGain.Value;
-            Settings.FrameRate = numericFrameRate.Value;
-            Settings.PixelFormat = comboBoxPixelFormat.Text.Trim();
+            Settings.Length = decimal.ToInt32(numericLength.Value);
+            Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
             Settings.AutoSave = checkBoxAutoSave.Checked;
@@ -173,43 +154,6 @@ namespace CameraCaptureApp.Forms
             }
 
             return new SapAcquisition(location, Settings.ConfigFilePath);
-        }
-
-        private static string ReadPixelFormat(SapAcquisition acquisition)
-        {
-            int pixelDepth;
-            if (!acquisition.GetParameter(SapAcquisition.Prm.PIXEL_DEPTH, out pixelDepth))
-            {
-                return "Unknown";
-            }
-
-            if (pixelDepth <= 8)
-            {
-                return "Mono8";
-            }
-
-            if (pixelDepth <= 16)
-            {
-                return "Mono16";
-            }
-
-            if (pixelDepth <= 24)
-            {
-                return "RGB24";
-            }
-
-            return "Unknown";
-        }
-
-        private static decimal ReadFrameRate(SapAcquisition acquisition)
-        {
-            long frequency;
-            if (acquisition.GetParameter(SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ, out frequency))
-            {
-                return (decimal)frequency;
-            }
-
-            return 30m;
         }
 
         private static TriggerMode ReadTriggerMode(SapAcquisition acquisition)
@@ -242,16 +186,6 @@ namespace CameraCaptureApp.Forms
             }
 
             return TriggerMode.Continuous;
-        }
-
-        private static decimal ClampDecimal(decimal value, decimal minimum, decimal maximum, decimal fallback)
-        {
-            if (value < minimum || value > maximum)
-            {
-                return fallback;
-            }
-
-            return value;
         }
 
         private static int ParseInt(string text, int fallback)

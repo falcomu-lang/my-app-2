@@ -35,8 +35,10 @@ namespace CameraCaptureApp.Services
             settings.ResourceIndex = GetInt(values, "ResourceIndex", settings.ResourceIndex);
             settings.Width = GetInt(values, "Width", settings.Width);
             settings.Height = GetInt(values, "Height", settings.Height);
+            settings.Length = GetInt(values, "Length", settings.Length);
             settings.ExposureTime = GetDecimal(values, "ExposureTime", settings.ExposureTime);
             settings.Gain = GetDecimal(values, "Gain", settings.Gain);
+            settings.InternalLineRate = GetDecimal(values, "InternalLineRate", settings.InternalLineRate);
             settings.FrameRate = GetDecimal(values, "FrameRate", settings.FrameRate);
             settings.PixelFormat = GetString(values, "PixelFormat", settings.PixelFormat);
             settings.TriggerMode = GetTriggerMode(values, "TriggerMode", settings.TriggerMode);
@@ -61,8 +63,10 @@ namespace CameraCaptureApp.Services
                 "ResourceIndex=" + settings.ResourceIndex.ToString(CultureInfo.InvariantCulture),
                 "Width=" + settings.Width.ToString(CultureInfo.InvariantCulture),
                 "Height=" + settings.Height.ToString(CultureInfo.InvariantCulture),
+                "Length=" + settings.Length.ToString(CultureInfo.InvariantCulture),
                 "ExposureTime=" + settings.ExposureTime.ToString(CultureInfo.InvariantCulture),
                 "Gain=" + settings.Gain.ToString(CultureInfo.InvariantCulture),
+                "InternalLineRate=" + settings.InternalLineRate.ToString(CultureInfo.InvariantCulture),
                 "FrameRate=" + settings.FrameRate.ToString(CultureInfo.InvariantCulture),
                 "PixelFormat=" + settings.PixelFormat,
                 "TriggerMode=" + settings.TriggerMode.ToString(),

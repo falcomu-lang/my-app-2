@@ -228,9 +228,7 @@ namespace CameraCaptureApp.Forms
             labelHeaderSignalValue.Text = status.HasSignal ? "Detected" : "Missing";
             labelFooterLinesValue.Text = status.ScannedLineCount.ToString();
             labelFooterPreviewValue.Text = status.IsPreviewing ? "Running" : "Stopped";
-            labelFooterImageSizeValue.Text = status.FrameWidth + " x " + status.FrameHeight;
             labelFooterMessageValue.Text = status.LastMessage;
-            labelFooterUpdateRateValue.Text = status.UpdateRateHz + " Hz";
             labelFooterScanStateValue.Text = status.ScanStateText;
             if (!string.IsNullOrWhiteSpace(status.CameraName))
             {

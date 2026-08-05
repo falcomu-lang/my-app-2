@@ -8,7 +8,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.TabPage tabPageImage;
         private System.Windows.Forms.TabPage tabPageTrigger;
         private System.Windows.Forms.TabPage tabPageSaving;
-        private System.Windows.Forms.ComboBox comboBoxCameraName;
+        private System.Windows.Forms.TextBox textBoxCameraName;
         private System.Windows.Forms.TextBox textBoxConfigFile;
         private System.Windows.Forms.TextBox textBoxServerName;
         private System.Windows.Forms.TextBox textBoxServerIndex;
@@ -19,8 +19,8 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelReadResult;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
-        private System.Windows.Forms.NumericUpDown numericFrameRate;
-        private System.Windows.Forms.ComboBox comboBoxPixelFormat;
+        private System.Windows.Forms.NumericUpDown numericLength;
+        private System.Windows.Forms.NumericUpDown numericInternalLineRate;
         private System.Windows.Forms.ComboBox comboBoxTriggerMode;
         private System.Windows.Forms.CheckBox checkBoxAutoSave;
         private System.Windows.Forms.TextBox textBoxSaveFolder;
@@ -51,10 +51,10 @@ namespace CameraCaptureApp.Forms
             this.textBoxServerIndex = new System.Windows.Forms.TextBox();
             this.textBoxServerName = new System.Windows.Forms.TextBox();
             this.textBoxConfigFile = new System.Windows.Forms.TextBox();
-            this.comboBoxCameraName = new System.Windows.Forms.ComboBox();
+            this.textBoxCameraName = new System.Windows.Forms.TextBox();
             this.tabPageImage = new System.Windows.Forms.TabPage();
-            this.comboBoxPixelFormat = new System.Windows.Forms.ComboBox();
-            this.numericFrameRate = new System.Windows.Forms.NumericUpDown();
+            this.numericInternalLineRate = new System.Windows.Forms.NumericUpDown();
+            this.numericLength = new System.Windows.Forms.NumericUpDown();
             this.numericGain = new System.Windows.Forms.NumericUpDown();
             this.numericExposure = new System.Windows.Forms.NumericUpDown();
             this.tabPageTrigger = new System.Windows.Forms.TabPage();
@@ -69,7 +69,8 @@ namespace CameraCaptureApp.Forms
             this.tabControlSettings.SuspendLayout();
             this.tabPageConnection.SuspendLayout();
             this.tabPageImage.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericFrameRate)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericInternalLineRate)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericLength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericGain)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericExposure)).BeginInit();
             this.tabPageTrigger.SuspendLayout();
@@ -91,7 +92,7 @@ namespace CameraCaptureApp.Forms
             // tabPageConnection
             // 
             this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 25), Text = "Camera Name" });
-            this.tabPageConnection.Controls.Add(this.comboBoxCameraName);
+            this.tabPageConnection.Controls.Add(this.textBoxCameraName);
             this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 78), Text = "CCF File" });
             this.tabPageConnection.Controls.Add(this.textBoxConfigFile);
             this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 164), Text = "Acquisition Server" });
@@ -112,13 +113,12 @@ namespace CameraCaptureApp.Forms
             this.tabPageConnection.Text = "Basic Connection";
             this.tabPageConnection.UseVisualStyleBackColor = true;
             // 
-            // comboBoxCameraName
+            // textBoxCameraName
             // 
-            this.comboBoxCameraName.FormattingEnabled = true;
-            this.comboBoxCameraName.Location = new System.Drawing.Point(35, 47);
-            this.comboBoxCameraName.Name = "comboBoxCameraName";
-            this.comboBoxCameraName.Size = new System.Drawing.Size(280, 24);
-            this.comboBoxCameraName.TabIndex = 0;
+            this.textBoxCameraName.Location = new System.Drawing.Point(35, 47);
+            this.textBoxCameraName.Name = "textBoxCameraName";
+            this.textBoxCameraName.Size = new System.Drawing.Size(280, 23);
+            this.textBoxCameraName.TabIndex = 0;
             // 
             // textBoxConfigFile
             // 
@@ -196,11 +196,11 @@ namespace CameraCaptureApp.Forms
             this.tabPageImage.Controls.Add(this.numericExposure);
             this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(208, 35), Text = "Gain" });
             this.tabPageImage.Controls.Add(this.numericGain);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(384, 35), Text = "Frame Rate" });
-            this.tabPageImage.Controls.Add(this.numericFrameRate);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 103), Text = "Pixel Format" });
-            this.tabPageImage.Controls.Add(this.comboBoxPixelFormat);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 171), Text = "Exposure and gain are not guaranteed to come from the CCF using the current SDK path." });
+            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(384, 35), Text = "Length (Lines)" });
+            this.tabPageImage.Controls.Add(this.numericLength);
+            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(560, 35), Text = "Internal Line Rate" });
+            this.tabPageImage.Controls.Add(this.numericInternalLineRate);
+            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 103), Size = new System.Drawing.Size(680, 16), Text = "Exposure, gain, length, and internal line rate will be written to supported Sapera parameters when available." });
             this.tabPageImage.Location = new System.Drawing.Point(4, 26);
             this.tabPageImage.Name = "tabPageImage";
             this.tabPageImage.Padding = new System.Windows.Forms.Padding(3);
@@ -219,20 +219,23 @@ namespace CameraCaptureApp.Forms
             this.numericGain.Location = new System.Drawing.Point(211, 57);
             this.numericGain.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
             this.numericGain.Size = new System.Drawing.Size(140, 23);
-            this.numericFrameRate.DecimalPlaces = 2;
-            this.numericFrameRate.Location = new System.Drawing.Point(387, 57);
-            this.numericFrameRate.Maximum = new decimal(new int[] { 100000, 0, 0, 0 });
-            this.numericFrameRate.Size = new System.Drawing.Size(140, 23);
-            this.comboBoxPixelFormat.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBoxPixelFormat.FormattingEnabled = true;
-            this.comboBoxPixelFormat.Location = new System.Drawing.Point(35, 125);
-            this.comboBoxPixelFormat.Size = new System.Drawing.Size(200, 24);
+            this.numericLength.Location = new System.Drawing.Point(387, 57);
+            this.numericLength.Maximum = new decimal(new int[] { 1000000, 0, 0, 0 });
+            this.numericLength.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.numericLength.Size = new System.Drawing.Size(140, 23);
+            this.numericLength.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            this.numericInternalLineRate.DecimalPlaces = 2;
+            this.numericInternalLineRate.Location = new System.Drawing.Point(563, 57);
+            this.numericInternalLineRate.Maximum = new decimal(new int[] { 1000000, 0, 0, 0 });
+            this.numericInternalLineRate.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.numericInternalLineRate.Size = new System.Drawing.Size(140, 23);
+            this.numericInternalLineRate.Value = new decimal(new int[] { 1, 0, 0, 0 });
             // 
             // tabPageTrigger
             // 
             this.tabPageTrigger.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 35), Text = "Trigger Mode" });
             this.tabPageTrigger.Controls.Add(this.comboBoxTriggerMode);
-            this.tabPageTrigger.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 103), Text = "This field can be mapped from supported acquisition trigger parameters in the CCF." });
+            this.tabPageTrigger.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 103), Size = new System.Drawing.Size(600, 16), Text = "Trigger Mode will be written to supported Sapera trigger features when the camera provides them." });
             this.tabPageTrigger.Location = new System.Drawing.Point(4, 26);
             this.tabPageTrigger.Name = "tabPageTrigger";
             this.tabPageTrigger.Padding = new System.Windows.Forms.Padding(3);
@@ -313,7 +316,8 @@ namespace CameraCaptureApp.Forms
             this.tabPageConnection.PerformLayout();
             this.tabPageImage.ResumeLayout(false);
             this.tabPageImage.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericFrameRate)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericInternalLineRate)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericLength)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericGain)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericExposure)).EndInit();
             this.tabPageTrigger.ResumeLayout(false);
