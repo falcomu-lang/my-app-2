@@ -52,7 +52,24 @@ namespace CameraCaptureApp.Forms
             var dialogSettings = _settings ?? CameraSettings.CreateDefault();
             using (var form = new CameraSettingsForm(dialogSettings, _cameraService))
             {
-                if (form.ShowDialog(this) != DialogResult.OK)
+                DialogResult dialogResult;
+                try
+                {
+                    dialogResult = form.ShowDialog(this);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        this,
+                        "Camera Settings could not be opened.\r\n" + ex.Message,
+                        "Camera Settings Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    labelFooterMessageValue.Text = "Camera Settings open failed: " + ex.Message;
+                    return;
+                }
+
+                if (dialogResult != DialogResult.OK)
                 {
                     return;
                 }
