@@ -9,8 +9,11 @@ namespace CameraCaptureApp.Controls
 {
     public partial class CameraDisplayControl : UserControl
     {
+        private const int TileSourceSize = 1024;
+
         private readonly object _imageLock = new object();
         private Bitmap _sourceBitmap;
+        private LargeImageSource _largeImageSource;
         private bool _isPanning;
         private Point _lastMousePoint;
         private int _imageVersion;
@@ -22,7 +25,7 @@ namespace CameraCaptureApp.Controls
         {
             InitializeComponent();
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
-            StatusText = "尚未載入圖片";
+            StatusText = "No image loaded";
         }
 
         public string OverlayText
@@ -46,35 +49,61 @@ namespace CameraCaptureApp.Controls
         public async Task LoadImageFromFileAsync(string filePath, CancellationToken cancellationToken)
         {
             var version = Interlocked.Increment(ref _imageVersion);
-            StatusText = "載入圖片中...";
+            StatusText = "Loading large image...";
 
-            var bitmap = await Task.Run(
+            var largeImageSource = await Task.Run(
                 () =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    using (var source = Image.FromFile(filePath))
-                    {
-                        return new Bitmap(source);
-                    }
+                    return new LargeImageSource(filePath);
                 },
                 cancellationToken);
 
             if (cancellationToken.IsCancellationRequested || version != _imageVersion)
             {
-                bitmap.Dispose();
+                largeImageSource.Dispose();
                 return;
             }
 
-            await ApplyImageAsync(bitmap, version, cancellationToken);
+            await ApplyLargeImageAsync(largeImageSource, version, cancellationToken);
         }
 
         public async Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken)
         {
             var version = Interlocked.Increment(ref _imageVersion);
-            await ApplyImageAsync(new Bitmap(frame), version, cancellationToken);
+            await ApplyBitmapAsync(new Bitmap(frame), version, cancellationToken);
         }
 
-        private async Task ApplyImageAsync(Bitmap bitmap, int version, CancellationToken cancellationToken)
+        private async Task ApplyLargeImageAsync(LargeImageSource source, int version, CancellationToken cancellationToken)
+        {
+            var elapsed = DateTime.UtcNow - _lastDisplayUpdateUtc;
+            if (elapsed.TotalMilliseconds < 200)
+            {
+                await Task.Delay(200 - (int)elapsed.TotalMilliseconds, cancellationToken);
+            }
+
+            if (cancellationToken.IsCancellationRequested || version != _imageVersion)
+            {
+                source.Dispose();
+                return;
+            }
+
+            lock (_imageLock)
+            {
+                DisposeCurrentImage();
+                _largeImageSource = source;
+            }
+
+            _lastDisplayUpdateUtc = DateTime.UtcNow;
+            OverlayText = "Large image view";
+            ResolutionText = source.Width + " x " + source.Height;
+            FitImageToView();
+            UpdateStatusLabel();
+            viewerPanel.Invalidate();
+            viewerPanel.Update();
+        }
+
+        private async Task ApplyBitmapAsync(Bitmap bitmap, int version, CancellationToken cancellationToken)
         {
             var elapsed = DateTime.UtcNow - _lastDisplayUpdateUtc;
             if (elapsed.TotalMilliseconds < 200)
@@ -90,16 +119,12 @@ namespace CameraCaptureApp.Controls
 
             lock (_imageLock)
             {
-                if (_sourceBitmap != null)
-                {
-                    _sourceBitmap.Dispose();
-                }
-
+                DisposeCurrentImage();
                 _sourceBitmap = bitmap;
             }
 
             _lastDisplayUpdateUtc = DateTime.UtcNow;
-            OverlayText = "拖曳平移，滾輪縮放";
+            OverlayText = "Live frame view";
             ResolutionText = bitmap.Width + " x " + bitmap.Height;
             FitImageToView();
             UpdateStatusLabel();
@@ -115,38 +140,124 @@ namespace CameraCaptureApp.Controls
             e.Graphics.SmoothingMode = SmoothingMode.HighSpeed;
 
             Bitmap bitmap;
+            LargeImageSource largeImageSource;
             float zoom;
             PointF offset;
             lock (_imageLock)
             {
                 bitmap = _sourceBitmap;
+                largeImageSource = _largeImageSource;
                 zoom = _zoom;
                 offset = _imageOffset;
             }
 
-            if (bitmap == null || zoom <= 0f)
+            if (zoom <= 0f)
             {
                 return;
             }
 
-            var drawWidth = bitmap.Width * zoom;
-            var drawHeight = bitmap.Height * zoom;
-            e.Graphics.DrawImage(bitmap, offset.X, offset.Y, drawWidth, drawHeight);
+            if (bitmap != null)
+            {
+                var drawWidth = bitmap.Width * zoom;
+                var drawHeight = bitmap.Height * zoom;
+                e.Graphics.DrawImage(bitmap, offset.X, offset.Y, drawWidth, drawHeight);
+                return;
+            }
+
+            if (largeImageSource == null)
+            {
+                return;
+            }
+
+            DrawLargeImage(e.Graphics, largeImageSource, zoom, offset);
+        }
+
+        private void DrawLargeImage(Graphics graphics, LargeImageSource source, float zoom, PointF offset)
+        {
+            using (var preview = source.GetBestPreview(zoom))
+            {
+                var drawWidth = source.Width * zoom;
+                var drawHeight = source.Height * zoom;
+                graphics.DrawImage(preview.Bitmap, offset.X, offset.Y, drawWidth, drawHeight);
+            }
+
+            if (zoom < 0.08f)
+            {
+                return;
+            }
+
+            var viewBounds = viewerPanel.ClientRectangle;
+            var visibleSourceRect = GetVisibleSourceRectangle(source.Width, source.Height, viewBounds, zoom, offset);
+            if (visibleSourceRect.Width <= 0 || visibleSourceRect.Height <= 0)
+            {
+                return;
+            }
+
+            var startTileX = (visibleSourceRect.Left / TileSourceSize) * TileSourceSize;
+            var endTileX = ((visibleSourceRect.Right + TileSourceSize - 1) / TileSourceSize) * TileSourceSize;
+            var startTileY = (visibleSourceRect.Top / TileSourceSize) * TileSourceSize;
+            var endTileY = ((visibleSourceRect.Bottom + TileSourceSize - 1) / TileSourceSize) * TileSourceSize;
+
+            for (var tileY = startTileY; tileY < endTileY; tileY += TileSourceSize)
+            {
+                for (var tileX = startTileX; tileX < endTileX; tileX += TileSourceSize)
+                {
+                    var tileRect = source.GetVisibleTileBounds(new Rectangle(tileX, tileY, TileSourceSize, TileSourceSize));
+                    Bitmap tile;
+                    if (source.TryGetTile(tileRect, out tile))
+                    {
+                        using (tile)
+                        {
+                            DrawTile(graphics, tile, tileRect, zoom, offset);
+                        }
+                    }
+                    else
+                    {
+                        RequestTile(source, tileRect);
+                    }
+                }
+            }
+        }
+
+        private void RequestTile(LargeImageSource source, Rectangle tileRect)
+        {
+            source.QueueTile(
+                tileRect,
+                () =>
+                {
+                    if (!IsDisposed && IsHandleCreated)
+                    {
+                        BeginInvoke(new Action(() => viewerPanel.Invalidate()));
+                    }
+                });
+            source.PrefetchNeighborhood(
+                tileRect,
+                () =>
+                {
+                    if (!IsDisposed && IsHandleCreated)
+                    {
+                        BeginInvoke(new Action(() => viewerPanel.Invalidate()));
+                    }
+                });
+        }
+
+        private static void DrawTile(Graphics graphics, Bitmap tile, Rectangle tileRect, float zoom, PointF offset)
+        {
+            var drawRect = new RectangleF(
+                offset.X + (tileRect.X * zoom),
+                offset.Y + (tileRect.Y * zoom),
+                tileRect.Width * zoom,
+                tileRect.Height * zoom);
+            graphics.DrawImage(tile, drawRect);
         }
 
         private void viewerPanel_MouseWheel(object sender, MouseEventArgs e)
         {
-            Bitmap bitmap;
+            int width;
+            int height;
             float oldZoom;
             PointF oldOffset;
-            lock (_imageLock)
-            {
-                bitmap = _sourceBitmap;
-                oldZoom = _zoom;
-                oldOffset = _imageOffset;
-            }
-
-            if (bitmap == null)
+            if (!TryGetSourceMetrics(out width, out height, out oldZoom, out oldOffset))
             {
                 return;
             }
@@ -177,7 +288,7 @@ namespace CameraCaptureApp.Controls
         {
             lock (_imageLock)
             {
-                if (e.Button != MouseButtons.Left || _sourceBitmap == null)
+                if (e.Button != MouseButtons.Left || (_sourceBitmap == null && _largeImageSource == null))
                 {
                     return;
                 }
@@ -240,7 +351,9 @@ namespace CameraCaptureApp.Controls
         {
             lock (_imageLock)
             {
-                if (_sourceBitmap == null)
+                var sourceWidth = GetSourceWidthUnsafe();
+                var sourceHeight = GetSourceHeightUnsafe();
+                if (sourceWidth <= 0 || sourceHeight <= 0)
                 {
                     _zoom = 1f;
                     _imageOffset = PointF.Empty;
@@ -255,12 +368,12 @@ namespace CameraCaptureApp.Controls
                     return;
                 }
 
-                var scaleX = bounds.Width / (float)_sourceBitmap.Width;
-                var scaleY = bounds.Height / (float)_sourceBitmap.Height;
+                var scaleX = bounds.Width / (float)sourceWidth;
+                var scaleY = bounds.Height / (float)sourceHeight;
                 _zoom = Math.Min(scaleX, scaleY);
 
-                var drawWidth = _sourceBitmap.Width * _zoom;
-                var drawHeight = _sourceBitmap.Height * _zoom;
+                var drawWidth = sourceWidth * _zoom;
+                var drawHeight = sourceHeight * _zoom;
                 _imageOffset = new PointF(
                     bounds.X + ((bounds.Width - drawWidth) / 2f),
                     bounds.Y + ((bounds.Height - drawHeight) / 2f));
@@ -271,16 +384,18 @@ namespace CameraCaptureApp.Controls
         {
             lock (_imageLock)
             {
-                if (_sourceBitmap == null)
+                var sourceWidth = GetSourceWidthUnsafe();
+                var sourceHeight = GetSourceHeightUnsafe();
+                if (sourceWidth <= 0 || sourceHeight <= 0)
                 {
-                    StatusText = "尚未載入圖片";
+                    StatusText = "No image loaded";
                     return;
                 }
 
                 var imageX = (-_imageOffset.X) / _zoom;
                 var imageY = (-_imageOffset.Y) / _zoom;
                 StatusText = string.Format(
-                    "縮放 {0:0.00}x | 偏移 {1:0},{2:0} | 影像座標 {3:0},{4:0}",
+                    "Zoom {0:0.00}x | Offset {1:0},{2:0} | Image {3:0},{4:0}",
                     _zoom,
                     _imageOffset.X,
                     _imageOffset.Y,
@@ -294,6 +409,62 @@ namespace CameraCaptureApp.Controls
             var bounds = viewerPanel.ClientRectangle;
             bounds.Inflate(-8, -8);
             return bounds;
+        }
+
+        private bool TryGetSourceMetrics(out int width, out int height, out float zoom, out PointF offset)
+        {
+            lock (_imageLock)
+            {
+                width = GetSourceWidthUnsafe();
+                height = GetSourceHeightUnsafe();
+                zoom = _zoom;
+                offset = _imageOffset;
+                return width > 0 && height > 0;
+            }
+        }
+
+        private int GetSourceWidthUnsafe()
+        {
+            if (_sourceBitmap != null)
+            {
+                return _sourceBitmap.Width;
+            }
+
+            return _largeImageSource != null ? _largeImageSource.Width : 0;
+        }
+
+        private int GetSourceHeightUnsafe()
+        {
+            if (_sourceBitmap != null)
+            {
+                return _sourceBitmap.Height;
+            }
+
+            return _largeImageSource != null ? _largeImageSource.Height : 0;
+        }
+
+        private void DisposeCurrentImage()
+        {
+            if (_sourceBitmap != null)
+            {
+                _sourceBitmap.Dispose();
+                _sourceBitmap = null;
+            }
+
+            if (_largeImageSource != null)
+            {
+                _largeImageSource.Dispose();
+                _largeImageSource = null;
+            }
+        }
+
+        private static Rectangle GetVisibleSourceRectangle(int sourceWidth, int sourceHeight, Rectangle viewBounds, float zoom, PointF offset)
+        {
+            var left = Math.Max(0, (int)Math.Floor((viewBounds.Left - offset.X) / zoom));
+            var top = Math.Max(0, (int)Math.Floor((viewBounds.Top - offset.Y) / zoom));
+            var right = Math.Min(sourceWidth, (int)Math.Ceiling((viewBounds.Right - offset.X) / zoom));
+            var bottom = Math.Min(sourceHeight, (int)Math.Ceiling((viewBounds.Bottom - offset.Y) / zoom));
+            return Rectangle.FromLTRB(left, top, Math.Max(left + 1, right), Math.Max(top + 1, bottom));
         }
 
         private static float ClampZoom(float zoom)

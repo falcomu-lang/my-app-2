@@ -8,7 +8,6 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.TabPage tabPageImage;
         private System.Windows.Forms.TabPage tabPageTrigger;
         private System.Windows.Forms.TabPage tabPageSaving;
-        private System.Windows.Forms.TabPage tabPageDiagnostic;
         private System.Windows.Forms.ComboBox comboBoxCameraName;
         private System.Windows.Forms.TextBox textBoxConfigFile;
         private System.Windows.Forms.TextBox textBoxServerName;
@@ -16,9 +15,8 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.TextBox textBoxResourceIndex;
         private System.Windows.Forms.CheckBox checkBoxAutoConnect;
         private System.Windows.Forms.Button buttonBrowseSapera;
-        private System.Windows.Forms.Button buttonTestConnection;
-        private System.Windows.Forms.NumericUpDown numericWidth;
-        private System.Windows.Forms.NumericUpDown numericHeight;
+        private System.Windows.Forms.Button buttonReadCcfToFields;
+        private System.Windows.Forms.Label labelReadResult;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
         private System.Windows.Forms.NumericUpDown numericFrameRate;
@@ -30,10 +28,6 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Button buttonApply;
         private System.Windows.Forms.Button buttonOk;
         private System.Windows.Forms.Button buttonCancel;
-        private System.Windows.Forms.Label labelDiagnosticConnectionValue;
-        private System.Windows.Forms.Label labelDiagnosticSignalValue;
-        private System.Windows.Forms.Label labelDiagnosticResolutionValue;
-        private System.Windows.Forms.Label labelDiagnosticMessageValue;
 
         protected override void Dispose(bool disposing)
         {
@@ -49,7 +43,8 @@ namespace CameraCaptureApp.Forms
         {
             this.tabControlSettings = new System.Windows.Forms.TabControl();
             this.tabPageConnection = new System.Windows.Forms.TabPage();
-            this.buttonTestConnection = new System.Windows.Forms.Button();
+            this.labelReadResult = new System.Windows.Forms.Label();
+            this.buttonReadCcfToFields = new System.Windows.Forms.Button();
             this.buttonBrowseSapera = new System.Windows.Forms.Button();
             this.checkBoxAutoConnect = new System.Windows.Forms.CheckBox();
             this.textBoxResourceIndex = new System.Windows.Forms.TextBox();
@@ -62,19 +57,12 @@ namespace CameraCaptureApp.Forms
             this.numericFrameRate = new System.Windows.Forms.NumericUpDown();
             this.numericGain = new System.Windows.Forms.NumericUpDown();
             this.numericExposure = new System.Windows.Forms.NumericUpDown();
-            this.numericHeight = new System.Windows.Forms.NumericUpDown();
-            this.numericWidth = new System.Windows.Forms.NumericUpDown();
             this.tabPageTrigger = new System.Windows.Forms.TabPage();
             this.comboBoxTriggerMode = new System.Windows.Forms.ComboBox();
             this.tabPageSaving = new System.Windows.Forms.TabPage();
             this.textBoxFileNamePattern = new System.Windows.Forms.TextBox();
             this.textBoxSaveFolder = new System.Windows.Forms.TextBox();
             this.checkBoxAutoSave = new System.Windows.Forms.CheckBox();
-            this.tabPageDiagnostic = new System.Windows.Forms.TabPage();
-            this.labelDiagnosticMessageValue = new System.Windows.Forms.Label();
-            this.labelDiagnosticResolutionValue = new System.Windows.Forms.Label();
-            this.labelDiagnosticSignalValue = new System.Windows.Forms.Label();
-            this.labelDiagnosticConnectionValue = new System.Windows.Forms.Label();
             this.buttonApply = new System.Windows.Forms.Button();
             this.buttonOk = new System.Windows.Forms.Button();
             this.buttonCancel = new System.Windows.Forms.Button();
@@ -84,11 +72,8 @@ namespace CameraCaptureApp.Forms
             ((System.ComponentModel.ISupportInitialize)(this.numericFrameRate)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericGain)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericExposure)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericHeight)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericWidth)).BeginInit();
             this.tabPageTrigger.SuspendLayout();
             this.tabPageSaving.SuspendLayout();
-            this.tabPageDiagnostic.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControlSettings
@@ -97,7 +82,6 @@ namespace CameraCaptureApp.Forms
             this.tabControlSettings.Controls.Add(this.tabPageImage);
             this.tabControlSettings.Controls.Add(this.tabPageTrigger);
             this.tabControlSettings.Controls.Add(this.tabPageSaving);
-            this.tabControlSettings.Controls.Add(this.tabPageDiagnostic);
             this.tabControlSettings.Location = new System.Drawing.Point(12, 12);
             this.tabControlSettings.Name = "tabControlSettings";
             this.tabControlSettings.SelectedIndex = 0;
@@ -118,7 +102,8 @@ namespace CameraCaptureApp.Forms
             this.tabPageConnection.Controls.Add(this.textBoxResourceIndex);
             this.tabPageConnection.Controls.Add(this.checkBoxAutoConnect);
             this.tabPageConnection.Controls.Add(this.buttonBrowseSapera);
-            this.tabPageConnection.Controls.Add(this.buttonTestConnection);
+            this.tabPageConnection.Controls.Add(this.buttonReadCcfToFields);
+            this.tabPageConnection.Controls.Add(this.labelReadResult);
             this.tabPageConnection.Location = new System.Drawing.Point(4, 26);
             this.tabPageConnection.Name = "tabPageConnection";
             this.tabPageConnection.Padding = new System.Windows.Forms.Padding(3);
@@ -187,30 +172,35 @@ namespace CameraCaptureApp.Forms
             this.buttonBrowseSapera.UseVisualStyleBackColor = true;
             this.buttonBrowseSapera.Click += new System.EventHandler(this.buttonBrowseSapera_Click);
             // 
-            // buttonTestConnection
+            // buttonReadCcfToFields
             // 
-            this.buttonTestConnection.Location = new System.Drawing.Point(581, 278);
-            this.buttonTestConnection.Name = "buttonTestConnection";
-            this.buttonTestConnection.Size = new System.Drawing.Size(134, 32);
-            this.buttonTestConnection.TabIndex = 7;
-            this.buttonTestConnection.Text = "Check Saved Data";
-            this.buttonTestConnection.UseVisualStyleBackColor = true;
-            this.buttonTestConnection.Click += new System.EventHandler(this.buttonTestConnection_Click);
+            this.buttonReadCcfToFields.Location = new System.Drawing.Point(581, 278);
+            this.buttonReadCcfToFields.Name = "buttonReadCcfToFields";
+            this.buttonReadCcfToFields.Size = new System.Drawing.Size(134, 32);
+            this.buttonReadCcfToFields.TabIndex = 7;
+            this.buttonReadCcfToFields.Text = "Read CCF To Fields";
+            this.buttonReadCcfToFields.UseVisualStyleBackColor = true;
+            this.buttonReadCcfToFields.Click += new System.EventHandler(this.buttonReadCcfToFields_Click);
+            // 
+            // labelReadResult
+            // 
+            this.labelReadResult.Location = new System.Drawing.Point(32, 314);
+            this.labelReadResult.Name = "labelReadResult";
+            this.labelReadResult.Size = new System.Drawing.Size(683, 23);
+            this.labelReadResult.TabIndex = 8;
+            this.labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
             // 
             // tabPageImage
             // 
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 35), Text = "Width" });
-            this.tabPageImage.Controls.Add(this.numericWidth);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(208, 35), Text = "Height" });
-            this.tabPageImage.Controls.Add(this.numericHeight);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 103), Text = "Exposure" });
+            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 35), Text = "Exposure" });
             this.tabPageImage.Controls.Add(this.numericExposure);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(208, 103), Text = "Gain" });
+            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(208, 35), Text = "Gain" });
             this.tabPageImage.Controls.Add(this.numericGain);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(384, 103), Text = "Frame Rate" });
+            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(384, 35), Text = "Frame Rate" });
             this.tabPageImage.Controls.Add(this.numericFrameRate);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 171), Text = "Pixel Format" });
+            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 103), Text = "Pixel Format" });
             this.tabPageImage.Controls.Add(this.comboBoxPixelFormat);
+            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 171), Text = "Exposure and gain are not guaranteed to come from the CCF using the current SDK path." });
             this.tabPageImage.Location = new System.Drawing.Point(4, 26);
             this.tabPageImage.Name = "tabPageImage";
             this.tabPageImage.Padding = new System.Windows.Forms.Padding(3);
@@ -220,37 +210,29 @@ namespace CameraCaptureApp.Forms
             this.tabPageImage.UseVisualStyleBackColor = true;
             // 
             // image controls
-            this.numericWidth.Location = new System.Drawing.Point(35, 57);
-            this.numericWidth.Maximum = new decimal(new int[] { 8192, 0, 0, 0 });
-            this.numericWidth.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
-            this.numericWidth.Size = new System.Drawing.Size(140, 23);
-            this.numericWidth.Value = new decimal(new int[] { 1280, 0, 0, 0 });
-            this.numericHeight.Location = new System.Drawing.Point(211, 57);
-            this.numericHeight.Maximum = new decimal(new int[] { 8192, 0, 0, 0 });
-            this.numericHeight.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
-            this.numericHeight.Size = new System.Drawing.Size(140, 23);
-            this.numericHeight.Value = new decimal(new int[] { 720, 0, 0, 0 });
+            // 
             this.numericExposure.DecimalPlaces = 2;
-            this.numericExposure.Location = new System.Drawing.Point(35, 125);
+            this.numericExposure.Location = new System.Drawing.Point(35, 57);
             this.numericExposure.Maximum = new decimal(new int[] { 100000, 0, 0, 0 });
             this.numericExposure.Size = new System.Drawing.Size(140, 23);
             this.numericGain.DecimalPlaces = 2;
-            this.numericGain.Location = new System.Drawing.Point(211, 125);
+            this.numericGain.Location = new System.Drawing.Point(211, 57);
             this.numericGain.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
             this.numericGain.Size = new System.Drawing.Size(140, 23);
             this.numericFrameRate.DecimalPlaces = 2;
-            this.numericFrameRate.Location = new System.Drawing.Point(387, 125);
-            this.numericFrameRate.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            this.numericFrameRate.Location = new System.Drawing.Point(387, 57);
+            this.numericFrameRate.Maximum = new decimal(new int[] { 100000, 0, 0, 0 });
             this.numericFrameRate.Size = new System.Drawing.Size(140, 23);
             this.comboBoxPixelFormat.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxPixelFormat.FormattingEnabled = true;
-            this.comboBoxPixelFormat.Location = new System.Drawing.Point(35, 193);
+            this.comboBoxPixelFormat.Location = new System.Drawing.Point(35, 125);
             this.comboBoxPixelFormat.Size = new System.Drawing.Size(200, 24);
             // 
             // tabPageTrigger
             // 
             this.tabPageTrigger.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 35), Text = "Trigger Mode" });
             this.tabPageTrigger.Controls.Add(this.comboBoxTriggerMode);
+            this.tabPageTrigger.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 103), Text = "This field can be mapped from supported acquisition trigger parameters in the CCF." });
             this.tabPageTrigger.Location = new System.Drawing.Point(4, 26);
             this.tabPageTrigger.Name = "tabPageTrigger";
             this.tabPageTrigger.Padding = new System.Windows.Forms.Padding(3);
@@ -282,6 +264,7 @@ namespace CameraCaptureApp.Forms
             this.tabPageSaving.UseVisualStyleBackColor = true;
             // 
             // save controls
+            // 
             this.checkBoxAutoSave.AutoSize = true;
             this.checkBoxAutoSave.Location = new System.Drawing.Point(35, 31);
             this.checkBoxAutoSave.Size = new System.Drawing.Size(82, 20);
@@ -291,38 +274,6 @@ namespace CameraCaptureApp.Forms
             this.textBoxSaveFolder.Size = new System.Drawing.Size(680, 57);
             this.textBoxFileNamePattern.Location = new System.Drawing.Point(35, 201);
             this.textBoxFileNamePattern.Size = new System.Drawing.Size(320, 23);
-            // 
-            // tabPageDiagnostic
-            // 
-            this.tabPageDiagnostic.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 35), Text = "Connection" });
-            this.tabPageDiagnostic.Controls.Add(this.labelDiagnosticConnectionValue);
-            this.tabPageDiagnostic.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 83), Text = "Signal" });
-            this.tabPageDiagnostic.Controls.Add(this.labelDiagnosticSignalValue);
-            this.tabPageDiagnostic.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 131), Text = "Resolution" });
-            this.tabPageDiagnostic.Controls.Add(this.labelDiagnosticResolutionValue);
-            this.tabPageDiagnostic.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 179), Text = "Message" });
-            this.tabPageDiagnostic.Controls.Add(this.labelDiagnosticMessageValue);
-            this.tabPageDiagnostic.Location = new System.Drawing.Point(4, 26);
-            this.tabPageDiagnostic.Name = "tabPageDiagnostic";
-            this.tabPageDiagnostic.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageDiagnostic.Size = new System.Drawing.Size(752, 350);
-            this.tabPageDiagnostic.TabIndex = 4;
-            this.tabPageDiagnostic.Text = "Diagnostic";
-            this.tabPageDiagnostic.UseVisualStyleBackColor = true;
-            // 
-            // diagnostic values
-            this.labelDiagnosticConnectionValue.AutoSize = true;
-            this.labelDiagnosticConnectionValue.Location = new System.Drawing.Point(153, 35);
-            this.labelDiagnosticConnectionValue.Text = "Not checked";
-            this.labelDiagnosticSignalValue.AutoSize = true;
-            this.labelDiagnosticSignalValue.Location = new System.Drawing.Point(153, 83);
-            this.labelDiagnosticSignalValue.Text = "Not checked";
-            this.labelDiagnosticResolutionValue.AutoSize = true;
-            this.labelDiagnosticResolutionValue.Location = new System.Drawing.Point(153, 131);
-            this.labelDiagnosticResolutionValue.Text = "1280 x 720";
-            this.labelDiagnosticMessageValue.Location = new System.Drawing.Point(153, 179);
-            this.labelDiagnosticMessageValue.Size = new System.Drawing.Size(532, 70);
-            this.labelDiagnosticMessageValue.Text = "Use the Sapera dialog once, then the saved values can be reused for later connections.";
             // 
             // buttons
             // 
@@ -365,14 +316,10 @@ namespace CameraCaptureApp.Forms
             ((System.ComponentModel.ISupportInitialize)(this.numericFrameRate)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericGain)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericExposure)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericHeight)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericWidth)).EndInit();
             this.tabPageTrigger.ResumeLayout(false);
             this.tabPageTrigger.PerformLayout();
             this.tabPageSaving.ResumeLayout(false);
             this.tabPageSaving.PerformLayout();
-            this.tabPageDiagnostic.ResumeLayout(false);
-            this.tabPageDiagnostic.PerformLayout();
             this.ResumeLayout(false);
         }
     }

@@ -182,8 +182,6 @@ namespace CameraCaptureApp.Forms
             labelHeaderCameraValue.Text = _settings.CameraName;
             _cameraDisplayControl.ResolutionText = _settings.Width + " x " + _settings.Height;
             _cameraDisplayControl.OverlayText = "Ready for preview";
-            textBoxConfigPath.Text = _settings.ConfigFilePath;
-            textBoxSaveFolder.Text = _settings.SaveFolder;
         }
 
         private void UpdateStatus()
