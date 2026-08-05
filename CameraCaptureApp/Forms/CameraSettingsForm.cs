@@ -149,7 +149,7 @@ namespace CameraCaptureApp.Forms
         {
             SaveSettings();
             _cameraService.ApplySettings(Settings);
-            labelReadResult.Text = _cameraService.Status.LastMessage;
+            ShowApplyResult();
         }
 
         private void buttonProbeLiveFeatures_Click(object sender, EventArgs e)
@@ -166,9 +166,21 @@ namespace CameraCaptureApp.Forms
         {
             SaveSettings();
             _cameraService.ApplySettings(Settings);
-            labelReadResult.Text = _cameraService.Status.LastMessage;
+            ShowApplyResult();
             DialogResult = DialogResult.OK;
             Close();
+        }
+
+        private void ShowApplyResult()
+        {
+            var message = _cameraService.Status.LastMessage;
+            labelReadResult.Text = message;
+            MessageBox.Show(
+                this,
+                message,
+                "Camera Apply Result",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
 
         private void buttonCancel_Click(object sender, EventArgs e)

@@ -214,7 +214,7 @@ namespace CameraCaptureApp.Forms
             this.labelReadResult.Location = new System.Drawing.Point(35, 307);
             this.labelReadResult.Name = "labelReadResult";
             this.labelReadResult.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.labelReadResult.Size = new System.Drawing.Size(680, 36);
+            this.labelReadResult.Size = new System.Drawing.Size(680, 44);
             this.labelReadResult.TabIndex = 10;
             this.labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
             // 
