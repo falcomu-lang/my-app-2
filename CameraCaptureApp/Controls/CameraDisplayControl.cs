@@ -29,7 +29,7 @@ namespace CameraCaptureApp.Controls
         {
             InitializeComponent();
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
-            _tileRefreshTimer = new System.Windows.Forms.Timer(components);
+            _tileRefreshTimer = new System.Windows.Forms.Timer();
             _tileRefreshTimer.Interval = TileRefreshIntervalMs;
             _tileRefreshTimer.Tick += TileRefreshTimer_Tick;
             StatusText = "No image loaded";
