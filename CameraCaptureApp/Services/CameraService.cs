@@ -861,9 +861,7 @@ namespace CameraCaptureApp.Services
             if (TrySetAcquisitionIntParameter(
                 notes,
                 _settings.Length,
-                SapAcquisition.Prm.FRAME_LENGTH,
-                SapAcquisition.Prm.CROP_HEIGHT,
-                SapAcquisition.Prm.FRAME_INTEGRATE_COUNT))
+                SapAcquisition.Prm.CROP_HEIGHT))
             {
                 return true;
             }
@@ -1010,22 +1008,50 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
-            foreach (var parameter in parameters)
+            var wasGrabbing = _transfer != null && _transfer.Initialized && _status.IsPreviewing;
+            try
             {
-                try
+                if (wasGrabbing)
                 {
-                    if (_acquisition.SetParameter(parameter, value, true))
+                    try
                     {
-                        notes.Add(parameter + " applied");
-                        return true;
+                        _transfer.Freeze();
+                    }
+                    catch
+                    {
                     }
                 }
-                catch
+
+                foreach (var parameter in parameters)
                 {
+                    try
+                    {
+                        if (_acquisition.SetParameter(parameter, value, true))
+                        {
+                            notes.Add(parameter + " applied");
+                            return true;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                return false;
+            }
+            finally
+            {
+                if (wasGrabbing)
+                {
+                    try
+                    {
+                        _transfer.Grab();
+                    }
+                    catch
+                    {
+                    }
                 }
             }
-
-            return false;
         }
 
         private bool TrySetAcquisitionBoolPattern(System.Collections.Generic.List<string> notes, ParameterWrite[] writes)
