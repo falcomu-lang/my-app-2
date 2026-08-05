@@ -18,6 +18,8 @@ namespace CameraCaptureApp.Services
 
         string ExportLiveFeatureReport();
 
+        string ExportAcquisitionParameterReport();
+
         void Disconnect();
 
         bool StartPreview();

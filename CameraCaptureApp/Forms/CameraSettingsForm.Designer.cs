@@ -17,6 +17,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Button buttonBrowseSapera;
         private System.Windows.Forms.Button buttonReadCcfToFields;
         private System.Windows.Forms.Button buttonProbeLiveFeatures;
+        private System.Windows.Forms.Button buttonProbeAcquisitionParameters;
         private System.Windows.Forms.Label labelReadResult;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
@@ -46,6 +47,7 @@ namespace CameraCaptureApp.Forms
             this.tabPageConnection = new System.Windows.Forms.TabPage();
             this.labelReadResult = new System.Windows.Forms.Label();
             this.buttonProbeLiveFeatures = new System.Windows.Forms.Button();
+            this.buttonProbeAcquisitionParameters = new System.Windows.Forms.Button();
             this.buttonReadCcfToFields = new System.Windows.Forms.Button();
             this.buttonBrowseSapera = new System.Windows.Forms.Button();
             this.checkBoxAutoConnect = new System.Windows.Forms.CheckBox();
@@ -107,6 +109,7 @@ namespace CameraCaptureApp.Forms
             this.tabPageConnection.Controls.Add(this.buttonBrowseSapera);
             this.tabPageConnection.Controls.Add(this.buttonReadCcfToFields);
             this.tabPageConnection.Controls.Add(this.buttonProbeLiveFeatures);
+            this.tabPageConnection.Controls.Add(this.buttonProbeAcquisitionParameters);
             this.tabPageConnection.Controls.Add(this.labelReadResult);
             this.tabPageConnection.Location = new System.Drawing.Point(4, 26);
             this.tabPageConnection.Name = "tabPageConnection";
@@ -195,12 +198,22 @@ namespace CameraCaptureApp.Forms
             this.buttonProbeLiveFeatures.UseVisualStyleBackColor = true;
             this.buttonProbeLiveFeatures.Click += new System.EventHandler(this.buttonProbeLiveFeatures_Click);
             // 
+            // buttonProbeAcquisitionParameters
+            // 
+            this.buttonProbeAcquisitionParameters.Location = new System.Drawing.Point(430, 240);
+            this.buttonProbeAcquisitionParameters.Name = "buttonProbeAcquisitionParameters";
+            this.buttonProbeAcquisitionParameters.Size = new System.Drawing.Size(285, 32);
+            this.buttonProbeAcquisitionParameters.TabIndex = 8;
+            this.buttonProbeAcquisitionParameters.Text = "Probe Acquisition Parameters";
+            this.buttonProbeAcquisitionParameters.UseVisualStyleBackColor = true;
+            this.buttonProbeAcquisitionParameters.Click += new System.EventHandler(this.buttonProbeAcquisitionParameters_Click);
+            // 
             // labelReadResult
             // 
             this.labelReadResult.Location = new System.Drawing.Point(32, 314);
             this.labelReadResult.Name = "labelReadResult";
             this.labelReadResult.Size = new System.Drawing.Size(383, 34);
-            this.labelReadResult.TabIndex = 9;
+            this.labelReadResult.TabIndex = 10;
             this.labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
             // 
             // tabPageImage

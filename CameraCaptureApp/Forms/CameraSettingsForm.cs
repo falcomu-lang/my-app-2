@@ -123,6 +123,19 @@ namespace CameraCaptureApp.Forms
             }
         }
 
+        private void buttonProbeAcquisitionParameters_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var reportPath = _cameraService.ExportAcquisitionParameterReport();
+                labelReadResult.Text = "Acquisition parameter report exported: " + reportPath;
+            }
+            catch (Exception ex)
+            {
+                labelReadResult.Text = "Probe acquisition parameters failed: " + ex.Message;
+            }
+        }
+
         private void buttonOk_Click(object sender, EventArgs e)
         {
             SaveSettings();

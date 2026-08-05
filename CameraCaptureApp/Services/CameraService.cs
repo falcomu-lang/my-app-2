@@ -237,6 +237,43 @@ namespace CameraCaptureApp.Services
             return filePath;
         }
 
+        public string ExportAcquisitionParameterReport()
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                throw new InvalidOperationException("Connect the camera before probing acquisition parameters.");
+            }
+
+            var reportBuilder = new StringBuilder();
+            reportBuilder.AppendLine("CameraCaptureApp Acquisition Parameter Report");
+            reportBuilder.AppendLine("GeneratedAt=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            reportBuilder.AppendLine("CameraName=" + _status.CameraName);
+            reportBuilder.AppendLine("Server=" + _serverLocation.ServerName);
+            reportBuilder.AppendLine("ResourceIndex=" + _serverLocation.ResourceIndex);
+            reportBuilder.AppendLine("ConfigFile=" + _configFileName);
+            reportBuilder.AppendLine();
+
+            foreach (SapAcquisition.Prm parameter in Enum.GetValues(typeof(SapAcquisition.Prm)))
+            {
+                if (!_acquisition.IsParameterAvailable(parameter))
+                {
+                    continue;
+                }
+
+                reportBuilder.AppendLine("[Parameter] " + parameter);
+                reportBuilder.AppendLine("Type=" + SapAcquisition.GetParameterType(parameter));
+                reportBuilder.AppendLine("Value=" + ReadAcquisitionParameterValue(parameter));
+                reportBuilder.AppendLine();
+            }
+
+            var filePath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "acquisition_params_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
+            File.WriteAllText(filePath, reportBuilder.ToString(), Encoding.UTF8);
+            _status.LastMessage = "Acquisition parameter report exported: " + Path.GetFileName(filePath);
+            return filePath;
+        }
+
         private bool TryPrepareConnectionSettings()
         {
             if (HasStoredConnectionSettings())
@@ -922,6 +959,37 @@ namespace CameraCaptureApp.Services
         private static string SafeString(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Replace("\r", " ").Replace("\n", " ");
+        }
+
+        private string ReadAcquisitionParameterValue(SapAcquisition.Prm parameter)
+        {
+            try
+            {
+                var parameterType = SapAcquisition.GetParameterType(parameter);
+                switch (parameterType.ToString())
+                {
+                    case "Int32":
+                    case "RangeInt32":
+                    case "Index":
+                    case "Enum":
+                        int intValue;
+                        return _acquisition.GetParameter(parameter, out intValue) ? intValue.ToString() : "<unreadable>";
+                    case "Int64":
+                    case "RangeInt64":
+                        long longValue;
+                        return _acquisition.GetParameter(parameter, out longValue) ? longValue.ToString() : "<unreadable>";
+                    case "String":
+                        string stringValue;
+                        return _acquisition.GetParameter(parameter, out stringValue) ? SafeString(stringValue) : "<unreadable>";
+                    default:
+                        SapAcquisition.Val value;
+                        return _acquisition.GetParameter(parameter, out value) ? value.ToString() : "<unreadable>";
+                }
+            }
+            catch (Exception ex)
+            {
+                return "<error: " + ex.Message + ">";
+            }
         }
     }
 }
