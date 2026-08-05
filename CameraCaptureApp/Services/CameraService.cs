@@ -625,6 +625,22 @@ namespace CameraCaptureApp.Services
                 applied = true;
             }
 
+            if (TrySetExposureParameters(notes))
+            {
+                applied = true;
+            }
+
+            if (TrySetLengthParameters(notes))
+            {
+                _status.FrameHeight = _settings.Length;
+                applied = true;
+            }
+
+            if (TryApplyAcquisitionTriggerMode(notes))
+            {
+                applied = true;
+            }
+
             if (includeDeviceFeatures)
             {
                 EnsureAcqDeviceAvailable();
@@ -804,9 +820,8 @@ namespace CameraCaptureApp.Services
         private bool TrySetInternalLineRate(System.Collections.Generic.List<string> notes)
         {
             var acquisitionRate = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate));
-            if (TrySetAcquisitionIntParameter(SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ, acquisitionRate))
+            if (TrySetAcquisitionIntParameter(notes, acquisitionRate, SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ))
             {
-                notes.Add("INT_LINE_TRIGGER_FREQ applied");
                 return true;
             }
 
@@ -821,6 +836,110 @@ namespace CameraCaptureApp.Services
             }
 
             notes.Add("InternalLineRate not supported");
+            return false;
+        }
+
+        private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
+        {
+            var exposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
+            if (TrySetAcquisitionIntParameter(
+                notes,
+                exposureValue,
+                SapAcquisition.Prm.TIME_INTEGRATE_DURATION,
+                SapAcquisition.Prm.LINE_INTEGRATE_DURATION,
+                SapAcquisition.Prm.CAM_TRIGGER_DURATION))
+            {
+                return true;
+            }
+
+            notes.Add("Acquisition exposure parameter not supported");
+            return false;
+        }
+
+        private bool TrySetLengthParameters(System.Collections.Generic.List<string> notes)
+        {
+            if (TrySetAcquisitionIntParameter(
+                notes,
+                _settings.Length,
+                SapAcquisition.Prm.FRAME_LENGTH,
+                SapAcquisition.Prm.CROP_HEIGHT,
+                SapAcquisition.Prm.FRAME_INTEGRATE_COUNT))
+            {
+                return true;
+            }
+
+            notes.Add("Acquisition length parameter not supported");
+            return false;
+        }
+
+        private bool TryApplyAcquisitionTriggerMode(System.Collections.Generic.List<string> notes)
+        {
+            switch (_settings.TriggerMode)
+            {
+                case TriggerMode.Continuous:
+                    if (TrySetAcquisitionBoolPattern(
+                        notes,
+                        new[]
+                        {
+                            new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0)
+                        }))
+                    {
+                        notes.Add("Acquisition trigger continuous applied");
+                        return true;
+                    }
+                    break;
+
+                case TriggerMode.SoftwareTrigger:
+                    if (TrySetAcquisitionBoolPattern(
+                        notes,
+                        new[]
+                        {
+                            new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 1),
+                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 1)
+                        }))
+                    {
+                        notes.Add("Acquisition trigger software applied");
+                        return true;
+                    }
+                    break;
+
+                case TriggerMode.ExternalTrigger:
+                    if (TrySetAcquisitionBoolPattern(
+                        notes,
+                        new[]
+                        {
+                            new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 1),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 1),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 1)
+                        }))
+                    {
+                        notes.Add("Acquisition trigger external applied");
+                        return true;
+                    }
+                    break;
+
+                case TriggerMode.SingleFrame:
+                    if (TrySetAcquisitionBoolPattern(
+                        notes,
+                        new[]
+                        {
+                            new ParameterWrite(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 1),
+                            new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 1)
+                        }))
+                    {
+                        notes.Add("Acquisition trigger single-frame applied");
+                        return true;
+                    }
+                    break;
+            }
+
+            notes.Add("Acquisition trigger parameter not supported");
             return false;
         }
 
@@ -884,21 +1003,42 @@ namespace CameraCaptureApp.Services
             return false;
         }
 
-        private bool TrySetAcquisitionIntParameter(SapAcquisition.Prm parameter, int value)
+        private bool TrySetAcquisitionIntParameter(System.Collections.Generic.List<string> notes, int value, params SapAcquisition.Prm[] parameters)
         {
             if (_acquisition == null || !_acquisition.Initialized)
             {
                 return false;
             }
 
-            try
+            foreach (var parameter in parameters)
             {
-                return _acquisition.SetParameter(parameter, value, true);
+                try
+                {
+                    if (_acquisition.SetParameter(parameter, value, true))
+                    {
+                        notes.Add(parameter + " applied");
+                        return true;
+                    }
+                }
+                catch
+                {
+                }
             }
-            catch
+
+            return false;
+        }
+
+        private bool TrySetAcquisitionBoolPattern(System.Collections.Generic.List<string> notes, ParameterWrite[] writes)
+        {
+            foreach (var write in writes)
             {
-                return false;
+                if (TrySetAcquisitionIntParameter(notes, write.Value, write.Parameter))
+                {
+                    return true;
+                }
             }
+
+            return false;
         }
 
         private bool TrySetDeviceFeature(string[] featureNames, string value)
@@ -995,6 +1135,19 @@ namespace CameraCaptureApp.Services
             {
                 return "<error: " + ex.Message + ">";
             }
+        }
+
+        private struct ParameterWrite
+        {
+            public ParameterWrite(SapAcquisition.Prm parameter, int value)
+            {
+                Parameter = parameter;
+                Value = value;
+            }
+
+            public SapAcquisition.Prm Parameter { get; private set; }
+
+            public int Value { get; private set; }
         }
     }
 }
