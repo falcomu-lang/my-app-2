@@ -218,6 +218,7 @@ namespace CameraCaptureApp.Controls
             AddPreviewLevel(1024);
             AddPreviewLevel(2048);
             AddPreviewLevel(4096);
+            AddPreviewLevel(8192);
             _previewLevels.Sort((a, b) => b.Scale.CompareTo(a.Scale));
         }
 

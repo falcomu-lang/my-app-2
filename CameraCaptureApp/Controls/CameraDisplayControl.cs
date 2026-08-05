@@ -10,7 +10,8 @@ namespace CameraCaptureApp.Controls
     public partial class CameraDisplayControl : UserControl
     {
         private const int TileSourceSize = 1024;
-        private const float TileRenderZoomThreshold = 0.045f;
+        private const float TileRenderZoomThreshold = 0.12f;
+        private const float TilePreviewHandoffRatio = 1.02f;
         private const int TileRefreshIntervalMs = 33;
 
         private readonly object _imageLock = new object();
@@ -189,11 +190,10 @@ namespace CameraCaptureApp.Controls
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.DrawImage(preview.Bitmap, offset.X, offset.Y, drawWidth, drawHeight);
                 graphics.InterpolationMode = previousInterpolation;
-            }
-
-            if (zoom < TileRenderZoomThreshold)
-            {
-                return;
+                if (!ShouldRenderTiles(zoom, preview.Scale))
+                {
+                    return;
+                }
             }
 
             var viewBounds = viewerPanel.ClientRectangle;
@@ -265,6 +265,16 @@ namespace CameraCaptureApp.Controls
             graphics.InterpolationMode = zoom >= 1f ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear;
             graphics.DrawImage(tile, drawRect);
             graphics.InterpolationMode = previousInterpolation;
+        }
+
+        private static bool ShouldRenderTiles(float zoom, float previewScale)
+        {
+            if (zoom < TileRenderZoomThreshold)
+            {
+                return false;
+            }
+
+            return zoom > (previewScale * TilePreviewHandoffRatio);
         }
 
         private void ScheduleTileRefresh()
