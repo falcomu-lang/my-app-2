@@ -479,7 +479,6 @@ namespace CameraCaptureApp.Services
             DestroySdkObjects();
             DisposeSdkObjects();
 
-            TryInitializeAcqDevice();
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
