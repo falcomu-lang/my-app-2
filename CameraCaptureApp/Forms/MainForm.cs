@@ -1,7 +1,9 @@
 using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CameraCaptureApp.Models;
 using CameraCaptureApp.Services;
@@ -18,6 +20,7 @@ namespace CameraCaptureApp.Forms
         private CancellationTokenSource _imageLoadTokenSource;
         private CancellationTokenSource _previewFrameTokenSource;
         private bool _autoConnectAttempted;
+        private int _pendingSnapshotSaveCount;
 
         public MainForm(ICameraService cameraService, ISettingsService settingsService)
         {
@@ -87,7 +90,12 @@ namespace CameraCaptureApp.Forms
 
         private void buttonCapture_Click(object sender, EventArgs e)
         {
-            _cameraService.CaptureFrame();
+            if (_cameraService.CaptureFrame())
+            {
+                Interlocked.Increment(ref _pendingSnapshotSaveCount);
+                labelFooterMessageValue.Text = "Capture requested. Waiting for frame to save...";
+            }
+
             UpdateStatus();
         }
 
@@ -148,6 +156,7 @@ namespace CameraCaptureApp.Forms
 
         private async void DisplayPreviewFrameAsync(Bitmap frame)
         {
+            await SaveFrameIfRequestedAsync(frame);
             CancelPendingPreviewFrame();
             _previewFrameTokenSource = new CancellationTokenSource();
             var token = _previewFrameTokenSource.Token;
@@ -162,6 +171,33 @@ namespace CameraCaptureApp.Forms
             finally
             {
                 frame.Dispose();
+            }
+        }
+
+        private async Task SaveFrameIfRequestedAsync(Bitmap frame)
+        {
+            if (Interlocked.CompareExchange(ref _pendingSnapshotSaveCount, 0, 0) <= 0)
+            {
+                return;
+            }
+
+            if (Interlocked.Decrement(ref _pendingSnapshotSaveCount) < 0)
+            {
+                Interlocked.Exchange(ref _pendingSnapshotSaveCount, 0);
+                return;
+            }
+
+            using (var snapshot = new Bitmap(frame))
+            {
+                try
+                {
+                    var savedPath = await Task.Run(() => SaveSnapshotBitmap(snapshot, _settings));
+                    labelFooterMessageValue.Text = "Captured image saved: " + Path.GetFileName(savedPath);
+                }
+                catch (Exception ex)
+                {
+                    labelFooterMessageValue.Text = "Captured image save failed: " + ex.Message;
+                }
             }
         }
 
@@ -260,6 +296,100 @@ namespace CameraCaptureApp.Forms
             }
 
             UpdateStatus();
+        }
+
+        private static string SaveSnapshotBitmap(Bitmap bitmap, CameraSettings settings)
+        {
+            var outputFolder = ResolveSnapshotFolder(settings);
+            Directory.CreateDirectory(outputFolder);
+
+            var filePath = BuildSnapshotPath(outputFolder, settings);
+            bitmap.Save(filePath, ImageFormat.Bmp);
+            return filePath;
+        }
+
+        private static string ResolveSnapshotFolder(CameraSettings settings)
+        {
+            if (!string.IsNullOrWhiteSpace(settings.SaveFolder))
+            {
+                return settings.SaveFolder.Trim();
+            }
+
+            return Path.Combine(Application.StartupPath, "Captures");
+        }
+
+        private static string BuildSnapshotPath(string outputFolder, CameraSettings settings)
+        {
+            var baseName = FormatFileNamePattern(settings.FileNamePattern);
+            if (string.IsNullOrWhiteSpace(baseName))
+            {
+                baseName = "capture_" + DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            }
+
+            baseName = SanitizeFileName(baseName);
+            var candidatePath = Path.Combine(outputFolder, baseName + ".bmp");
+            if (!File.Exists(candidatePath))
+            {
+                return candidatePath;
+            }
+
+            var suffix = 1;
+            while (true)
+            {
+                var nextPath = Path.Combine(outputFolder, baseName + "_" + suffix.ToString("000") + ".bmp");
+                if (!File.Exists(nextPath))
+                {
+                    return nextPath;
+                }
+
+                suffix++;
+            }
+        }
+
+        private static string FormatFileNamePattern(string pattern)
+        {
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                return string.Empty;
+            }
+
+            var result = pattern;
+            var startIndex = result.IndexOf('{');
+            while (startIndex >= 0)
+            {
+                var endIndex = result.IndexOf('}', startIndex + 1);
+                if (endIndex <= startIndex)
+                {
+                    break;
+                }
+
+                var format = result.Substring(startIndex + 1, endIndex - startIndex - 1);
+                string replacement;
+                try
+                {
+                    replacement = DateTime.Now.ToString(format);
+                }
+                catch (FormatException)
+                {
+                    replacement = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                }
+
+                result = result.Substring(0, startIndex) + replacement + result.Substring(endIndex + 1);
+                startIndex = result.IndexOf('{', startIndex + replacement.Length);
+            }
+
+            return result;
+        }
+
+        private static string SanitizeFileName(string fileName)
+        {
+            var sanitized = fileName;
+            foreach (var invalidChar in Path.GetInvalidFileNameChars())
+            {
+                sanitized = sanitized.Replace(invalidChar, '_');
+            }
+
+            return sanitized.Trim();
         }
     }
 }

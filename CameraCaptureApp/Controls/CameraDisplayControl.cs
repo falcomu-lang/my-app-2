@@ -10,14 +10,18 @@ namespace CameraCaptureApp.Controls
     public partial class CameraDisplayControl : UserControl
     {
         private const int TileSourceSize = 1024;
+        private const float TileRenderZoomThreshold = 0.045f;
+        private const int TileRefreshIntervalMs = 33;
 
         private readonly object _imageLock = new object();
+        private readonly System.Windows.Forms.Timer _tileRefreshTimer;
         private Bitmap _sourceBitmap;
         private LargeImageSource _largeImageSource;
         private bool _isPanning;
         private Point _lastMousePoint;
         private int _imageVersion;
         private DateTime _lastDisplayUpdateUtc;
+        private bool _tileRefreshPending;
         private float _zoom = 1f;
         private PointF _imageOffset = PointF.Empty;
 
@@ -25,6 +29,9 @@ namespace CameraCaptureApp.Controls
         {
             InitializeComponent();
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            _tileRefreshTimer = new System.Windows.Forms.Timer(components);
+            _tileRefreshTimer.Interval = TileRefreshIntervalMs;
+            _tileRefreshTimer.Tick += TileRefreshTimer_Tick;
             StatusText = "No image loaded";
         }
 
@@ -135,8 +142,8 @@ namespace CameraCaptureApp.Controls
         private void viewerPanel_Paint(object sender, PaintEventArgs e)
         {
             e.Graphics.Clear(Color.Black);
-            e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+            e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
             e.Graphics.SmoothingMode = SmoothingMode.HighSpeed;
 
             Bitmap bitmap;
@@ -178,10 +185,13 @@ namespace CameraCaptureApp.Controls
             {
                 var drawWidth = source.Width * zoom;
                 var drawHeight = source.Height * zoom;
+                var previousInterpolation = graphics.InterpolationMode;
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.DrawImage(preview.Bitmap, offset.X, offset.Y, drawWidth, drawHeight);
+                graphics.InterpolationMode = previousInterpolation;
             }
 
-            if (zoom < 0.08f)
+            if (zoom < TileRenderZoomThreshold)
             {
                 return;
             }
@@ -223,22 +233,10 @@ namespace CameraCaptureApp.Controls
         {
             source.QueueTile(
                 tileRect,
-                () =>
-                {
-                    if (!IsDisposed && IsHandleCreated)
-                    {
-                        BeginInvoke(new Action(() => viewerPanel.Invalidate()));
-                    }
-                });
+                ScheduleTileRefresh);
             source.PrefetchNeighborhood(
                 tileRect,
-                () =>
-                {
-                    if (!IsDisposed && IsHandleCreated)
-                    {
-                        BeginInvoke(new Action(() => viewerPanel.Invalidate()));
-                    }
-                });
+                ScheduleTileRefresh);
         }
 
         private static void DrawTile(Graphics graphics, Bitmap tile, Rectangle tileRect, float zoom, PointF offset)
@@ -248,7 +246,55 @@ namespace CameraCaptureApp.Controls
                 offset.Y + (tileRect.Y * zoom),
                 tileRect.Width * zoom,
                 tileRect.Height * zoom);
+            var previousInterpolation = graphics.InterpolationMode;
+            graphics.InterpolationMode = zoom >= 1f ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear;
             graphics.DrawImage(tile, drawRect);
+            graphics.InterpolationMode = previousInterpolation;
+        }
+
+        private void ScheduleTileRefresh()
+        {
+            if (IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+
+            try
+            {
+                BeginInvoke(
+                    new Action(
+                        () =>
+                        {
+                            if (IsDisposed)
+                            {
+                                return;
+                            }
+
+                            _tileRefreshPending = true;
+                            if (!_tileRefreshTimer.Enabled)
+                            {
+                                _tileRefreshTimer.Start();
+                            }
+                        }));
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        private void TileRefreshTimer_Tick(object sender, EventArgs e)
+        {
+            _tileRefreshTimer.Stop();
+            if (!_tileRefreshPending || IsDisposed)
+            {
+                return;
+            }
+
+            _tileRefreshPending = false;
+            viewerPanel.Invalidate();
         }
 
         private void viewerPanel_MouseWheel(object sender, MouseEventArgs e)

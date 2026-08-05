@@ -58,7 +58,7 @@ namespace CameraCaptureApp.Controls
             lock (_sync)
             {
                 ThrowIfDisposed();
-                PreviewLevel selected = _previewLevels[_previewLevels.Count - 1];
+                PreviewLevel selected = _previewLevels[0];
                 for (var i = 0; i < _previewLevels.Count; i++)
                 {
                     if (_previewLevels[i].Scale >= zoom)
@@ -217,6 +217,7 @@ namespace CameraCaptureApp.Controls
             AddPreviewLevel(512);
             AddPreviewLevel(1024);
             AddPreviewLevel(2048);
+            AddPreviewLevel(4096);
             _previewLevels.Sort((a, b) => b.Scale.CompareTo(a.Scale));
         }
 
