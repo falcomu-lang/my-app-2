@@ -8,6 +8,8 @@ namespace CameraCaptureApp.Models
 
         public string ServerName { get; set; }
 
+        public int ServerIndex { get; set; }
+
         public int ResourceIndex { get; set; }
 
         public int Width { get; set; }
@@ -39,6 +41,7 @@ namespace CameraCaptureApp.Models
                 CameraName = "Default Camera",
                 ConfigFilePath = string.Empty,
                 ServerName = string.Empty,
+                ServerIndex = -1,
                 ResourceIndex = 0,
                 Width = 1280,
                 Height = 720,

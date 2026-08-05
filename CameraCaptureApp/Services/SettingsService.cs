@@ -31,6 +31,7 @@ namespace CameraCaptureApp.Services
             settings.CameraName = GetString(values, "CameraName", settings.CameraName);
             settings.ConfigFilePath = GetString(values, "ConfigFilePath", settings.ConfigFilePath);
             settings.ServerName = GetString(values, "ServerName", settings.ServerName);
+            settings.ServerIndex = GetInt(values, "ServerIndex", settings.ServerIndex);
             settings.ResourceIndex = GetInt(values, "ResourceIndex", settings.ResourceIndex);
             settings.Width = GetInt(values, "Width", settings.Width);
             settings.Height = GetInt(values, "Height", settings.Height);
@@ -56,6 +57,7 @@ namespace CameraCaptureApp.Services
                 "CameraName=" + settings.CameraName,
                 "ConfigFilePath=" + settings.ConfigFilePath,
                 "ServerName=" + settings.ServerName,
+                "ServerIndex=" + settings.ServerIndex.ToString(CultureInfo.InvariantCulture),
                 "ResourceIndex=" + settings.ResourceIndex.ToString(CultureInfo.InvariantCulture),
                 "Width=" + settings.Width.ToString(CultureInfo.InvariantCulture),
                 "Height=" + settings.Height.ToString(CultureInfo.InvariantCulture),

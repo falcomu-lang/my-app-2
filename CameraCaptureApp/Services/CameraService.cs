@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using CameraCaptureApp.Models;
 using DALSA.SaperaLT.SapClassBasic;
@@ -39,6 +40,11 @@ namespace CameraCaptureApp.Services
 
         public event EventHandler<CameraFrameEventArgs> FrameReady;
 
+        public CameraSettings CurrentSettings
+        {
+            get { return _settings.Clone(); }
+        }
+
         public CameraStatus Status
         {
             get { return _status; }
@@ -55,54 +61,32 @@ namespace CameraCaptureApp.Services
 
         public bool Connect()
         {
+            var attemptedStoredSettings = false;
             try
             {
-                if (!EnsureConnectionSettings())
+                attemptedStoredSettings = HasStoredConnectionSettings();
+                if (!TryPrepareConnectionSettings())
                 {
                     _status.LastMessage = "Camera connection was cancelled.";
                     return false;
                 }
 
-                DestroySdkObjects();
-                DisposeSdkObjects();
-
-                _acquisition = new SapAcquisition(_serverLocation, _configFileName);
-                if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
-                {
-                    _buffers = new SapBufferWithTrash(2, _acquisition, SapBuffer.MemoryType.ScatterGather);
-                }
-                else
-                {
-                    _buffers = new SapBufferWithTrash(2, _acquisition, SapBuffer.MemoryType.ScatterGatherPhysical);
-                }
-
-                _transfer = new SapAcqToBuf(_acquisition, _buffers);
-                _transfer.Pairs[0].EventType = SapXferPair.XferEventType.EndOfFrame;
-                _transfer.XferNotify += OnTransferNotify;
-                _transfer.XferNotifyContext = this;
-
-                _acquisition.SignalNotify += OnSignalNotify;
-                _acquisition.SignalNotifyContext = this;
-
-                if (!CreateSdkObjects())
-                {
-                    DestroySdkObjects();
-                    DisposeSdkObjects();
-                    _status.LastMessage = "Sapera objects could not be created.";
-                    return false;
-                }
-
-                _status.IsConnected = true;
-                _status.HasSignal = _acquisition.SignalStatus != SapAcquisition.AcqSignalStatus.None;
-                _status.CameraName = _serverLocation.ServerName;
-                _status.FrameWidth = _buffers.Width;
-                _status.FrameHeight = _buffers.Height;
-                _status.ScanStateText = "Connected";
-                _status.LastMessage = "Camera connected successfully.";
-                return true;
+                return OpenCurrentConnection();
             }
             catch (Exception ex)
             {
+                if (attemptedStoredSettings && SelectConnectionSettings(null))
+                {
+                    try
+                    {
+                        return OpenCurrentConnection();
+                    }
+                    catch (Exception retryEx)
+                    {
+                        ex = retryEx;
+                    }
+                }
+
                 DestroySdkObjects();
                 DisposeSdkObjects();
                 _status.IsConnected = false;
@@ -175,30 +159,63 @@ namespace CameraCaptureApp.Services
             return false;
         }
 
-        private bool EnsureConnectionSettings()
+        public bool SelectConnectionSettings(System.Windows.Forms.IWin32Window owner)
         {
-            if (!string.IsNullOrWhiteSpace(_settings.ServerName))
+            using (var dialog = new AcqConfigDlg(null, _settings.ConfigFilePath ?? string.Empty, AcqConfigDlg.ServerCategory.ServerAcq))
             {
-                _serverLocation = new SapLocation(_settings.ServerName, _settings.ResourceIndex);
-                _configFileName = _settings.ConfigFilePath;
-                return true;
-            }
-
-            using (var dialog = new AcqConfigDlg(null, string.Empty, AcqConfigDlg.ServerCategory.ServerAcq))
-            {
-                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                if (dialog.ShowDialog(owner) != System.Windows.Forms.DialogResult.OK)
                 {
                     return false;
                 }
 
-                _serverLocation = dialog.ServerLocation;
-                _configFileName = dialog.ConfigFile;
-                _settings.ServerName = _serverLocation.ServerName;
-                _settings.ResourceIndex = _serverLocation.ServerIndex;
-                _settings.ConfigFilePath = _configFileName;
-                _settings.CameraName = _serverLocation.ServerName;
+                ApplyDialogSelection(dialog);
+                _status.LastMessage = "Connection settings updated from Sapera.";
                 return true;
             }
+        }
+
+        private bool TryPrepareConnectionSettings()
+        {
+            if (HasStoredConnectionSettings())
+            {
+                BuildLocationFromSettings();
+                return true;
+            }
+
+            return SelectConnectionSettings(null);
+        }
+
+        private bool HasStoredConnectionSettings()
+        {
+            return !string.IsNullOrWhiteSpace(_settings.ConfigFilePath)
+                && File.Exists(_settings.ConfigFilePath)
+                && (!string.IsNullOrWhiteSpace(_settings.ServerName) || _settings.ServerIndex >= 0)
+                && _settings.ResourceIndex >= 0;
+        }
+
+        private void BuildLocationFromSettings()
+        {
+            if (!string.IsNullOrWhiteSpace(_settings.ServerName))
+            {
+                _serverLocation = new SapLocation(_settings.ServerName, _settings.ResourceIndex);
+            }
+            else
+            {
+                _serverLocation = new SapLocation(_settings.ServerIndex, _settings.ResourceIndex);
+            }
+
+            _configFileName = _settings.ConfigFilePath;
+        }
+
+        private void ApplyDialogSelection(AcqConfigDlg dialog)
+        {
+            _serverLocation = dialog.ServerLocation;
+            _configFileName = dialog.ConfigFile;
+            _settings.ServerName = _serverLocation.ServerName;
+            _settings.ServerIndex = _serverLocation.ServerIndex;
+            _settings.ResourceIndex = _serverLocation.ResourceIndex;
+            _settings.ConfigFilePath = _configFileName;
+            _settings.CameraName = _serverLocation.ServerName;
         }
 
         private bool CreateSdkObjects()
@@ -381,12 +398,9 @@ namespace CameraCaptureApp.Services
                 handle.Free();
             }
 
-            if (bytesPerPixel == 3)
-            {
-                return CreateRgbBitmap(rawBytes, width, height, pitch);
-            }
-
-            return CreateMonoBitmap(rawBytes, width, height, pitch);
+            return bytesPerPixel == 3
+                ? CreateRgbBitmap(rawBytes, width, height, pitch)
+                : CreateMonoBitmap(rawBytes, width, height, pitch);
         }
 
         private static Bitmap CreateMonoBitmap(byte[] rawBytes, int width, int height, int sourceStride)
@@ -433,6 +447,44 @@ namespace CameraCaptureApp.Services
             }
 
             return bitmap;
+        }
+
+        private bool OpenCurrentConnection()
+        {
+            DestroySdkObjects();
+            DisposeSdkObjects();
+
+            _acquisition = new SapAcquisition(_serverLocation, _configFileName);
+            if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
+            {
+                _buffers = new SapBufferWithTrash(2, _acquisition, SapBuffer.MemoryType.ScatterGather);
+            }
+            else
+            {
+                _buffers = new SapBufferWithTrash(2, _acquisition, SapBuffer.MemoryType.ScatterGatherPhysical);
+            }
+
+            _transfer = new SapAcqToBuf(_acquisition, _buffers);
+            _transfer.Pairs[0].EventType = SapXferPair.XferEventType.EndOfFrame;
+            _transfer.XferNotify += OnTransferNotify;
+            _transfer.XferNotifyContext = this;
+
+            _acquisition.SignalNotify += OnSignalNotify;
+            _acquisition.SignalNotifyContext = this;
+
+            if (!CreateSdkObjects())
+            {
+                throw new InvalidOperationException("Sapera objects could not be created.");
+            }
+
+            _status.IsConnected = true;
+            _status.HasSignal = _acquisition.SignalStatus != SapAcquisition.AcqSignalStatus.None;
+            _status.CameraName = _serverLocation.ServerName;
+            _status.FrameWidth = _buffers.Width;
+            _status.FrameHeight = _buffers.Height;
+            _status.ScanStateText = "Connected";
+            _status.LastMessage = "Camera connected successfully.";
+            return true;
         }
     }
 }

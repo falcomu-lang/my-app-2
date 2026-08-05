@@ -43,7 +43,7 @@ namespace CameraCaptureApp.Forms
 
         private void buttonCameraSettings_Click(object sender, EventArgs e)
         {
-            using (var form = new CameraSettingsForm(_settings))
+            using (var form = new CameraSettingsForm(_settings, _cameraService))
             {
                 if (form.ShowDialog(this) != DialogResult.OK)
                 {
@@ -61,7 +61,12 @@ namespace CameraCaptureApp.Forms
         private void buttonConnect_Click(object sender, EventArgs e)
         {
             _cameraService.ApplySettings(_settings);
-            _cameraService.Connect();
+            if (_cameraService.Connect())
+            {
+                _settings = _cameraService.CurrentSettings;
+                _settingsService.Save(_settings);
+                ApplySettingsToUi();
+            }
             UpdateStatus();
         }
 
