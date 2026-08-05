@@ -26,7 +26,7 @@ namespace CameraCaptureApp.Forms
         {
             _cameraService = cameraService;
             _settingsService = settingsService;
-            _settings = _settingsService.Load();
+            _settings = _settingsService.Load() ?? CameraSettings.CreateDefault();
 
             InitializeComponent();
 
@@ -49,7 +49,8 @@ namespace CameraCaptureApp.Forms
 
         private void buttonCameraSettings_Click(object sender, EventArgs e)
         {
-            using (var form = new CameraSettingsForm(_settings, _cameraService))
+            var dialogSettings = _settings ?? CameraSettings.CreateDefault();
+            using (var form = new CameraSettingsForm(dialogSettings, _cameraService))
             {
                 if (form.ShowDialog(this) != DialogResult.OK)
                 {

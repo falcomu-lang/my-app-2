@@ -13,7 +13,7 @@ namespace CameraCaptureApp.Forms
         public CameraSettingsForm(CameraSettings settings, ICameraService cameraService)
         {
             _cameraService = cameraService;
-            Settings = settings.Clone();
+            Settings = (settings ?? CameraSettings.CreateDefault()).Clone();
             InitializeComponent();
             BindSettings();
         }
@@ -40,11 +40,12 @@ namespace CameraCaptureApp.Forms
             numericGain.Value = Settings.Gain;
             numericLength.Value = Settings.Length > 0 ? Settings.Length : 1;
             numericInternalLineRate.Value = Settings.InternalLineRate > 0 ? Settings.InternalLineRate : 1;
-            comboBoxTriggerMode.SelectedIndex = (int)Settings.TriggerMode;
+            var triggerIndex = (int)Settings.TriggerMode;
+            comboBoxTriggerMode.SelectedIndex = triggerIndex >= 0 && triggerIndex < comboBoxTriggerMode.Items.Count ? triggerIndex : 0;
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
             checkBoxAutoSave.Checked = Settings.AutoSave;
-            textBoxSaveFolder.Text = Settings.SaveFolder;
-            textBoxFileNamePattern.Text = Settings.FileNamePattern;
+            textBoxSaveFolder.Text = Settings.SaveFolder ?? string.Empty;
+            textBoxFileNamePattern.Text = Settings.FileNamePattern ?? string.Empty;
             labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
         }
 
