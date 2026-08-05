@@ -627,6 +627,7 @@ namespace CameraCaptureApp.Services
         private void ApplyWritableCameraSettings(bool includeDeviceFeatures)
         {
             var applied = false;
+            var acquisitionLengthApplied = false;
             var notes = new System.Collections.Generic.List<string>();
 
             if (TrySetInternalLineRate(notes))
@@ -642,6 +643,7 @@ namespace CameraCaptureApp.Services
             if (TrySetLengthParameters(notes))
             {
                 _status.FrameHeight = _settings.Length;
+                acquisitionLengthApplied = true;
                 applied = true;
             }
 
@@ -665,17 +667,19 @@ namespace CameraCaptureApp.Services
                         applied = true;
                     }
 
+                    var gainApplied = false;
                     if (TrySetNumericFeature(_settings.Gain, notes, "Gain", "GainRaw", "AnalogGain"))
                     {
+                        gainApplied = true;
                         applied = true;
                     }
 
-                    if (TrySetNumericFeature(_settings.Gain, notes, "GainAbs", "SensorGain", "DigitalGain", "AllGain", "MasterGain"))
+                    if (!gainApplied && TrySetNumericFeature(_settings.Gain, notes, "GainAbs", "SensorGain", "DigitalGain", "AllGain", "MasterGain"))
                     {
                         applied = true;
                     }
 
-                    if (TrySetIntegralFeature(_settings.Length, notes, "Height", "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount"))
+                    if (!acquisitionLengthApplied && TrySetIntegralFeature(_settings.Length, notes, "Height", "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount"))
                     {
                         _status.FrameHeight = _settings.Length;
                         applied = true;
