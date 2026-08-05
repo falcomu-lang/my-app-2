@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -25,6 +26,7 @@ namespace CameraCaptureApp.Services
         private SapAcqToBuf _transfer;
         private DateTime _lastPreviewFrameUtc;
         private bool _deviceFeaturesAvailable;
+        private string _acqDevicePathSummary;
 
         public CameraService()
         {
@@ -372,6 +374,7 @@ namespace CameraCaptureApp.Services
         private void DisposeSdkObjects()
         {
             _deviceFeaturesAvailable = false;
+            _acqDevicePathSummary = string.Empty;
             if (_acqDevice != null)
             {
                 _acqDevice.Dispose();
@@ -682,6 +685,11 @@ namespace CameraCaptureApp.Services
                     {
                         applied = true;
                     }
+
+                    if (!string.IsNullOrWhiteSpace(_acqDevicePathSummary))
+                    {
+                        notes.Add("Gain path " + _acqDevicePathSummary);
+                    }
                 }
             }
 
@@ -711,13 +719,20 @@ namespace CameraCaptureApp.Services
         private void TryInitializeAcqDevice()
         {
             _deviceFeaturesAvailable = false;
+            _acqDevicePathSummary = string.Empty;
             DisposeAcqDeviceOnly();
 
-            _acqDevice = TryBuildAcqDevice(
-                () => new SapAcqDevice(_serverLocation, _configFileName),
-                () => new SapAcqDevice(_serverLocation),
-                () => new SapAcqDevice(_serverLocation, true),
-                () => new SapAcqDevice(_serverLocation, false));
+            foreach (var candidate in BuildCandidateAcqDeviceLocations())
+            {
+                var createdDevice = TryBuildAndCreateAcqDevice(candidate);
+                if (createdDevice != null)
+                {
+                    _acqDevice = createdDevice;
+                    _deviceFeaturesAvailable = true;
+                    _acqDevicePathSummary = candidate.ServerName + "#" + candidate.ResourceIndex;
+                    return;
+                }
+            }
         }
 
         private void EnsureAcqDeviceAvailable()
@@ -730,6 +745,11 @@ namespace CameraCaptureApp.Services
             if (_acqDevice == null)
             {
                 TryInitializeAcqDevice();
+            }
+
+            if (_deviceFeaturesAvailable)
+            {
+                return;
             }
 
             if (_acqDevice != null && !_acqDevice.Initialized)
@@ -777,14 +797,67 @@ namespace CameraCaptureApp.Services
             }
         }
 
-        private static SapAcqDevice TryBuildAcqDevice(params Func<SapAcqDevice>[] factories)
+        private IEnumerable<SapLocation> BuildCandidateAcqDeviceLocations()
         {
-            foreach (var factory in factories)
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var location in EnumerateDirectAcqDeviceLocations(_serverLocation.ServerName))
             {
+                var key = location.ServerName + "|" + location.ResourceIndex.ToString();
+                if (seen.Add(key))
+                {
+                    yield return location;
+                }
+            }
+
+            if (_serverLocation != null && !string.IsNullOrWhiteSpace(_serverLocation.ServerName))
+            {
+                for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
+                {
+                    var serverName = SapManager.GetServerName(serverIndex);
+                    if (!IsRelatedServerName(_serverLocation.ServerName, serverName))
+                    {
+                        continue;
+                    }
+
+                    foreach (var location in EnumerateDirectAcqDeviceLocations(serverName))
+                    {
+                        var key = location.ServerName + "|" + location.ResourceIndex.ToString();
+                        if (seen.Add(key))
+                        {
+                            yield return location;
+                        }
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<SapLocation> EnumerateDirectAcqDeviceLocations(string serverName)
+        {
+            if (string.IsNullOrWhiteSpace(serverName))
+            {
+                yield break;
+            }
+
+            var count = SapManager.GetResourceCount(serverName, SapManager.ResourceType.AcqDevice);
+            for (var resourceIndex = 0; resourceIndex < count; resourceIndex++)
+            {
+                yield return new SapLocation(serverName, resourceIndex);
+            }
+        }
+
+        private SapAcqDevice TryBuildAndCreateAcqDevice(SapLocation location)
+        {
+            foreach (var device in BuildAcqDeviceVariants(location))
+            {
+                if (device == null)
+                {
+                    continue;
+                }
+
                 try
                 {
-                    var device = factory();
-                    if (device != null)
+                    if (device.Initialized || device.Create())
                     {
                         return device;
                     }
@@ -792,9 +865,86 @@ namespace CameraCaptureApp.Services
                 catch
                 {
                 }
+
+                try
+                {
+                    device.Dispose();
+                }
+                catch
+                {
+                }
             }
 
             return null;
+        }
+
+        private IEnumerable<SapAcqDevice> BuildAcqDeviceVariants(SapLocation location)
+        {
+            SapAcqDevice device;
+
+            device = TryBuildAcqDevice(() => new SapAcqDevice(location, _configFileName));
+            if (device != null)
+            {
+                yield return device;
+            }
+
+            device = TryBuildAcqDevice(() => new SapAcqDevice(location));
+            if (device != null)
+            {
+                yield return device;
+            }
+
+            device = TryBuildAcqDevice(() => new SapAcqDevice(location, true));
+            if (device != null)
+            {
+                yield return device;
+            }
+
+            device = TryBuildAcqDevice(() => new SapAcqDevice(location, false));
+            if (device != null)
+            {
+                yield return device;
+            }
+        }
+
+        private static SapAcqDevice TryBuildAcqDevice(Func<SapAcqDevice> factory)
+        {
+            try
+            {
+                return factory();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsRelatedServerName(string primaryServerName, string candidateServerName)
+        {
+            if (string.IsNullOrWhiteSpace(primaryServerName) || string.IsNullOrWhiteSpace(candidateServerName))
+            {
+                return false;
+            }
+
+            if (string.Equals(primaryServerName, candidateServerName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var normalizedPrimary = NormalizeServerName(primaryServerName);
+            var normalizedCandidate = NormalizeServerName(candidateServerName);
+            return string.Equals(normalizedPrimary, normalizedCandidate, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeServerName(string serverName)
+        {
+            var trimmed = serverName.Trim();
+            if (trimmed.Length > 2 && char.IsWhiteSpace(trimmed[trimmed.Length - 2]) && char.IsDigit(trimmed[trimmed.Length - 1]))
+            {
+                return trimmed.Substring(0, trimmed.Length - 2).TrimEnd();
+            }
+
+            return trimmed;
         }
 
         private bool TrySetIntegralFeature(int value, System.Collections.Generic.List<string> notes, params string[] featureNames)
