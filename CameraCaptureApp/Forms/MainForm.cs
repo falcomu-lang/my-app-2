@@ -70,9 +70,10 @@ namespace CameraCaptureApp.Forms
             }
             catch (Exception ex)
             {
+                AppLogger.Log("Camera Settings dialog open failed.", ex);
                 MessageBox.Show(
                     this,
-                    "Camera Settings could not be opened.\r\n" + ex.Message,
+                    "Camera Settings could not be opened.\r\n" + ex.Message + "\r\n\r\nLog: " + AppLogger.GetLogPath(),
                     "Camera Settings Error",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);

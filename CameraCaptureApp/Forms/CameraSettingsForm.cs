@@ -12,10 +12,18 @@ namespace CameraCaptureApp.Forms
 
         public CameraSettingsForm(CameraSettings settings, ICameraService cameraService)
         {
-            _cameraService = cameraService;
-            Settings = (settings ?? CameraSettings.CreateDefault()).Clone();
-            InitializeComponent();
-            BindSettings();
+            try
+            {
+                _cameraService = cameraService;
+                Settings = (settings ?? CameraSettings.CreateDefault()).Clone();
+                InitializeComponent();
+                BindSettings();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("CameraSettingsForm constructor failed.", ex);
+                throw;
+            }
         }
 
         public CameraSettings Settings { get; private set; }

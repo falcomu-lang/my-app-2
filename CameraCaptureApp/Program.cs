@@ -12,6 +12,7 @@ namespace CameraCaptureApp
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            UiExceptionHandler.Register();
 
             ISettingsService settingsService = new SettingsService();
             ICameraService cameraService = new CameraService();
