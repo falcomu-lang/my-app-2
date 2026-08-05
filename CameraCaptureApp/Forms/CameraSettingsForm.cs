@@ -193,34 +193,50 @@ namespace CameraCaptureApp.Forms
 
         private static TriggerMode ReadTriggerMode(SapAcquisition acquisition)
         {
-            int enabled;
-
-            if (acquisition.GetParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, out enabled) && enabled != 0)
+            if (TryReadEnabled(acquisition, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE))
             {
                 return TriggerMode.ExternalTrigger;
             }
 
-            if (acquisition.GetParameter(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, out enabled) && enabled != 0)
+            if (TryReadEnabled(acquisition, SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE))
             {
                 return TriggerMode.ExternalTrigger;
             }
 
-            if (acquisition.GetParameter(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, out enabled) && enabled != 0)
+            if (TryReadEnabled(acquisition, SapAcquisition.Prm.EXT_TRIGGER_ENABLE))
             {
                 return TriggerMode.ExternalTrigger;
             }
 
-            if (acquisition.GetParameter(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, out enabled) && enabled != 0)
+            if (TryReadEnabled(acquisition, SapAcquisition.Prm.CAM_TRIGGER_ENABLE))
             {
                 return TriggerMode.SoftwareTrigger;
             }
 
-            if (acquisition.GetParameter(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, out enabled) && enabled != 0)
+            if (TryReadEnabled(acquisition, SapAcquisition.Prm.LINE_TRIGGER_ENABLE))
             {
                 return TriggerMode.SoftwareTrigger;
             }
 
             return TriggerMode.Continuous;
+        }
+
+        private static bool TryReadEnabled(SapAcquisition acquisition, SapAcquisition.Prm parameter)
+        {
+            try
+            {
+                int enabled;
+                return acquisition != null
+                    && acquisition.Initialized
+                    && acquisition.IsParameterAvailable(parameter)
+                    && acquisition.GetParameter(parameter, out enabled)
+                    && enabled != 0;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("ReadTriggerMode failed for parameter " + parameter + ".", ex);
+                return false;
+            }
         }
 
         private static int ParseInt(string text, int fallback)
