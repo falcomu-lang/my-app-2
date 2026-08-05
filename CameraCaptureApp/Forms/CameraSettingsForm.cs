@@ -110,6 +110,19 @@ namespace CameraCaptureApp.Forms
             SaveSettings();
         }
 
+        private void buttonProbeLiveFeatures_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var reportPath = _cameraService.ExportLiveFeatureReport();
+                labelReadResult.Text = "Live feature report exported: " + reportPath;
+            }
+            catch (Exception ex)
+            {
+                labelReadResult.Text = "Probe live features failed: " + ex.Message;
+            }
+        }
+
         private void buttonOk_Click(object sender, EventArgs e)
         {
             SaveSettings();

@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using CameraCaptureApp.Models;
 using DALSA.SaperaLT.SapClassBasic;
 using DALSA.SaperaLT.SapClassGui;
@@ -179,6 +180,61 @@ namespace CameraCaptureApp.Services
                 _status.LastMessage = "Connection settings updated from Sapera.";
                 return true;
             }
+        }
+
+        public string ExportLiveFeatureReport()
+        {
+            if (!_status.IsConnected)
+            {
+                throw new InvalidOperationException("Connect the camera before probing live features.");
+            }
+
+            EnsureAcqDeviceAvailable();
+            if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
+            {
+                throw new InvalidOperationException("SapAcqDevice is not available for this connection path.");
+            }
+
+            var reportBuilder = new StringBuilder();
+            reportBuilder.AppendLine("CameraCaptureApp Live Feature Report");
+            reportBuilder.AppendLine("GeneratedAt=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            reportBuilder.AppendLine("CameraName=" + _status.CameraName);
+            reportBuilder.AppendLine("Server=" + _serverLocation.ServerName);
+            reportBuilder.AppendLine("ResourceIndex=" + _serverLocation.ResourceIndex);
+            reportBuilder.AppendLine("ConfigFile=" + _configFileName);
+            reportBuilder.AppendLine();
+
+            for (var i = 0; i < _acqDevice.FeatureCount; i++)
+            {
+                var feature = new SapFeature();
+                if (!_acqDevice.GetFeatureInfo(i, feature))
+                {
+                    continue;
+                }
+
+                var name = feature.Name ?? string.Empty;
+                if (name.Length == 0)
+                {
+                    continue;
+                }
+
+                reportBuilder.AppendLine("[Feature] " + name);
+                reportBuilder.AppendLine("DisplayName=" + SafeString(feature.DisplayName));
+                reportBuilder.AppendLine("Category=" + SafeString(feature.Category));
+                reportBuilder.AppendLine("Type=" + feature.DataType);
+                reportBuilder.AppendLine("AccessMode=" + feature.DataAccessMode);
+                reportBuilder.AppendLine("Visibility=" + feature.UserVisibility);
+                reportBuilder.AppendLine("Description=" + SafeString(feature.Description));
+                reportBuilder.AppendLine("Value=" + ReadFeatureValue(name, feature.DataType));
+                reportBuilder.AppendLine();
+            }
+
+            var filePath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "live_features_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
+            File.WriteAllText(filePath, reportBuilder.ToString(), Encoding.UTF8);
+            _status.LastMessage = "Live feature report exported: " + Path.GetFileName(filePath);
+            return filePath;
         }
 
         private bool TryPrepareConnectionSettings()
@@ -825,6 +881,47 @@ namespace CameraCaptureApp.Services
             }
 
             return false;
+        }
+
+        private string ReadFeatureValue(string featureName, SapFeature.Type dataType)
+        {
+            try
+            {
+                switch (dataType)
+                {
+                    case SapFeature.Type.Bool:
+                        bool boolValue;
+                        return _acqDevice.GetFeatureValue(featureName, out boolValue) ? boolValue.ToString() : "<unreadable>";
+                    case SapFeature.Type.Int32:
+                        int int32Value;
+                        return _acqDevice.GetFeatureValue(featureName, out int32Value) ? int32Value.ToString() : "<unreadable>";
+                    case SapFeature.Type.Int64:
+                        long intValue;
+                        return _acqDevice.GetFeatureValue(featureName, out intValue) ? intValue.ToString() : "<unreadable>";
+                    case SapFeature.Type.Float:
+                        float floatValue;
+                        return _acqDevice.GetFeatureValue(featureName, out floatValue) ? floatValue.ToString() : "<unreadable>";
+                    case SapFeature.Type.Double:
+                        double doubleValue;
+                        return _acqDevice.GetFeatureValue(featureName, out doubleValue) ? doubleValue.ToString() : "<unreadable>";
+                    case SapFeature.Type.String:
+                    case SapFeature.Type.Enum:
+                        string textValue;
+                        return _acqDevice.GetFeatureValue(featureName, out textValue) ? SafeString(textValue) : "<unreadable>";
+                    default:
+                        string fallbackValue;
+                        return _acqDevice.GetFeatureValue(featureName, out fallbackValue) ? SafeString(fallbackValue) : "<unsupported>";
+                }
+            }
+            catch (Exception ex)
+            {
+                return "<error: " + ex.Message + ">";
+            }
+        }
+
+        private static string SafeString(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Replace("\r", " ").Replace("\n", " ");
         }
     }
 }

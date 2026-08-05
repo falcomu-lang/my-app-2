@@ -16,6 +16,8 @@ namespace CameraCaptureApp.Services
 
         bool SelectConnectionSettings(System.Windows.Forms.IWin32Window owner);
 
+        string ExportLiveFeatureReport();
+
         void Disconnect();
 
         bool StartPreview();
