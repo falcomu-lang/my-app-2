@@ -853,21 +853,20 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var exposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
-            TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.TIME_INTEGRATE_ENABLE);
-            if (TrySetAcquisitionIntParameter(
-                notes,
-                exposureValue,
-                SapAcquisition.Prm.TIME_INTEGRATE_DURATION))
-            {
-                return true;
-            }
-
             TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.LINE_INTEGRATE_ENABLE);
             if (TrySetAcquisitionIntParameter(
                 notes,
                 exposureValue,
                 SapAcquisition.Prm.LINE_INTEGRATE_DURATION,
                 SapAcquisition.Prm.CAM_TRIGGER_DURATION))
+            {
+                return true;
+            }
+
+            if (TrySetAcquisitionIntParameter(
+                notes,
+                exposureValue,
+                SapAcquisition.Prm.TIME_INTEGRATE_DURATION))
             {
                 return true;
             }
