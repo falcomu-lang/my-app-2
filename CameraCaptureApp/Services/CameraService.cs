@@ -573,6 +573,16 @@ namespace CameraCaptureApp.Services
             DisposeSdkObjects();
 
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
+            _acquisition.SignalNotify += OnSignalNotify;
+            _acquisition.SignalNotifyContext = this;
+
+            if (!_acquisition.Create())
+            {
+                throw new InvalidOperationException("Sapera objects could not be created.");
+            }
+
+            ApplyWritableCameraSettings(false);
+
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
                 _buffers = new SapBufferWithTrash(2, _acquisition, SapBuffer.MemoryType.ScatterGather);
@@ -587,15 +597,10 @@ namespace CameraCaptureApp.Services
             _transfer.XferNotify += OnTransferNotify;
             _transfer.XferNotifyContext = this;
 
-            _acquisition.SignalNotify += OnSignalNotify;
-            _acquisition.SignalNotifyContext = this;
-
             if (!CreateSdkObjects())
             {
-                throw new InvalidOperationException("Sapera objects could not be created.");
+                throw new InvalidOperationException("Sapera buffer or transfer objects could not be created.");
             }
-
-            ApplyWritableCameraSettings(false);
 
             _status.IsConnected = true;
             _status.HasSignal = _acquisition.SignalStatus != SapAcquisition.AcqSignalStatus.None;
