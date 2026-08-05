@@ -711,14 +711,13 @@ namespace CameraCaptureApp.Services
         private void TryInitializeAcqDevice()
         {
             _deviceFeaturesAvailable = false;
-            try
-            {
-                _acqDevice = new SapAcqDevice(_serverLocation, _configFileName);
-            }
-            catch
-            {
-                _acqDevice = null;
-            }
+            DisposeAcqDeviceOnly();
+
+            _acqDevice = TryBuildAcqDevice(
+                () => new SapAcqDevice(_serverLocation, _configFileName),
+                () => new SapAcqDevice(_serverLocation),
+                () => new SapAcqDevice(_serverLocation, true),
+                () => new SapAcqDevice(_serverLocation, false));
         }
 
         private void EnsureAcqDeviceAvailable()
@@ -760,6 +759,42 @@ namespace CameraCaptureApp.Services
                 _deviceFeaturesAvailable = false;
                 return false;
             }
+        }
+
+        private void DisposeAcqDeviceOnly()
+        {
+            if (_acqDevice != null)
+            {
+                try
+                {
+                    _acqDevice.Dispose();
+                }
+                catch
+                {
+                }
+
+                _acqDevice = null;
+            }
+        }
+
+        private static SapAcqDevice TryBuildAcqDevice(params Func<SapAcqDevice>[] factories)
+        {
+            foreach (var factory in factories)
+            {
+                try
+                {
+                    var device = factory();
+                    if (device != null)
+                    {
+                        return device;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
         }
 
         private bool TrySetIntegralFeature(int value, System.Collections.Generic.List<string> notes, params string[] featureNames)
