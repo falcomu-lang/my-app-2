@@ -304,7 +304,12 @@ namespace CameraCaptureApp.Services
             _status.HasSignal = argsSignal.SignalStatus != SapAcquisition.AcqSignalStatus.None;
             if (!_status.HasSignal)
             {
+                _status.IsConnected = false;
                 _status.LastMessage = "No camera signal detected.";
+            }
+            else
+            {
+                _status.IsConnected = true;
             }
         }
 
@@ -482,8 +487,16 @@ namespace CameraCaptureApp.Services
             _status.CameraName = _serverLocation.ServerName;
             _status.FrameWidth = _buffers.Width;
             _status.FrameHeight = _buffers.Height;
+            if (!_status.HasSignal)
+            {
+                _status.IsConnected = false;
+                _status.LastMessage = "Connected objects were created, but no camera signal was detected.";
+            }
+            else
+            {
+                _status.LastMessage = "Camera connected successfully.";
+            }
             _status.ScanStateText = "Connected";
-            _status.LastMessage = "Camera connected successfully.";
             return true;
         }
     }

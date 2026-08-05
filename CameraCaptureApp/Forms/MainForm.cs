@@ -17,6 +17,7 @@ namespace CameraCaptureApp.Forms
         private CameraSettings _settings;
         private CancellationTokenSource _imageLoadTokenSource;
         private CancellationTokenSource _previewFrameTokenSource;
+        private bool _autoConnectAttempted;
 
         public MainForm(ICameraService cameraService, ISettingsService settingsService)
         {
@@ -39,6 +40,8 @@ namespace CameraCaptureApp.Forms
             _statusRefreshTimer.Interval = 300;
             _statusRefreshTimer.Tick += StatusRefreshTimer_Tick;
             _statusRefreshTimer.Start();
+
+            this.Shown += MainForm_Shown;
         }
 
         private void buttonCameraSettings_Click(object sender, EventArgs e)
@@ -167,6 +170,11 @@ namespace CameraCaptureApp.Forms
             UpdateStatus();
         }
 
+        private void MainForm_Shown(object sender, EventArgs e)
+        {
+            TryAutoConnectOnStart();
+        }
+
         private void ApplySettingsToUi()
         {
             labelHeaderResolutionValue.Text = _settings.Width + " x " + _settings.Height;
@@ -194,6 +202,8 @@ namespace CameraCaptureApp.Forms
             {
                 labelHeaderCameraValue.Text = status.CameraName;
             }
+
+            buttonConnect.Enabled = !status.IsConnected;
         }
 
         private void CancelPendingImageLoad()
@@ -233,6 +243,25 @@ namespace CameraCaptureApp.Forms
                 default:
                     return "Free Run";
             }
+        }
+
+        private void TryAutoConnectOnStart()
+        {
+            if (_autoConnectAttempted || !_settings.AutoConnect)
+            {
+                return;
+            }
+
+            _autoConnectAttempted = true;
+            _cameraService.ApplySettings(_settings);
+            if (_cameraService.Connect())
+            {
+                _settings = _cameraService.CurrentSettings;
+                _settingsService.Save(_settings);
+                ApplySettingsToUi();
+            }
+
+            UpdateStatus();
         }
     }
 }
