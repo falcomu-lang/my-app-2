@@ -10,6 +10,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Panel panelViewerHost;
         private System.Windows.Forms.Button buttonCameraSettings;
         private System.Windows.Forms.Button buttonConnect;
+        private System.Windows.Forms.Button buttonDisconnect;
         private System.Windows.Forms.Button buttonStartPreview;
         private System.Windows.Forms.Button buttonStop;
         private System.Windows.Forms.Button buttonCapture;
@@ -61,6 +62,7 @@ namespace CameraCaptureApp.Forms
             this.buttonCapture = new System.Windows.Forms.Button();
             this.buttonStop = new System.Windows.Forms.Button();
             this.buttonStartPreview = new System.Windows.Forms.Button();
+            this.buttonDisconnect = new System.Windows.Forms.Button();
             this.buttonConnect = new System.Windows.Forms.Button();
             this.buttonCameraSettings = new System.Windows.Forms.Button();
             this.panelContent = new System.Windows.Forms.Panel();
@@ -158,6 +160,7 @@ namespace CameraCaptureApp.Forms
             this.panelLeft.Controls.Add(this.buttonCapture);
             this.panelLeft.Controls.Add(this.buttonStop);
             this.panelLeft.Controls.Add(this.buttonStartPreview);
+            this.panelLeft.Controls.Add(this.buttonDisconnect);
             this.panelLeft.Controls.Add(this.buttonConnect);
             this.panelLeft.Controls.Add(this.buttonCameraSettings);
             this.panelLeft.Dock = System.Windows.Forms.DockStyle.Left;
@@ -180,9 +183,17 @@ namespace CameraCaptureApp.Forms
             this.buttonConnect.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
             this.buttonConnect.ForeColor = System.Drawing.Color.White;
             this.buttonConnect.Location = new System.Drawing.Point(19, 86);
-            this.buttonConnect.Size = new System.Drawing.Size(252, 48);
+            this.buttonConnect.Size = new System.Drawing.Size(120, 48);
             this.buttonConnect.Text = "Connect";
             this.buttonConnect.Click += new System.EventHandler(this.buttonConnect_Click);
+            this.buttonDisconnect.BackColor = System.Drawing.Color.FromArgb(36, 51, 84);
+            this.buttonDisconnect.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonDisconnect.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
+            this.buttonDisconnect.ForeColor = System.Drawing.Color.White;
+            this.buttonDisconnect.Location = new System.Drawing.Point(151, 86);
+            this.buttonDisconnect.Size = new System.Drawing.Size(120, 48);
+            this.buttonDisconnect.Text = "Disconnect";
+            this.buttonDisconnect.Click += new System.EventHandler(this.buttonDisconnect_Click);
             this.buttonStartPreview.BackColor = System.Drawing.Color.FromArgb(36, 51, 84);
             this.buttonStartPreview.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonStartPreview.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);

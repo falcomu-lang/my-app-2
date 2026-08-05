@@ -106,6 +106,12 @@ namespace CameraCaptureApp.Forms
             UpdateStatus();
         }
 
+        private void buttonDisconnect_Click(object sender, EventArgs e)
+        {
+            _cameraService.Disconnect();
+            UpdateStatus();
+        }
+
         private void buttonStop_Click(object sender, EventArgs e)
         {
             _cameraService.StopPreview();
@@ -260,6 +266,7 @@ namespace CameraCaptureApp.Forms
             }
 
             buttonConnect.Enabled = !status.IsConnected;
+            buttonDisconnect.Enabled = status.IsConnected;
         }
 
         private void CancelPendingImageLoad()

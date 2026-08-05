@@ -159,7 +159,7 @@ namespace CameraCaptureApp.Forms
             // checkBoxAutoConnect
             // 
             this.checkBoxAutoConnect.AutoSize = true;
-            this.checkBoxAutoConnect.Location = new System.Drawing.Point(35, 246);
+            this.checkBoxAutoConnect.Location = new System.Drawing.Point(35, 276);
             this.checkBoxAutoConnect.Name = "checkBoxAutoConnect";
             this.checkBoxAutoConnect.Size = new System.Drawing.Size(143, 20);
             this.checkBoxAutoConnect.TabIndex = 5;
@@ -168,7 +168,7 @@ namespace CameraCaptureApp.Forms
             // 
             // buttonBrowseSapera
             // 
-            this.buttonBrowseSapera.Location = new System.Drawing.Point(430, 239);
+            this.buttonBrowseSapera.Location = new System.Drawing.Point(430, 235);
             this.buttonBrowseSapera.Name = "buttonBrowseSapera";
             this.buttonBrowseSapera.Size = new System.Drawing.Size(138, 32);
             this.buttonBrowseSapera.TabIndex = 6;
@@ -178,7 +178,7 @@ namespace CameraCaptureApp.Forms
             // 
             // buttonReadCcfToFields
             // 
-            this.buttonReadCcfToFields.Location = new System.Drawing.Point(577, 239);
+            this.buttonReadCcfToFields.Location = new System.Drawing.Point(577, 235);
             this.buttonReadCcfToFields.Name = "buttonReadCcfToFields";
             this.buttonReadCcfToFields.Size = new System.Drawing.Size(138, 32);
             this.buttonReadCcfToFields.TabIndex = 7;
@@ -211,10 +211,10 @@ namespace CameraCaptureApp.Forms
             // labelReadResult
             // 
             this.labelReadResult.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.labelReadResult.Location = new System.Drawing.Point(35, 285);
+            this.labelReadResult.Location = new System.Drawing.Point(35, 307);
             this.labelReadResult.Name = "labelReadResult";
             this.labelReadResult.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.labelReadResult.Size = new System.Drawing.Size(680, 50);
+            this.labelReadResult.Size = new System.Drawing.Size(680, 36);
             this.labelReadResult.TabIndex = 10;
             this.labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
             // 

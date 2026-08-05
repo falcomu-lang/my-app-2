@@ -629,6 +629,11 @@ namespace CameraCaptureApp.Services
             {
                 EnsureAcqDeviceAvailable();
 
+                if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
+                {
+                    notes.Add("Camera device features unavailable on this connection path");
+                }
+
                 if (TrySetNumericFeature(_settings.ExposureTime, notes, "ExposureTime", "ExposureTimeAbs", "Exposure"))
                 {
                     applied = true;
