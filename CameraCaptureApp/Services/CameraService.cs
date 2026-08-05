@@ -62,6 +62,7 @@ namespace CameraCaptureApp.Services
             if (_status.IsConnected)
             {
                 ApplyWritableCameraSettings(true);
+                return;
             }
 
             _status.LastMessage = "Camera settings applied.";
