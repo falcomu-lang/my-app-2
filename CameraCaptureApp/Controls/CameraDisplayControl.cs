@@ -143,7 +143,7 @@ namespace CameraCaptureApp.Controls
         {
             e.Graphics.Clear(Color.Black);
             e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
-            e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
+            e.Graphics.PixelOffsetMode = PixelOffsetMode.Default;
             e.Graphics.SmoothingMode = SmoothingMode.HighSpeed;
 
             Bitmap bitmap;
@@ -241,11 +241,26 @@ namespace CameraCaptureApp.Controls
 
         private static void DrawTile(Graphics graphics, Bitmap tile, Rectangle tileRect, float zoom, PointF offset)
         {
-            var drawRect = new RectangleF(
-                offset.X + (tileRect.X * zoom),
-                offset.Y + (tileRect.Y * zoom),
-                tileRect.Width * zoom,
-                tileRect.Height * zoom);
+            var left = offset.X + (tileRect.Left * zoom);
+            var top = offset.Y + (tileRect.Top * zoom);
+            var right = offset.X + (tileRect.Right * zoom);
+            var bottom = offset.Y + (tileRect.Bottom * zoom);
+
+            var drawLeft = (float)Math.Round(left);
+            var drawTop = (float)Math.Round(top);
+            var drawRight = (float)Math.Round(right);
+            var drawBottom = (float)Math.Round(bottom);
+            if (drawRight <= drawLeft)
+            {
+                drawRight = drawLeft + 1f;
+            }
+
+            if (drawBottom <= drawTop)
+            {
+                drawBottom = drawTop + 1f;
+            }
+
+            var drawRect = RectangleF.FromLTRB(drawLeft, drawTop, drawRight, drawBottom);
             var previousInterpolation = graphics.InterpolationMode;
             graphics.InterpolationMode = zoom >= 1f ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear;
             graphics.DrawImage(tile, drawRect);
