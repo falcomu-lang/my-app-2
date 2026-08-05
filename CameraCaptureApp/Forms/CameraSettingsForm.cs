@@ -148,6 +148,8 @@ namespace CameraCaptureApp.Forms
         private void buttonApply_Click(object sender, EventArgs e)
         {
             SaveSettings();
+            _cameraService.ApplySettings(Settings);
+            labelReadResult.Text = "Settings applied to the camera service.";
         }
 
         private void buttonProbeLiveFeatures_Click(object sender, EventArgs e)
@@ -163,6 +165,7 @@ namespace CameraCaptureApp.Forms
         private void buttonOk_Click(object sender, EventArgs e)
         {
             SaveSettings();
+            _cameraService.ApplySettings(Settings);
             DialogResult = DialogResult.OK;
             Close();
         }
