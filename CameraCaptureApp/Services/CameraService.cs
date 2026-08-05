@@ -23,6 +23,7 @@ namespace CameraCaptureApp.Services
         private SapBuffer _buffers;
         private SapAcqToBuf _transfer;
         private DateTime _lastPreviewFrameUtc;
+        private bool _deviceFeaturesAvailable;
 
         public CameraService()
         {
@@ -226,9 +227,10 @@ namespace CameraCaptureApp.Services
 
         private bool CreateSdkObjects()
         {
-            if (_acqDevice != null && !_acqDevice.Initialized && !_acqDevice.Create())
+            if (_acqDevice != null && !_acqDevice.Initialized && !TryCreateAcqDevice())
             {
-                return false;
+                _acqDevice.Dispose();
+                _acqDevice = null;
             }
 
             if (_acquisition != null && !_acquisition.Initialized && !_acquisition.Create())
@@ -275,6 +277,7 @@ namespace CameraCaptureApp.Services
 
         private void DisposeSdkObjects()
         {
+            _deviceFeaturesAvailable = false;
             if (_acqDevice != null)
             {
                 _acqDevice.Dispose();
@@ -476,7 +479,7 @@ namespace CameraCaptureApp.Services
             DestroySdkObjects();
             DisposeSdkObjects();
 
-            _acqDevice = new SapAcqDevice(_serverLocation, _configFileName);
+            TryInitializeAcqDevice();
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
@@ -522,11 +525,6 @@ namespace CameraCaptureApp.Services
 
         private void ApplyWritableCameraSettings()
         {
-            if (_acqDevice == null || !_acqDevice.Initialized)
-            {
-                return;
-            }
-
             var applied = false;
             var notes = new System.Collections.Generic.List<string>();
 
@@ -577,6 +575,38 @@ namespace CameraCaptureApp.Services
 
             notes.Add(featureNames[0] + " not supported");
             return false;
+        }
+
+        private void TryInitializeAcqDevice()
+        {
+            _deviceFeaturesAvailable = false;
+            try
+            {
+                _acqDevice = new SapAcqDevice(_serverLocation, _configFileName);
+            }
+            catch
+            {
+                _acqDevice = null;
+            }
+        }
+
+        private bool TryCreateAcqDevice()
+        {
+            if (_acqDevice == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                _deviceFeaturesAvailable = _acqDevice.Create();
+                return _deviceFeaturesAvailable;
+            }
+            catch
+            {
+                _deviceFeaturesAvailable = false;
+                return false;
+            }
         }
 
         private bool TrySetIntegralFeature(int value, System.Collections.Generic.List<string> notes, params string[] featureNames)
@@ -681,7 +711,7 @@ namespace CameraCaptureApp.Services
         private bool TrySetDeviceFeature(string[] featureNames, double value, out string appliedFeature)
         {
             appliedFeature = string.Empty;
-            if (_acqDevice == null || !_acqDevice.Initialized)
+            if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
             {
                 return false;
             }
@@ -707,7 +737,7 @@ namespace CameraCaptureApp.Services
         private bool TrySetDeviceFeature(string[] featureNames, int value, out string appliedFeature)
         {
             appliedFeature = string.Empty;
-            if (_acqDevice == null || !_acqDevice.Initialized)
+            if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
             {
                 return false;
             }
@@ -749,7 +779,7 @@ namespace CameraCaptureApp.Services
 
         private bool TrySetDeviceFeature(string[] featureNames, string value)
         {
-            if (_acqDevice == null || !_acqDevice.Initialized)
+            if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
             {
                 return false;
             }
