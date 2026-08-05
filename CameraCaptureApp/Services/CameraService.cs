@@ -665,6 +665,11 @@ namespace CameraCaptureApp.Services
                     applied = true;
                 }
 
+                if (TrySetNumericFeature(_settings.Gain, notes, "GainAbs", "SensorGain", "DigitalGain", "AllGain", "MasterGain"))
+                {
+                    applied = true;
+                }
+
                 if (TrySetIntegralFeature(_settings.Length, notes, "Height", "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount"))
                 {
                     _status.FrameHeight = _settings.Length;
@@ -825,6 +830,7 @@ namespace CameraCaptureApp.Services
         private bool TrySetInternalLineRate(System.Collections.Generic.List<string> notes)
         {
             var acquisitionRate = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate));
+            TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE);
             if (TrySetAcquisitionIntParameter(notes, acquisitionRate, SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ))
             {
                 return true;
@@ -847,10 +853,19 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var exposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
+            TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.TIME_INTEGRATE_ENABLE);
             if (TrySetAcquisitionIntParameter(
                 notes,
                 exposureValue,
-                SapAcquisition.Prm.TIME_INTEGRATE_DURATION,
+                SapAcquisition.Prm.TIME_INTEGRATE_DURATION))
+            {
+                return true;
+            }
+
+            TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.LINE_INTEGRATE_ENABLE);
+            if (TrySetAcquisitionIntParameter(
+                notes,
+                exposureValue,
                 SapAcquisition.Prm.LINE_INTEGRATE_DURATION,
                 SapAcquisition.Prm.CAM_TRIGGER_DURATION))
             {
