@@ -50,24 +50,12 @@ namespace CameraCaptureApp.Forms
         private void buttonCameraSettings_Click(object sender, EventArgs e)
         {
             var dialogSettings = _settings ?? CameraSettings.CreateDefault();
-            using (var form = new CameraSettingsForm(dialogSettings, _cameraService))
+            CameraSettingsForm form = null;
+            try
             {
+                form = new CameraSettingsForm(dialogSettings, _cameraService);
                 DialogResult dialogResult;
-                try
-                {
-                    dialogResult = form.ShowDialog(this);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(
-                        this,
-                        "Camera Settings could not be opened.\r\n" + ex.Message,
-                        "Camera Settings Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                    labelFooterMessageValue.Text = "Camera Settings open failed: " + ex.Message;
-                    return;
-                }
+                dialogResult = form.ShowDialog(this);
 
                 if (dialogResult != DialogResult.OK)
                 {
@@ -79,6 +67,23 @@ namespace CameraCaptureApp.Forms
                 _cameraService.ApplySettings(_settings);
                 ApplySettingsToUi();
                 UpdateStatus();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    this,
+                    "Camera Settings could not be opened.\r\n" + ex.Message,
+                    "Camera Settings Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                labelFooterMessageValue.Text = "Camera Settings open failed: " + ex.Message;
+            }
+            finally
+            {
+                if (form != null)
+                {
+                    form.Dispose();
+                }
             }
         }
 
