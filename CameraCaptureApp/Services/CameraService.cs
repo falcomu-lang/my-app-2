@@ -60,7 +60,7 @@ namespace CameraCaptureApp.Services
             _status.CameraName = _settings.CameraName;
             if (_status.IsConnected)
             {
-                ApplyWritableCameraSettings();
+                ApplyWritableCameraSettings(true);
             }
 
             _status.LastMessage = "Camera settings applied.";
@@ -503,7 +503,7 @@ namespace CameraCaptureApp.Services
                 throw new InvalidOperationException("Sapera objects could not be created.");
             }
 
-            ApplyWritableCameraSettings();
+            ApplyWritableCameraSettings(false);
 
             _status.IsConnected = true;
             _status.HasSignal = _acquisition.SignalStatus != SapAcquisition.AcqSignalStatus.None;
@@ -523,35 +523,40 @@ namespace CameraCaptureApp.Services
             return true;
         }
 
-        private void ApplyWritableCameraSettings()
+        private void ApplyWritableCameraSettings(bool includeDeviceFeatures)
         {
             var applied = false;
             var notes = new System.Collections.Generic.List<string>();
-
-            if (TrySetNumericFeature(_settings.ExposureTime, notes, "ExposureTime", "ExposureTimeAbs", "Exposure"))
-            {
-                applied = true;
-            }
-
-            if (TrySetNumericFeature(_settings.Gain, notes, "Gain", "GainRaw", "AnalogGain"))
-            {
-                applied = true;
-            }
-
-            if (TrySetIntegralFeature(_settings.Length, notes, "Height", "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount"))
-            {
-                _status.FrameHeight = _settings.Length;
-                applied = true;
-            }
 
             if (TrySetInternalLineRate(notes))
             {
                 applied = true;
             }
 
-            if (ApplyTriggerMode(notes))
+            if (includeDeviceFeatures)
             {
-                applied = true;
+                EnsureAcqDeviceAvailable();
+
+                if (TrySetNumericFeature(_settings.ExposureTime, notes, "ExposureTime", "ExposureTimeAbs", "Exposure"))
+                {
+                    applied = true;
+                }
+
+                if (TrySetNumericFeature(_settings.Gain, notes, "Gain", "GainRaw", "AnalogGain"))
+                {
+                    applied = true;
+                }
+
+                if (TrySetIntegralFeature(_settings.Length, notes, "Height", "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount"))
+                {
+                    _status.FrameHeight = _settings.Length;
+                    applied = true;
+                }
+
+                if (ApplyTriggerMode(notes))
+                {
+                    applied = true;
+                }
             }
 
             if (notes.Count > 0)
@@ -587,6 +592,28 @@ namespace CameraCaptureApp.Services
             catch
             {
                 _acqDevice = null;
+            }
+        }
+
+        private void EnsureAcqDeviceAvailable()
+        {
+            if (_deviceFeaturesAvailable)
+            {
+                return;
+            }
+
+            if (_acqDevice == null)
+            {
+                TryInitializeAcqDevice();
+            }
+
+            if (_acqDevice != null && !_acqDevice.Initialized)
+            {
+                if (!TryCreateAcqDevice())
+                {
+                    _acqDevice.Dispose();
+                    _acqDevice = null;
+                }
             }
         }
 
