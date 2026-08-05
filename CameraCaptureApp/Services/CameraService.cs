@@ -653,33 +653,35 @@ namespace CameraCaptureApp.Services
 
                 if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
                 {
-                    notes.Add("Camera device features unavailable on this connection path");
+                    notes.Add("Device feature path unavailable: Gain cannot be written on this connection");
                 }
-
-                if (TrySetNumericFeature(_settings.ExposureTime, notes, "ExposureTime", "ExposureTimeAbs", "Exposure"))
+                else
                 {
-                    applied = true;
-                }
+                    if (TrySetNumericFeature(_settings.ExposureTime, notes, "ExposureTime", "ExposureTimeAbs", "Exposure"))
+                    {
+                        applied = true;
+                    }
 
-                if (TrySetNumericFeature(_settings.Gain, notes, "Gain", "GainRaw", "AnalogGain"))
-                {
-                    applied = true;
-                }
+                    if (TrySetNumericFeature(_settings.Gain, notes, "Gain", "GainRaw", "AnalogGain"))
+                    {
+                        applied = true;
+                    }
 
-                if (TrySetNumericFeature(_settings.Gain, notes, "GainAbs", "SensorGain", "DigitalGain", "AllGain", "MasterGain"))
-                {
-                    applied = true;
-                }
+                    if (TrySetNumericFeature(_settings.Gain, notes, "GainAbs", "SensorGain", "DigitalGain", "AllGain", "MasterGain"))
+                    {
+                        applied = true;
+                    }
 
-                if (TrySetIntegralFeature(_settings.Length, notes, "Height", "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount"))
-                {
-                    _status.FrameHeight = _settings.Length;
-                    applied = true;
-                }
+                    if (TrySetIntegralFeature(_settings.Length, notes, "Height", "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount"))
+                    {
+                        _status.FrameHeight = _settings.Length;
+                        applied = true;
+                    }
 
-                if (ApplyTriggerMode(notes))
-                {
-                    applied = true;
+                    if (ApplyTriggerMode(notes))
+                    {
+                        applied = true;
+                    }
                 }
             }
 
