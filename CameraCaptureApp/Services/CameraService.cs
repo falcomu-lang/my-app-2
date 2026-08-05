@@ -830,6 +830,19 @@ namespace CameraCaptureApp.Services
                     }
                 }
             }
+
+            for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
+            {
+                var serverName = SapManager.GetServerName(serverIndex);
+                foreach (var location in EnumerateDirectAcqDeviceLocations(serverName))
+                {
+                    var key = location.ServerName + "|" + location.ResourceIndex.ToString();
+                    if (seen.Add(key))
+                    {
+                        yield return location;
+                    }
+                }
+            }
         }
 
         private static IEnumerable<SapLocation> EnumerateDirectAcqDeviceLocations(string serverName)
