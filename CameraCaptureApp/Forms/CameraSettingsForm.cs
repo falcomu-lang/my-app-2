@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using CameraCaptureApp.Models;
 using CameraCaptureApp.Services;
-using DALSA.SaperaLT.SapClassBasic;
 
 namespace CameraCaptureApp.Forms
 {
@@ -86,30 +89,58 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(Settings.ServerName) && Settings.ServerIndex < 0)
+            if (!File.Exists(Settings.ConfigFilePath))
             {
-                labelReadResult.Text = "Please load Sapera acquisition settings first.";
+                labelReadResult.Text = "The selected CCF file could not be found.";
                 return;
             }
 
             try
             {
-                using (var acquisition = CreatePreviewAcquisition())
+                var values = LoadCcfValues(Settings.ConfigFilePath);
+                var appliedFields = new List<string>();
+                decimal decimalValue;
+                int intValue;
+                TriggerMode triggerMode;
+
+                if (TryReadDecimal(values, out decimalValue, "ExposureTime", "ExposureTimeAbs", "Exposure"))
                 {
-                    if (!acquisition.Create())
-                    {
-                        labelReadResult.Text = "Could not create a temporary Sapera acquisition object.";
-                        return;
-                    }
-
-                    comboBoxTriggerMode.SelectedIndex = (int)ReadTriggerMode(acquisition);
-
-                    acquisition.Destroy();
-                    labelReadResult.Text = "Mapped available CCF trigger values to supported fields.";
+                    numericExposure.Value = ClampToNumericRange(numericExposure, decimalValue);
+                    appliedFields.Add("Exposure");
                 }
+
+                if (TryReadDecimal(values, out decimalValue, "Gain", "GainRaw", "AnalogGain"))
+                {
+                    numericGain.Value = ClampToNumericRange(numericGain, decimalValue);
+                    appliedFields.Add("Gain");
+                }
+
+                if (TryReadInt(values, out intValue, "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount", "Height"))
+                {
+                    numericLength.Value = ClampToNumericRange(numericLength, intValue);
+                    appliedFields.Add("Length");
+                }
+
+                if (TryReadDecimal(values, out decimalValue, "AcquisitionLineRate", "LineRate", "DeviceLineRate", "InternalLineRate", "INT_LINE_TRIGGER_FREQ"))
+                {
+                    numericInternalLineRate.Value = ClampToNumericRange(numericInternalLineRate, decimalValue);
+                    appliedFields.Add("Internal Line Rate");
+                }
+
+                if (TryReadTriggerMode(values, out triggerMode))
+                {
+                    comboBoxTriggerMode.SelectedIndex = (int)triggerMode;
+                    appliedFields.Add("Trigger Mode");
+                }
+
+                labelReadResult.Text = appliedFields.Count > 0
+                    ? "Mapped CCF file values to: " + string.Join(", ", appliedFields.ToArray())
+                    : "No supported CCF fields were found. Connection settings were kept unchanged.";
+                SaveSettings();
             }
             catch (Exception ex)
             {
+                AppLogger.Log("Read CCF to fields failed.", ex);
                 labelReadResult.Text = "Read CCF failed: " + ex.Message;
             }
         }
@@ -121,28 +152,12 @@ namespace CameraCaptureApp.Forms
 
         private void buttonProbeLiveFeatures_Click(object sender, EventArgs e)
         {
-            try
-            {
-                var reportPath = _cameraService.ExportLiveFeatureReport();
-                labelReadResult.Text = "Live feature report exported: " + reportPath;
-            }
-            catch (Exception ex)
-            {
-                labelReadResult.Text = "Probe live features failed: " + ex.Message;
-            }
+            labelReadResult.Text = "Probe Live Features is disabled for stability on this camera path.";
         }
 
         private void buttonProbeAcquisitionParameters_Click(object sender, EventArgs e)
         {
-            try
-            {
-                var reportPath = _cameraService.ExportAcquisitionParameterReport();
-                labelReadResult.Text = "Acquisition parameter report exported: " + reportPath;
-            }
-            catch (Exception ex)
-            {
-                labelReadResult.Text = "Probe acquisition parameters failed: " + ex.Message;
-            }
+            labelReadResult.Text = "Probe Acquisition Parameters is disabled for stability on this camera path.";
         }
 
         private void buttonOk_Click(object sender, EventArgs e)
@@ -176,66 +191,121 @@ namespace CameraCaptureApp.Forms
             Settings.FileNamePattern = textBoxFileNamePattern.Text.Trim();
         }
 
-        private SapAcquisition CreatePreviewAcquisition()
+        private static Dictionary<string, string> LoadCcfValues(string filePath)
         {
-            SapLocation location;
-            if (!string.IsNullOrWhiteSpace(Settings.ServerName))
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var rawLine in File.ReadAllLines(filePath))
             {
-                location = new SapLocation(Settings.ServerName, Settings.ResourceIndex);
-            }
-            else
-            {
-                location = new SapLocation(Settings.ServerIndex, Settings.ResourceIndex);
+                var line = rawLine.Trim();
+                if (line.Length == 0 || line.StartsWith(";") || line.StartsWith("#") || line.StartsWith("["))
+                {
+                    continue;
+                }
+
+                var separatorIndex = line.IndexOf('=');
+                if (separatorIndex <= 0 || separatorIndex >= line.Length - 1)
+                {
+                    continue;
+                }
+
+                var key = line.Substring(0, separatorIndex).Trim();
+                var value = line.Substring(separatorIndex + 1).Trim();
+                if (key.Length > 0)
+                {
+                    values[key] = value;
+                }
             }
 
-            return new SapAcquisition(location, Settings.ConfigFilePath);
+            return values;
         }
 
-        private static TriggerMode ReadTriggerMode(SapAcquisition acquisition)
+        private static decimal ClampToNumericRange(NumericUpDown control, decimal value)
         {
-            if (TryReadEnabled(acquisition, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE))
+            if (value < control.Minimum)
             {
-                return TriggerMode.ExternalTrigger;
+                return control.Minimum;
             }
 
-            if (TryReadEnabled(acquisition, SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE))
+            if (value > control.Maximum)
             {
-                return TriggerMode.ExternalTrigger;
+                return control.Maximum;
             }
 
-            if (TryReadEnabled(acquisition, SapAcquisition.Prm.EXT_TRIGGER_ENABLE))
-            {
-                return TriggerMode.ExternalTrigger;
-            }
-
-            if (TryReadEnabled(acquisition, SapAcquisition.Prm.CAM_TRIGGER_ENABLE))
-            {
-                return TriggerMode.SoftwareTrigger;
-            }
-
-            if (TryReadEnabled(acquisition, SapAcquisition.Prm.LINE_TRIGGER_ENABLE))
-            {
-                return TriggerMode.SoftwareTrigger;
-            }
-
-            return TriggerMode.Continuous;
+            return value;
         }
 
-        private static bool TryReadEnabled(SapAcquisition acquisition, SapAcquisition.Prm parameter)
+        private static bool TryReadDecimal(Dictionary<string, string> values, out decimal result, params string[] keys)
         {
-            try
+            foreach (var value in EnumerateCandidateValues(values, keys))
             {
-                int enabled;
-                return acquisition != null
-                    && acquisition.Initialized
-                    && acquisition.IsParameterAvailable(parameter)
-                    && acquisition.GetParameter(parameter, out enabled)
-                    && enabled != 0;
+                if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out result) ||
+                    decimal.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out result))
+                {
+                    return true;
+                }
             }
-            catch (Exception ex)
+
+            result = 0;
+            return false;
+        }
+
+        private static bool TryReadInt(Dictionary<string, string> values, out int result, params string[] keys)
+        {
+            foreach (var value in EnumerateCandidateValues(values, keys))
             {
-                AppLogger.Log("ReadTriggerMode failed for parameter " + parameter + ".", ex);
-                return false;
+                if (int.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out result) ||
+                    int.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out result))
+                {
+                    return true;
+                }
+            }
+
+            result = 0;
+            return false;
+        }
+
+        private static bool TryReadTriggerMode(Dictionary<string, string> values, out TriggerMode mode)
+        {
+            foreach (var value in EnumerateCandidateValues(values, "TriggerMode", "TriggerSource", "LineTriggerMode", "FrameTriggerMode"))
+            {
+                var normalized = value.Trim().ToLowerInvariant();
+                if (normalized.Contains("line1") || normalized.Contains("input1") || normalized.Contains("external") || normalized.Contains("hardware"))
+                {
+                    mode = TriggerMode.ExternalTrigger;
+                    return true;
+                }
+
+                if (normalized.Contains("software"))
+                {
+                    mode = TriggerMode.SoftwareTrigger;
+                    return true;
+                }
+
+                if (normalized == "off" || normalized.Contains("continuous") || normalized.Contains("free"))
+                {
+                    mode = TriggerMode.Continuous;
+                    return true;
+                }
+            }
+
+            mode = TriggerMode.Continuous;
+            return false;
+        }
+
+        private static IEnumerable<string> EnumerateCandidateValues(Dictionary<string, string> values, params string[] keys)
+        {
+            foreach (var key in keys)
+            {
+                string exactValue;
+                if (values.TryGetValue(key, out exactValue))
+                {
+                    yield return exactValue;
+                }
+
+                foreach (var pair in values.Where(pair => pair.Key.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    yield return pair.Value;
+                }
             }
         }
 

@@ -108,8 +108,6 @@ namespace CameraCaptureApp.Forms
             this.tabPageConnection.Controls.Add(this.checkBoxAutoConnect);
             this.tabPageConnection.Controls.Add(this.buttonBrowseSapera);
             this.tabPageConnection.Controls.Add(this.buttonReadCcfToFields);
-            this.tabPageConnection.Controls.Add(this.buttonProbeLiveFeatures);
-            this.tabPageConnection.Controls.Add(this.buttonProbeAcquisitionParameters);
             this.tabPageConnection.Controls.Add(this.labelReadResult);
             this.tabPageConnection.Location = new System.Drawing.Point(4, 26);
             this.tabPageConnection.Name = "tabPageConnection";
@@ -196,6 +194,7 @@ namespace CameraCaptureApp.Forms
             this.buttonProbeLiveFeatures.TabIndex = 8;
             this.buttonProbeLiveFeatures.Text = "Probe Live Features";
             this.buttonProbeLiveFeatures.UseVisualStyleBackColor = true;
+            this.buttonProbeLiveFeatures.Visible = false;
             this.buttonProbeLiveFeatures.Click += new System.EventHandler(this.buttonProbeLiveFeatures_Click);
             // 
             // buttonProbeAcquisitionParameters
@@ -206,13 +205,14 @@ namespace CameraCaptureApp.Forms
             this.buttonProbeAcquisitionParameters.TabIndex = 8;
             this.buttonProbeAcquisitionParameters.Text = "Probe Acquisition Parameters";
             this.buttonProbeAcquisitionParameters.UseVisualStyleBackColor = true;
+            this.buttonProbeAcquisitionParameters.Visible = false;
             this.buttonProbeAcquisitionParameters.Click += new System.EventHandler(this.buttonProbeAcquisitionParameters_Click);
             // 
             // labelReadResult
             // 
-            this.labelReadResult.Location = new System.Drawing.Point(32, 314);
+            this.labelReadResult.Location = new System.Drawing.Point(32, 278);
             this.labelReadResult.Name = "labelReadResult";
-            this.labelReadResult.Size = new System.Drawing.Size(383, 34);
+            this.labelReadResult.Size = new System.Drawing.Size(683, 58);
             this.labelReadResult.TabIndex = 10;
             this.labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
             // 
