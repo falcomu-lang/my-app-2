@@ -27,6 +27,7 @@ namespace CameraCaptureApp.Services
         private DateTime _lastPreviewFrameUtc;
         private bool _deviceFeaturesAvailable;
         private string _acqDevicePathSummary;
+        private string _acqDeviceProbeSummary;
 
         public CameraService()
         {
@@ -685,7 +686,7 @@ namespace CameraCaptureApp.Services
 
                 if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
                 {
-                    notes.Add("Device feature path unavailable: Gain cannot be written on this connection");
+                    notes.Add("Device feature path unavailable: Gain cannot be written on this connection" + FormatAcqDeviceProbeSummary());
                 }
                 else
                 {
@@ -751,10 +752,12 @@ namespace CameraCaptureApp.Services
         {
             _deviceFeaturesAvailable = false;
             _acqDevicePathSummary = string.Empty;
+            _acqDeviceProbeSummary = string.Empty;
             DisposeAcqDeviceOnly();
 
             foreach (var candidate in BuildCandidateAcqDeviceLocations())
             {
+                AppendAcqDeviceProbe(candidate);
                 var createdDevice = TryBuildAndCreateAcqDevice(candidate);
                 if (createdDevice != null)
                 {
@@ -832,6 +835,15 @@ namespace CameraCaptureApp.Services
         {
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            if (_serverLocation != null && !string.IsNullOrWhiteSpace(_serverLocation.ServerName))
+            {
+                var currentKey = _serverLocation.ServerName + "|" + _serverLocation.ResourceIndex.ToString();
+                if (seen.Add(currentKey))
+                {
+                    yield return _serverLocation;
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName) && _settings.DeviceFeatureResourceIndex >= 0)
             {
                 var configuredLocation = new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex);
@@ -871,6 +883,28 @@ namespace CameraCaptureApp.Services
                     }
                 }
             }
+        }
+
+        private void AppendAcqDeviceProbe(SapLocation location)
+        {
+            if (location == null)
+            {
+                return;
+            }
+
+            if (_acqDeviceProbeSummary.Length > 0)
+            {
+                _acqDeviceProbeSummary += ", ";
+            }
+
+            _acqDeviceProbeSummary += location.ServerName + "#" + location.ResourceIndex;
+        }
+
+        private string FormatAcqDeviceProbeSummary()
+        {
+            return string.IsNullOrWhiteSpace(_acqDeviceProbeSummary)
+                ? " (tried: none)"
+                : " (tried: " + _acqDeviceProbeSummary + ")";
         }
 
         private static IEnumerable<SapLocation> EnumerateDirectAcqDeviceLocations(string serverName)
