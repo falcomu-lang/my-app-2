@@ -117,7 +117,6 @@ namespace CameraCaptureApp.Forms
             this.tabPageConnection.Controls.Add(this.textBoxDeviceFeatureResourceIndex);
             this.tabPageConnection.Controls.Add(this.checkBoxAutoConnect);
             this.tabPageConnection.Controls.Add(this.buttonBrowseSapera);
-            this.tabPageConnection.Controls.Add(this.buttonBrowseDeviceFeatures);
             this.tabPageConnection.Controls.Add(this.buttonReadCcfToFields);
             this.tabPageConnection.Controls.Add(this.labelReadResult);
             this.tabPageConnection.Location = new System.Drawing.Point(4, 26);
@@ -202,16 +201,6 @@ namespace CameraCaptureApp.Forms
             this.buttonBrowseSapera.Text = "Load From Sapera";
             this.buttonBrowseSapera.UseVisualStyleBackColor = true;
             this.buttonBrowseSapera.Click += new System.EventHandler(this.buttonBrowseSapera_Click);
-            // 
-            // buttonBrowseDeviceFeatures
-            // 
-            this.buttonBrowseDeviceFeatures.Location = new System.Drawing.Point(577, 293);
-            this.buttonBrowseDeviceFeatures.Name = "buttonBrowseDeviceFeatures";
-            this.buttonBrowseDeviceFeatures.Size = new System.Drawing.Size(138, 32);
-            this.buttonBrowseDeviceFeatures.TabIndex = 9;
-            this.buttonBrowseDeviceFeatures.Text = "Load Device Features";
-            this.buttonBrowseDeviceFeatures.UseVisualStyleBackColor = true;
-            this.buttonBrowseDeviceFeatures.Click += new System.EventHandler(this.buttonBrowseDeviceFeatures_Click);
             // 
             // buttonReadCcfToFields
             // 

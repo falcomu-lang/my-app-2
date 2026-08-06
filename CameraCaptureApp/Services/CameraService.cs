@@ -686,7 +686,7 @@ namespace CameraCaptureApp.Services
 
                 if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
                 {
-                    notes.Add("Device feature path unavailable: Gain cannot be written on this connection" + FormatAcqDeviceProbeSummary());
+                    notes.Add("Gain path unavailable: Sapera did not expose a writable AcqDevice for this acquisition connection" + FormatAcqDeviceProbeSummary());
                 }
                 else
                 {

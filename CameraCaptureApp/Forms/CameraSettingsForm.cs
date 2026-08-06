@@ -81,22 +81,6 @@ namespace CameraCaptureApp.Forms
             labelReadResult.Text = "Sapera acquisition settings loaded.";
         }
 
-        private void buttonBrowseDeviceFeatures_Click(object sender, EventArgs e)
-        {
-            SaveSettings();
-            _cameraService.ApplySettings(Settings);
-
-            if (!_cameraService.SelectDeviceFeatureSettings(this))
-            {
-                return;
-            }
-
-            Settings = _cameraService.CurrentSettings;
-            textBoxDeviceFeatureServerName.Text = Settings.DeviceFeatureServerName ?? string.Empty;
-            textBoxDeviceFeatureResourceIndex.Text = Settings.DeviceFeatureResourceIndex >= 0 ? Settings.DeviceFeatureResourceIndex.ToString() : string.Empty;
-            labelReadResult.Text = "Sapera device feature settings loaded.";
-        }
-
         private void buttonReadCcfToFields_Click(object sender, EventArgs e)
         {
             SaveSettings();
