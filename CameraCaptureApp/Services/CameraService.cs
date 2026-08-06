@@ -64,7 +64,7 @@ namespace CameraCaptureApp.Services
             _status.CameraName = _settings.CameraName;
             if (_status.IsConnected)
             {
-                ApplyWritableCameraSettings(true);
+                _status.LastMessage = "Camera settings saved. Acquisition parameters are applied on the next reconnect.";
                 return;
             }
 
@@ -629,8 +629,6 @@ namespace CameraCaptureApp.Services
                 throw new InvalidOperationException("Sapera buffer or transfer objects could not be created.");
             }
 
-            ApplyWritableCameraSettings(true);
-
             _status.IsConnected = true;
             _status.HasSignal = _acquisition.SignalStatus != SapAcquisition.AcqSignalStatus.None;
             _status.CameraName = _serverLocation.ServerName;
@@ -655,7 +653,6 @@ namespace CameraCaptureApp.Services
         private void ApplyWritableCameraSettings(bool includeDeviceFeatures)
         {
             var applied = false;
-            var acquisitionLengthApplied = false;
             var notes = new System.Collections.Generic.List<string>();
 
             if (TrySetInternalLineRate(notes))
@@ -671,7 +668,6 @@ namespace CameraCaptureApp.Services
             if (TrySetLengthParameters(notes))
             {
                 _status.FrameHeight = _settings.Length;
-                acquisitionLengthApplied = true;
                 applied = true;
             }
 
@@ -682,47 +678,7 @@ namespace CameraCaptureApp.Services
 
             if (includeDeviceFeatures)
             {
-                EnsureAcqDeviceAvailable();
-
-                if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
-                {
-                    notes.Add("Gain path unavailable: Sapera did not expose a writable AcqDevice for this acquisition connection" + FormatAcqDeviceProbeSummary());
-                }
-                else
-                {
-                    if (TrySetNumericFeature(_settings.ExposureTime, notes, "ExposureTime", "ExposureTimeAbs", "Exposure"))
-                    {
-                        applied = true;
-                    }
-
-                    var gainApplied = false;
-                    if (TrySetNumericFeature(_settings.Gain, notes, "Gain", "GainRaw", "AnalogGain"))
-                    {
-                        gainApplied = true;
-                        applied = true;
-                    }
-
-                    if (!gainApplied && TrySetNumericFeature(_settings.Gain, notes, "GainAbs", "SensorGain", "DigitalGain", "AllGain", "MasterGain"))
-                    {
-                        applied = true;
-                    }
-
-                    if (!acquisitionLengthApplied && TrySetIntegralFeature(_settings.Length, notes, "Height", "AcquisitionLineCount", "FrameLength", "ImageHeight", "ROIHeight", "LineCount"))
-                    {
-                        _status.FrameHeight = _settings.Length;
-                        applied = true;
-                    }
-
-                    if (ApplyTriggerMode(notes))
-                    {
-                        applied = true;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(_acqDevicePathSummary))
-                    {
-                        notes.Add("Gain path " + _acqDevicePathSummary);
-                    }
-                }
+                notes.Add("Gain not applied: Sapera AcqDevice path is not available for this acquisition connection.");
             }
 
             if (notes.Count > 0)
