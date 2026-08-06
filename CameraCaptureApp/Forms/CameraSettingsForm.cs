@@ -47,6 +47,8 @@ namespace CameraCaptureApp.Forms
             textBoxServerName.Text = Settings.ServerName;
             textBoxServerIndex.Text = Settings.ServerIndex >= 0 ? Settings.ServerIndex.ToString() : string.Empty;
             textBoxResourceIndex.Text = Settings.ResourceIndex.ToString();
+            textBoxDeviceFeatureServerName.Text = Settings.DeviceFeatureServerName ?? string.Empty;
+            textBoxDeviceFeatureResourceIndex.Text = Settings.DeviceFeatureResourceIndex >= 0 ? Settings.DeviceFeatureResourceIndex.ToString() : string.Empty;
             numericExposure.Value = Settings.ExposureTime;
             numericGain.Value = Settings.Gain;
             numericLength.Value = Settings.Length > 0 ? Settings.Length : 1;
@@ -77,6 +79,22 @@ namespace CameraCaptureApp.Forms
             textBoxResourceIndex.Text = Settings.ResourceIndex.ToString();
             textBoxCameraName.Text = Settings.CameraName;
             labelReadResult.Text = "Sapera acquisition settings loaded.";
+        }
+
+        private void buttonBrowseDeviceFeatures_Click(object sender, EventArgs e)
+        {
+            SaveSettings();
+            _cameraService.ApplySettings(Settings);
+
+            if (!_cameraService.SelectDeviceFeatureSettings(this))
+            {
+                return;
+            }
+
+            Settings = _cameraService.CurrentSettings;
+            textBoxDeviceFeatureServerName.Text = Settings.DeviceFeatureServerName ?? string.Empty;
+            textBoxDeviceFeatureResourceIndex.Text = Settings.DeviceFeatureResourceIndex >= 0 ? Settings.DeviceFeatureResourceIndex.ToString() : string.Empty;
+            labelReadResult.Text = "Sapera device feature settings loaded.";
         }
 
         private void buttonReadCcfToFields_Click(object sender, EventArgs e)
@@ -196,6 +214,8 @@ namespace CameraCaptureApp.Forms
             Settings.ServerName = textBoxServerName.Text.Trim();
             Settings.ServerIndex = ParseInt(textBoxServerIndex.Text, Settings.ServerIndex);
             Settings.ResourceIndex = ParseInt(textBoxResourceIndex.Text, Settings.ResourceIndex);
+            Settings.DeviceFeatureServerName = textBoxDeviceFeatureServerName.Text.Trim();
+            Settings.DeviceFeatureResourceIndex = ParseInt(textBoxDeviceFeatureResourceIndex.Text, Settings.DeviceFeatureResourceIndex);
             Settings.ExposureTime = numericExposure.Value;
             Settings.Gain = numericGain.Value;
             Settings.Length = decimal.ToInt32(numericLength.Value);

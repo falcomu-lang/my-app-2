@@ -13,8 +13,11 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.TextBox textBoxServerName;
         private System.Windows.Forms.TextBox textBoxServerIndex;
         private System.Windows.Forms.TextBox textBoxResourceIndex;
+        private System.Windows.Forms.TextBox textBoxDeviceFeatureServerName;
+        private System.Windows.Forms.TextBox textBoxDeviceFeatureResourceIndex;
         private System.Windows.Forms.CheckBox checkBoxAutoConnect;
         private System.Windows.Forms.Button buttonBrowseSapera;
+        private System.Windows.Forms.Button buttonBrowseDeviceFeatures;
         private System.Windows.Forms.Button buttonReadCcfToFields;
         private System.Windows.Forms.Button buttonProbeLiveFeatures;
         private System.Windows.Forms.Button buttonProbeAcquisitionParameters;
@@ -56,6 +59,9 @@ namespace CameraCaptureApp.Forms
             this.textBoxServerName = new System.Windows.Forms.TextBox();
             this.textBoxConfigFile = new System.Windows.Forms.TextBox();
             this.textBoxCameraName = new System.Windows.Forms.TextBox();
+            this.textBoxDeviceFeatureServerName = new System.Windows.Forms.TextBox();
+            this.textBoxDeviceFeatureResourceIndex = new System.Windows.Forms.TextBox();
+            this.buttonBrowseDeviceFeatures = new System.Windows.Forms.Button();
             this.tabPageImage = new System.Windows.Forms.TabPage();
             this.numericInternalLineRate = new System.Windows.Forms.NumericUpDown();
             this.numericLength = new System.Windows.Forms.NumericUpDown();
@@ -105,8 +111,13 @@ namespace CameraCaptureApp.Forms
             this.tabPageConnection.Controls.Add(this.textBoxServerIndex);
             this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(196, 217), Text = "Resource Index" });
             this.tabPageConnection.Controls.Add(this.textBoxResourceIndex);
+            this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 276), Text = "Device Feature Server" });
+            this.tabPageConnection.Controls.Add(this.textBoxDeviceFeatureServerName);
+            this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(430, 276), Text = "Feature Resource" });
+            this.tabPageConnection.Controls.Add(this.textBoxDeviceFeatureResourceIndex);
             this.tabPageConnection.Controls.Add(this.checkBoxAutoConnect);
             this.tabPageConnection.Controls.Add(this.buttonBrowseSapera);
+            this.tabPageConnection.Controls.Add(this.buttonBrowseDeviceFeatures);
             this.tabPageConnection.Controls.Add(this.buttonReadCcfToFields);
             this.tabPageConnection.Controls.Add(this.labelReadResult);
             this.tabPageConnection.Location = new System.Drawing.Point(4, 26);
@@ -156,13 +167,29 @@ namespace CameraCaptureApp.Forms
             this.textBoxResourceIndex.Size = new System.Drawing.Size(120, 23);
             this.textBoxResourceIndex.TabIndex = 4;
             // 
+            // textBoxDeviceFeatureServerName
+            // 
+            this.textBoxDeviceFeatureServerName.Location = new System.Drawing.Point(35, 298);
+            this.textBoxDeviceFeatureServerName.Name = "textBoxDeviceFeatureServerName";
+            this.textBoxDeviceFeatureServerName.ReadOnly = true;
+            this.textBoxDeviceFeatureServerName.Size = new System.Drawing.Size(360, 23);
+            this.textBoxDeviceFeatureServerName.TabIndex = 5;
+            // 
+            // textBoxDeviceFeatureResourceIndex
+            // 
+            this.textBoxDeviceFeatureResourceIndex.Location = new System.Drawing.Point(433, 298);
+            this.textBoxDeviceFeatureResourceIndex.Name = "textBoxDeviceFeatureResourceIndex";
+            this.textBoxDeviceFeatureResourceIndex.ReadOnly = true;
+            this.textBoxDeviceFeatureResourceIndex.Size = new System.Drawing.Size(120, 23);
+            this.textBoxDeviceFeatureResourceIndex.TabIndex = 6;
+            // 
             // checkBoxAutoConnect
             // 
             this.checkBoxAutoConnect.AutoSize = true;
-            this.checkBoxAutoConnect.Location = new System.Drawing.Point(35, 276);
+            this.checkBoxAutoConnect.Location = new System.Drawing.Point(35, 326);
             this.checkBoxAutoConnect.Name = "checkBoxAutoConnect";
             this.checkBoxAutoConnect.Size = new System.Drawing.Size(143, 20);
-            this.checkBoxAutoConnect.TabIndex = 5;
+            this.checkBoxAutoConnect.TabIndex = 7;
             this.checkBoxAutoConnect.Text = "Auto Connect at Start";
             this.checkBoxAutoConnect.UseVisualStyleBackColor = true;
             // 
@@ -171,17 +198,27 @@ namespace CameraCaptureApp.Forms
             this.buttonBrowseSapera.Location = new System.Drawing.Point(430, 235);
             this.buttonBrowseSapera.Name = "buttonBrowseSapera";
             this.buttonBrowseSapera.Size = new System.Drawing.Size(138, 32);
-            this.buttonBrowseSapera.TabIndex = 6;
+            this.buttonBrowseSapera.TabIndex = 8;
             this.buttonBrowseSapera.Text = "Load From Sapera";
             this.buttonBrowseSapera.UseVisualStyleBackColor = true;
             this.buttonBrowseSapera.Click += new System.EventHandler(this.buttonBrowseSapera_Click);
+            // 
+            // buttonBrowseDeviceFeatures
+            // 
+            this.buttonBrowseDeviceFeatures.Location = new System.Drawing.Point(577, 293);
+            this.buttonBrowseDeviceFeatures.Name = "buttonBrowseDeviceFeatures";
+            this.buttonBrowseDeviceFeatures.Size = new System.Drawing.Size(138, 32);
+            this.buttonBrowseDeviceFeatures.TabIndex = 9;
+            this.buttonBrowseDeviceFeatures.Text = "Load Device Features";
+            this.buttonBrowseDeviceFeatures.UseVisualStyleBackColor = true;
+            this.buttonBrowseDeviceFeatures.Click += new System.EventHandler(this.buttonBrowseDeviceFeatures_Click);
             // 
             // buttonReadCcfToFields
             // 
             this.buttonReadCcfToFields.Location = new System.Drawing.Point(577, 235);
             this.buttonReadCcfToFields.Name = "buttonReadCcfToFields";
             this.buttonReadCcfToFields.Size = new System.Drawing.Size(138, 32);
-            this.buttonReadCcfToFields.TabIndex = 7;
+            this.buttonReadCcfToFields.TabIndex = 10;
             this.buttonReadCcfToFields.Text = "Read CCF To Fields";
             this.buttonReadCcfToFields.UseVisualStyleBackColor = true;
             this.buttonReadCcfToFields.Click += new System.EventHandler(this.buttonReadCcfToFields_Click);

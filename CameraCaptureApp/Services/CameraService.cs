@@ -187,6 +187,26 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        public bool SelectDeviceFeatureSettings(System.Windows.Forms.IWin32Window owner)
+        {
+            using (var dialog = new AcqConfigDlg(null, string.Empty, AcqConfigDlg.ServerCategory.ServerAcqDevice))
+            {
+                if (dialog.ShowDialog(owner) != System.Windows.Forms.DialogResult.OK)
+                {
+                    return false;
+                }
+
+                var location = dialog.ServerLocation;
+                _settings.DeviceFeatureServerName = location.ServerName;
+                _settings.DeviceFeatureResourceIndex = location.ResourceIndex;
+                _status.LastMessage = "Device feature settings updated from Sapera: " + location.ServerName + "#" + location.ResourceIndex;
+                DisposeAcqDeviceOnly();
+                _deviceFeaturesAvailable = false;
+                _acqDevicePathSummary = string.Empty;
+                return true;
+            }
+        }
+
         public string ExportLiveFeatureReport()
         {
             if (!_status.IsConnected)
@@ -811,6 +831,16 @@ namespace CameraCaptureApp.Services
         private IEnumerable<SapLocation> BuildCandidateAcqDeviceLocations()
         {
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (!string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName) && _settings.DeviceFeatureResourceIndex >= 0)
+            {
+                var configuredLocation = new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex);
+                var configuredKey = configuredLocation.ServerName + "|" + configuredLocation.ResourceIndex.ToString();
+                if (seen.Add(configuredKey))
+                {
+                    yield return configuredLocation;
+                }
+            }
 
             foreach (var location in EnumerateDirectAcqDeviceLocations(_serverLocation.ServerName))
             {

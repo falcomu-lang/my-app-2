@@ -12,6 +12,10 @@ namespace CameraCaptureApp.Models
 
         public int ResourceIndex { get; set; }
 
+        public string DeviceFeatureServerName { get; set; }
+
+        public int DeviceFeatureResourceIndex { get; set; }
+
         public int Width { get; set; }
 
         public int Height { get; set; }
@@ -47,6 +51,8 @@ namespace CameraCaptureApp.Models
                 ServerName = string.Empty,
                 ServerIndex = -1,
                 ResourceIndex = 0,
+                DeviceFeatureServerName = string.Empty,
+                DeviceFeatureResourceIndex = -1,
                 Width = 1280,
                 Height = 720,
                 Length = 720,

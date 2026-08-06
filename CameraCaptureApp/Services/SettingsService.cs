@@ -33,6 +33,8 @@ namespace CameraCaptureApp.Services
             settings.ServerName = GetString(values, "ServerName", settings.ServerName);
             settings.ServerIndex = GetInt(values, "ServerIndex", settings.ServerIndex);
             settings.ResourceIndex = GetInt(values, "ResourceIndex", settings.ResourceIndex);
+            settings.DeviceFeatureServerName = GetString(values, "DeviceFeatureServerName", settings.DeviceFeatureServerName);
+            settings.DeviceFeatureResourceIndex = GetInt(values, "DeviceFeatureResourceIndex", settings.DeviceFeatureResourceIndex);
             settings.Width = GetInt(values, "Width", settings.Width);
             settings.Height = GetInt(values, "Height", settings.Height);
             settings.Length = GetInt(values, "Length", settings.Length);
@@ -61,6 +63,8 @@ namespace CameraCaptureApp.Services
                 "ServerName=" + settings.ServerName,
                 "ServerIndex=" + settings.ServerIndex.ToString(CultureInfo.InvariantCulture),
                 "ResourceIndex=" + settings.ResourceIndex.ToString(CultureInfo.InvariantCulture),
+                "DeviceFeatureServerName=" + settings.DeviceFeatureServerName,
+                "DeviceFeatureResourceIndex=" + settings.DeviceFeatureResourceIndex.ToString(CultureInfo.InvariantCulture),
                 "Width=" + settings.Width.ToString(CultureInfo.InvariantCulture),
                 "Height=" + settings.Height.ToString(CultureInfo.InvariantCulture),
                 "Length=" + settings.Length.ToString(CultureInfo.InvariantCulture),
