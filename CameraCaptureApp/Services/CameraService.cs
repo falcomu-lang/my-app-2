@@ -1174,14 +1174,13 @@ namespace CameraCaptureApp.Services
 
             foreach (var featureName in featureNames)
             {
-                if (!CanWriteDeviceFeature(featureName))
+                if (!_acqDevice.IsFeatureAvailable(featureName))
                 {
                     continue;
                 }
 
-                if (_acqDevice.SetFeatureValue(featureName, value))
+                if (TrySetFeatureValue(featureName, value))
                 {
-                    _acqDevice.UpdateFeaturesToDevice();
                     appliedFeature = featureName;
                     return true;
                 }
@@ -1200,14 +1199,13 @@ namespace CameraCaptureApp.Services
 
             foreach (var featureName in featureNames)
             {
-                if (!CanWriteDeviceFeature(featureName))
+                if (!_acqDevice.IsFeatureAvailable(featureName))
                 {
                     continue;
                 }
 
-                if (_acqDevice.SetFeatureValue(featureName, value))
+                if (TrySetFeatureValue(featureName, value))
                 {
-                    _acqDevice.UpdateFeaturesToDevice();
                     appliedFeature = featureName;
                     return true;
                 }
@@ -1296,11 +1294,61 @@ namespace CameraCaptureApp.Services
                     continue;
                 }
 
+                if (TrySetFeatureValue(featureName, value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TrySetFeatureValue(string featureName, double value)
+        {
+            try
+            {
                 if (_acqDevice.SetFeatureValue(featureName, value))
                 {
                     _acqDevice.UpdateFeaturesToDevice();
                     return true;
                 }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private bool TrySetFeatureValue(string featureName, int value)
+        {
+            try
+            {
+                if (_acqDevice.SetFeatureValue(featureName, value))
+                {
+                    _acqDevice.UpdateFeaturesToDevice();
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private bool TrySetFeatureValue(string featureName, string value)
+        {
+            try
+            {
+                if (_acqDevice.SetFeatureValue(featureName, value))
+                {
+                    _acqDevice.UpdateFeaturesToDevice();
+                    return true;
+                }
+            }
+            catch
+            {
             }
 
             return false;
