@@ -1327,15 +1327,37 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var exposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
-            if (TrySetAcquisitionIntParameter(
-                notes,
-                exposureValue,
-                SapAcquisition.Prm.LINE_INTEGRATE_DURATION))
+            var enabled = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 1);
+            var methodApplied = TrySetLineIntegrateMethod();
+            var durationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, exposureValue);
+
+            notes.Add(
+                "LineIntegrate exposure "
+                + "enable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE)
+                + " method=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_METHOD)
+                + " requested=" + exposureValue
+                + " duration=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_DURATION));
+
+            if (enabled || methodApplied || durationApplied)
             {
                 return true;
             }
 
-            notes.Add("LINE_INTEGRATE_DURATION not supported");
+            notes.Add("LineIntegrate exposure parameters not supported");
+            return false;
+        }
+
+        private bool TrySetLineIntegrateMethod()
+        {
+            var preferredMethods = new[] { 0x00000004, 0x00000008, 0x00000200, 0x00000001, 0x00000002, 0x00000080 };
+            foreach (var method in preferredMethods)
+            {
+                if (TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_METHOD, method))
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
 
@@ -1359,12 +1381,14 @@ namespace CameraCaptureApp.Services
             {
                 case TriggerMode.Continuous:
                     var useInternalLineTrigger = _settings.InternalLineRate > 0;
+                    var useLineIntegrate = _settings.ExposureTime > 0;
                     if (TrySetAcquisitionBoolPattern(
                         notes,
                         new[]
                         {
                             new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, useLineIntegrate ? 1 : 0),
+                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, useLineIntegrate ? 1 : 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0),
@@ -1538,17 +1562,35 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        private bool TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm parameter, int value)
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return false;
+            }
+
+            try
+            {
+                return _acquisition.SetParameter(parameter, value, true);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private bool TrySetAcquisitionBoolPattern(System.Collections.Generic.List<string> notes, ParameterWrite[] writes)
         {
+            var applied = false;
             foreach (var write in writes)
             {
                 if (TrySetAcquisitionIntParameter(notes, write.Value, write.Parameter))
                 {
-                    return true;
+                    applied = true;
                 }
             }
 
-            return false;
+            return applied;
         }
 
         private bool TrySetDeviceFeature(string[] featureNames, string value)
