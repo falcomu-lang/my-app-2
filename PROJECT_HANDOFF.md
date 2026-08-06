@@ -2,98 +2,105 @@
 
 ## Overview
 
-This repository contains a WinForms-based line-scan camera application scaffold targeting `.NET Framework 4.7.2`.
-The code is organized so the UI remains editable with the WinForms Designer while camera logic, settings logic, and viewer behavior stay separated from `MainForm`.
+This repository contains a WinForms line-scan camera capture application targeting `.NET Framework 4.7.2` and `x64`.
+The project is designed so the WinForms UI remains editable by a person in the Designer, while camera control, settings persistence, and image viewing logic are separated from `MainForm`.
 
-The project is now beyond a pure UI scaffold:
-
-- the main dashboard is in place
-- the custom large-image viewer is working
-- Sapera SDK objects can connect / grab / snap
-- preview frames are now pushed from `CameraService` into the viewer
-- camera settings now persist to `settings.ini`
+Repository: `https://github.com/falcomu-lang/my-app-2`
 
 ## Current State
 
-- Repository branch: `main`
-- Main solution: `CameraCaptureApp.sln`
+- Branch: `main`
+- Solution: `CameraCaptureApp.sln`
 - Main project: `CameraCaptureApp/CameraCaptureApp.csproj`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
-- Current date context: `2026-08-04`
-- Latest pushed commit before this handoff update: `2b56f1f Add Sapera preview pipeline and ini settings persistence`
-- Latest verified local build command:
+- Current handoff date: `2026-08-06`
+- Latest pushed commit before this handoff update: `13111e1 Avoid locked Sapera parameter writes`
+
+Latest verified local build command:
 
 ```powershell
-& 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe' CameraCaptureApp.sln /t:Build /p:Configuration=Debug
+& "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\amd64\MSBuild.exe" ".\CameraCaptureApp.sln" /t:Build /p:Configuration=Debug
 ```
+
+Latest local build result: `0 warning / 0 error`
 
 ## What Is Ready
 
-- Main WinForms application structure under `CameraCaptureApp/`
-- `MainForm` split from services and models
-- `CameraDisplayControl` with:
-  - async image loading
-  - zoom with mouse wheel
-  - drag-to-pan
-  - large-image viewing behavior where zoom can exceed the initial fit rectangle
-  - double-buffered render surface to reduce flicker
-- `CameraSettingsForm` for editable camera settings
-- `CameraService` Sapera integration using:
+- Main WinForms application layout for a `1280 x 720` program window.
+- `MainForm` hosts the viewer at runtime to avoid Designer load issues.
+- `CameraSettingsForm` remains Designer-editable.
+- `settings.ini` persistence is implemented and generated beside the built executable.
+- Sapera connection flow is present through:
   - `SapAcquisition`
   - `SapBufferWithTrash`
   - `SapAcqToBuf`
   - `SignalNotify`
   - `XferNotify`
-- Preview event pipeline:
-  - `CameraService` raises `FrameReady`
-  - `MainForm` receives preview frames without blocking the UI thread
-  - preview updates are throttled to about `5 Hz`
-- Persistent settings storage:
-  - stored as `settings.ini`
-  - loaded on startup
-  - saved when the settings dialog is confirmed
-- Sapera acquisition dialog files copied locally under `CameraCaptureApp/Sapera/`
+- Manual connection, disconnection, preview, stop, and snap capture actions exist.
+- Preview frames are throttled to about `5 Hz` to keep the UI responsive.
+- Large image loading and viewing supports:
+  - very large image dimensions
+  - async loading
+  - zoom and pan
+  - reduced flicker
+  - tiled / pyramid-style rendering work from earlier iterations
+- Snapshot save on manual capture has been added.
 
-## Important Implementation Notes
+## Current Camera Parameter Status
 
-- The custom viewer is not placed directly in the WinForms Designer tree for `MainForm`.
-  - To avoid Designer failures, `MainForm` hosts a plain `Panel` in Designer and creates `CameraDisplayControl` at runtime.
-- Sapera SDK is currently referenced from a local DLL path:
-  - `..\..\原廠攝影機取像程式\GrabDemo\CSharp\bin\Debug\DALSA.SaperaLT.SapClassBasic.dll`
-- This means GitHub alone is still not enough for a clean build on another machine unless Sapera is installed there too, or the dependency strategy is changed.
-- `settings.ini` is written beside the built executable.
-  - In a local Debug run, this means `CameraCaptureApp\bin\Debug\settings.ini`.
-- The current Sapera preview conversion path reads buffer data into a managed byte array and converts it into a `Bitmap`.
-  - It currently assumes common `Mono8` or `24bpp` style preview output.
-  - This is a first working bridge, not the final line-scan-specific preview design.
+The current stable behavior prioritizes avoiding Sapera error popups and keeping connection/preview stable.
 
-## What Is Not Finished
+- `Exposure Time`: acquisition-side writes have previously shown successful readback, but current stable flow applies acquisition parameters during reconnect rather than while already connected.
+- `Internal Line Rate`: acquisition-side writes have previously shown successful readback for:
+  - `INT_LINE_TRIGGER_ENABLE`
+  - `INT_LINE_TRIGGER_FREQ`
+- `Length`: some acquisition length paths work depending on camera / CCF state, but `Acquisition length parameter not supported` may still appear for unsupported Sapera parameters.
+- `Gain`: not currently working through this application.
+  - The attempted `SapAcqDevice` path is not available for the current acquisition connection.
+  - Sapera reported errors such as `CorAcqDeviceGetHandle not implemented()` when probing that path.
+  - The current stable version disables the risky `SapAcqDevice` probing to avoid error popups.
 
-- The true line-scan accumulation pipeline is not implemented yet
-- Very large continuous image stitching / append strategy is not implemented yet
-- No save-image/export workflow yet
-- The current preview bridge may still need adjustment for the actual camera pixel format or pitch behavior
-- Some older UI text or source strings may still contain legacy encoding damage, even if not all of it is visible in the running UI
-- No tests
-- No installer or deployment packaging
+## Important Sapera Notes
 
-## Recommended Next Steps
+- Parameters can become locked after buffer / transfer objects are created.
+- To avoid `CorAcqSetPrmEx parameters locked()`, acquisition parameters are currently applied early in the connection flow.
+- Already-connected `Apply` currently saves settings and expects reconnect for hardware application.
+- The current Sapera DLL reference still points to a local SDK/demo DLL path, so another computer must have a compatible Sapera SDK/runtime setup.
 
-1. Replace the current local Sapera DLL dependency with a more portable setup if redistribution is allowed.
-2. Validate the preview conversion against the actual line-scan camera output format.
-3. Design the real line-scan accumulation model:
-   - line buffer
-   - long-image growth
-   - update throttling
-   - memory strategy
-4. Add save and export flow for captured images.
-5. Clean any remaining UI labels and source strings that came from earlier encoding-damaged edits.
-6. Decide whether `settings.ini` should be checked into source as a sample template or stay runtime-generated only.
+## Known Issues
+
+- `Gain` cannot currently be written from the app.
+- `Exposure Time` and `Internal Line Rate` need a cleaner, confirmed user workflow for when values are written:
+  - before connect
+  - during reconnect
+  - while preview is stopped
+- Online parameter changes are intentionally conservative right now to avoid locked-parameter errors.
+- Some Sapera official dialogs may still show SDK-level message boxes if invalid paths are probed.
+- No automated tests.
+- No installer or deployment package.
+
+## Next Version Goals
+
+The next version should focus on reliable camera parameter control:
+
+1. Make `Exposure Time` controllable from the app with a clear apply timing.
+2. Make `Gain` controllable from the app by finding the same parameter path used by the official camera settings tool.
+3. Make `Internal Line Rate` controllable and verify that it affects line-scan acquisition behavior.
+
+Recommended approach for the next version:
+
+- Do not re-enable broad `SapAcqDevice` probing until the exact official feature path is known.
+- Investigate how the official Sapera / camera configuration window obtains the writable `Gain` handle.
+- Add readback display for every parameter write that remains enabled.
+- Consider a two-mode apply workflow:
+  - `Save Only`
+  - `Apply On Reconnect`
+- Keep online writes disabled or guarded until the lock behavior is fully mapped.
 
 ## Notes For The Next Person
 
-- If WinForms Designer reports it cannot load `CameraDisplayControl`, check whether someone reintroduced the control directly into the Designer file.
-- The large-image viewer behaves like a real zoom/pan viewer rather than always fitting the image inside the original frame.
-- The project has been verified to build locally on `2026-08-04`.
-- Portability to another machine is still mainly blocked by the Sapera dependency path and target machine SDK availability.
+- If WinForms Designer fails, check whether `CameraDisplayControl` was inserted directly into Designer files.
+- Avoid writing Sapera acquisition parameters after transfer/buffer creation unless the transfer is safely stopped and the parameter is confirmed writable.
+- Avoid calling `SapAcqDevice` creation paths blindly; some paths trigger official Sapera message boxes.
+- Keep the Camera Settings UI clean. Temporary diagnostic fields should not remain in the layout if they block normal use.
