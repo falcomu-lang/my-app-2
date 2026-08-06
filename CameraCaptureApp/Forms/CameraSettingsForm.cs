@@ -180,6 +180,20 @@ namespace CameraCaptureApp.Forms
             }
         }
 
+        private void buttonLoadDeviceFeatures_Click(object sender, EventArgs e)
+        {
+            SaveSettings();
+            _cameraService.ApplySettings(Settings);
+
+            if (!_cameraService.SelectDeviceFeatureSettings(this))
+            {
+                return;
+            }
+
+            Settings = _cameraService.CurrentSettings;
+            labelReadResult.Text = "Sapera device feature settings loaded. Use Live Features after connecting.";
+        }
+
         private void buttonProbeAcquisitionParameters_Click(object sender, EventArgs e)
         {
             try

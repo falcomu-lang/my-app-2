@@ -852,7 +852,7 @@ namespace CameraCaptureApp.Services
 
             if (_acqDevice == null)
             {
-                TryInitializeAcqDevice();
+                TryInitializeConfiguredAcqDevice();
             }
 
             if (_deviceFeaturesAvailable)
@@ -868,6 +868,33 @@ namespace CameraCaptureApp.Services
                     _acqDevice = null;
                 }
             }
+        }
+
+        private void TryInitializeConfiguredAcqDevice()
+        {
+            _deviceFeaturesAvailable = false;
+            _acqDevicePathSummary = string.Empty;
+            _acqDeviceProbeSummary = string.Empty;
+            DisposeAcqDeviceOnly();
+
+            if (string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName) || _settings.DeviceFeatureResourceIndex < 0)
+            {
+                _status.LastMessage = "Device feature path is not selected. Click Load Features in Camera Settings first.";
+                return;
+            }
+
+            var configuredLocation = new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex);
+            AppendAcqDeviceProbe(configuredLocation);
+            var createdDevice = TryBuildAndCreateConfiguredAcqDevice(configuredLocation);
+            if (createdDevice == null)
+            {
+                _status.LastMessage = "SapAcqDevice is not available for selected feature path" + FormatAcqDeviceProbeSummary();
+                return;
+            }
+
+            _acqDevice = createdDevice;
+            _deviceFeaturesAvailable = true;
+            _acqDevicePathSummary = configuredLocation.ServerName + "#" + configuredLocation.ResourceIndex;
         }
 
         private bool TryCreateAcqDevice()
@@ -1022,6 +1049,36 @@ namespace CameraCaptureApp.Services
                 catch
                 {
                 }
+            }
+
+            return null;
+        }
+
+        private SapAcqDevice TryBuildAndCreateConfiguredAcqDevice(SapLocation location)
+        {
+            var device = TryBuildAcqDevice(() => new SapAcqDevice(location, _configFileName));
+            if (device == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                if (device.Initialized || device.Create())
+                {
+                    return device;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                device.Dispose();
+            }
+            catch
+            {
             }
 
             return null;
