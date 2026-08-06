@@ -384,15 +384,24 @@ namespace CameraCaptureApp.Services
 
             foreach (SapAcquisition.Prm parameter in Enum.GetValues(typeof(SapAcquisition.Prm)))
             {
-                if (!_acquisition.IsParameterAvailable(parameter))
+                try
                 {
-                    continue;
-                }
+                    if (!_acquisition.IsParameterAvailable(parameter))
+                    {
+                        continue;
+                    }
 
-                reportBuilder.AppendLine("[Parameter] " + parameter);
-                reportBuilder.AppendLine("Type=" + SapAcquisition.GetParameterType(parameter));
-                reportBuilder.AppendLine("Value=" + ReadAcquisitionParameterValue(parameter));
-                reportBuilder.AppendLine();
+                    reportBuilder.AppendLine("[Parameter] " + parameter);
+                    reportBuilder.AppendLine("Type=" + SafeGetAcquisitionParameterType(parameter));
+                    reportBuilder.AppendLine("Value=" + ReadAcquisitionParameterValue(parameter));
+                    reportBuilder.AppendLine();
+                }
+                catch (Exception ex)
+                {
+                    reportBuilder.AppendLine("[Parameter] " + parameter);
+                    reportBuilder.AppendLine("Value=<error: " + ex.Message + ">");
+                    reportBuilder.AppendLine();
+                }
             }
 
             var filePath = Path.Combine(
@@ -1776,6 +1785,18 @@ namespace CameraCaptureApp.Services
             return "<unreadable>";
         }
 
+        private static string SafeGetAcquisitionParameterType(SapAcquisition.Prm parameter)
+        {
+            try
+            {
+                return SapAcquisition.GetParameterType(parameter).ToString();
+            }
+            catch (Exception ex)
+            {
+                return "<error: " + ex.Message + ">";
+            }
+        }
+
         private static bool IsLineScanCandidateFeature(string name, SapFeature feature)
         {
             var searchable = (
@@ -1859,8 +1880,7 @@ namespace CameraCaptureApp.Services
                         string stringValue;
                         return _acquisition.GetParameter(parameter, out stringValue) ? SafeString(stringValue) : "<unreadable>";
                     default:
-                        SapAcquisition.Val value;
-                        return _acquisition.GetParameter(parameter, out value) ? value.ToString() : "<unreadable>";
+                        return "<unsupported type: " + parameterType + ">";
                 }
             }
             catch (Exception ex)
