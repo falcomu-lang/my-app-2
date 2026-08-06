@@ -836,19 +836,6 @@ namespace CameraCaptureApp.Services
                     }
                 }
             }
-
-            for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
-            {
-                var serverName = SapManager.GetServerName(serverIndex);
-                foreach (var location in EnumerateDirectAcqDeviceLocations(serverName))
-                {
-                    var key = location.ServerName + "|" + location.ResourceIndex.ToString();
-                    if (seen.Add(key))
-                    {
-                        yield return location;
-                    }
-                }
-            }
         }
 
         private static IEnumerable<SapLocation> EnumerateDirectAcqDeviceLocations(string serverName)
@@ -1326,9 +1313,11 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
+            SapFeature feature = null;
             try
             {
-                var feature = new SapFeature();
+                feature = new SapFeature(_acqDevice.Location);
+                feature.Create();
                 if (_acqDevice.GetFeatureInfo(featureName, feature))
                 {
                     var accessMode = feature.DataAccessMode.ToString();
@@ -1340,6 +1329,30 @@ namespace CameraCaptureApp.Services
             }
             catch
             {
+            }
+            finally
+            {
+                if (feature != null)
+                {
+                    try
+                    {
+                        if (feature.Initialized)
+                        {
+                            feature.Destroy();
+                        }
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        feature.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
             }
 
             return true;
