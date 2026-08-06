@@ -64,17 +64,23 @@ namespace CameraCaptureApp.Services
             _status.CameraName = _settings.CameraName;
             if (_status.IsConnected)
             {
-                _status.LastMessage = "Camera settings saved. Acquisition parameters are applied on the next reconnect.";
+                _status.LastMessage = "Camera settings saved only. Disconnect first; acquisition parameters will be written on the next connect.";
                 return;
             }
 
             _status.LastMessage = HasStoredConnectionSettings()
-                ? "Camera settings saved locally. They will be applied on the next connect."
+                ? "Camera settings saved locally. Acquisition parameters will be written on the next connect."
                 : "Camera settings saved locally. Select connection settings before applying to hardware.";
         }
 
         public bool Connect()
         {
+            if (_status.IsConnected)
+            {
+                _status.LastMessage = "Camera is still online. Disconnect first, then connect again to write saved acquisition parameters.";
+                return false;
+            }
+
             var attemptedStoredSettings = false;
             try
             {
