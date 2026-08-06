@@ -67,13 +67,8 @@ namespace CameraCaptureApp.Services
                 return;
             }
 
-            if (TryApplySettingsWithoutActiveConnection())
-            {
-                return;
-            }
-
             _status.LastMessage = HasStoredConnectionSettings()
-                ? "Camera settings saved locally. Sapera offline apply could not be completed."
+                ? "Camera settings saved locally. They will be applied on the next connect."
                 : "Camera settings saved locally. Select connection settings before applying to hardware.";
         }
 
@@ -631,68 +626,6 @@ namespace CameraCaptureApp.Services
             return true;
         }
 
-        private bool TryApplySettingsWithoutActiveConnection()
-        {
-            if (!TryPrepareConnectionSettings())
-            {
-                return false;
-            }
-
-            SapAcquisition temporaryAcquisition = null;
-            try
-            {
-                temporaryAcquisition = new SapAcquisition(_serverLocation, _configFileName);
-                _acquisition = temporaryAcquisition;
-                if (!_acquisition.Create())
-                {
-                    _status.LastMessage = "Camera settings saved locally, but Sapera offline acquisition could not be opened.";
-                    return true;
-                }
-
-                ApplyWritableCameraSettings(true);
-                if (string.IsNullOrWhiteSpace(_status.LastMessage))
-                {
-                    _status.LastMessage = "Camera settings written without active preview connection.";
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _status.LastMessage = "Camera settings saved locally, but Sapera offline apply failed: " + ex.Message;
-                return true;
-            }
-            finally
-            {
-                if (temporaryAcquisition != null)
-                {
-                    try
-                    {
-                        if (temporaryAcquisition.Initialized)
-                        {
-                            temporaryAcquisition.Destroy();
-                        }
-                    }
-                    catch
-                    {
-                    }
-
-                    try
-                    {
-                        temporaryAcquisition.Dispose();
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                _acquisition = null;
-                DisposeAcqDeviceOnly();
-                _deviceFeaturesAvailable = false;
-                _acqDevicePathSummary = string.Empty;
-            }
-        }
-
         private void ApplyWritableCameraSettings(bool includeDeviceFeatures)
         {
             var applied = false;
@@ -1127,7 +1060,6 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var exposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
-            TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.LINE_INTEGRATE_ENABLE);
             if (TrySetAcquisitionIntParameter(
                 notes,
                 exposureValue,
@@ -1255,7 +1187,7 @@ namespace CameraCaptureApp.Services
 
             foreach (var featureName in featureNames)
             {
-                if (!_acqDevice.IsFeatureAvailable(featureName))
+                if (!CanWriteDeviceFeature(featureName))
                 {
                     continue;
                 }
@@ -1281,7 +1213,7 @@ namespace CameraCaptureApp.Services
 
             foreach (var featureName in featureNames)
             {
-                if (!_acqDevice.IsFeatureAvailable(featureName))
+                if (!CanWriteDeviceFeature(featureName))
                 {
                     continue;
                 }
@@ -1372,7 +1304,7 @@ namespace CameraCaptureApp.Services
 
             foreach (var featureName in featureNames)
             {
-                if (!_acqDevice.IsFeatureAvailable(featureName))
+                if (!CanWriteDeviceFeature(featureName))
                 {
                     continue;
                 }
@@ -1385,6 +1317,32 @@ namespace CameraCaptureApp.Services
             }
 
             return false;
+        }
+
+        private bool CanWriteDeviceFeature(string featureName)
+        {
+            if (string.IsNullOrWhiteSpace(featureName) || !_acqDevice.IsFeatureAvailable(featureName))
+            {
+                return false;
+            }
+
+            try
+            {
+                var feature = new SapFeature();
+                if (_acqDevice.GetFeatureInfo(featureName, feature))
+                {
+                    var accessMode = feature.DataAccessMode.ToString();
+                    if (accessMode.IndexOf("Write", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return true;
         }
 
         private string ReadFeatureValue(string featureName, SapFeature.Type dataType)
