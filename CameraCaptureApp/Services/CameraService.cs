@@ -1330,21 +1330,12 @@ namespace CameraCaptureApp.Services
             if (TrySetAcquisitionIntParameter(
                 notes,
                 exposureValue,
-                SapAcquisition.Prm.LINE_INTEGRATE_DURATION,
-                SapAcquisition.Prm.CAM_TRIGGER_DURATION))
+                SapAcquisition.Prm.LINE_INTEGRATE_DURATION))
             {
                 return true;
             }
 
-            if (TrySetAcquisitionIntParameter(
-                notes,
-                exposureValue,
-                SapAcquisition.Prm.TIME_INTEGRATE_DURATION))
-            {
-                return true;
-            }
-
-            notes.Add("Acquisition exposure parameter not supported");
+            notes.Add("LINE_INTEGRATE_DURATION not supported");
             return false;
         }
 
