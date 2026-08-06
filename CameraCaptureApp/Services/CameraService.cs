@@ -605,6 +605,9 @@ namespace CameraCaptureApp.Services
             DestroySdkObjects();
             DisposeSdkObjects();
 
+            var offlineNotes = new System.Collections.Generic.List<string>();
+            TryWriteOfflineConfigExposure(offlineNotes);
+
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             _acquisition.SignalNotify += OnSignalNotify;
             _acquisition.SignalNotifyContext = this;
@@ -614,7 +617,7 @@ namespace CameraCaptureApp.Services
                 throw new InvalidOperationException("Sapera objects could not be created.");
             }
 
-            ApplyWritableCameraSettings(false);
+            ApplyWritableCameraSettings(false, offlineNotes);
 
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
@@ -658,8 +661,13 @@ namespace CameraCaptureApp.Services
 
         private void ApplyWritableCameraSettings(bool includeDeviceFeatures)
         {
+            ApplyWritableCameraSettings(includeDeviceFeatures, null);
+        }
+
+        private void ApplyWritableCameraSettings(bool includeDeviceFeatures, System.Collections.Generic.List<string> initialNotes)
+        {
             var applied = false;
-            var notes = new System.Collections.Generic.List<string>();
+            var notes = initialNotes ?? new System.Collections.Generic.List<string>();
 
             if (TrySetInternalLineRate(notes))
             {
@@ -695,6 +703,73 @@ namespace CameraCaptureApp.Services
             {
                 _status.LastMessage = "Camera parameters written to Sapera device.";
             }
+        }
+
+        private void TryWriteOfflineConfigExposure(System.Collections.Generic.List<string> notes)
+        {
+            if (string.IsNullOrWhiteSpace(_configFileName) || !File.Exists(_configFileName))
+            {
+                notes.Add("CCF exposure not updated: config file not found");
+                return;
+            }
+
+            try
+            {
+                var lines = File.ReadAllLines(_configFileName, Encoding.Default);
+                var exposureText = _settings.ExposureTime.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var updated = false;
+                var matchedKeys = new System.Collections.Generic.List<string>();
+
+                for (var i = 0; i < lines.Length; i++)
+                {
+                    var line = lines[i];
+                    var trimmed = line.TrimStart();
+                    if (trimmed.Length == 0 || trimmed.StartsWith(";") || trimmed.StartsWith("#") || trimmed.StartsWith("["))
+                    {
+                        continue;
+                    }
+
+                    var separatorIndex = line.IndexOf('=');
+                    if (separatorIndex <= 0)
+                    {
+                        continue;
+                    }
+
+                    var key = line.Substring(0, separatorIndex).Trim();
+                    if (!IsExposureConfigKey(key))
+                    {
+                        continue;
+                    }
+
+                    lines[i] = line.Substring(0, separatorIndex + 1) + exposureText;
+                    matchedKeys.Add(key);
+                    updated = true;
+                }
+
+                if (!updated)
+                {
+                    notes.Add("CCF exposure key not found; acquisition parameter write will be tried");
+                    return;
+                }
+
+                var backupPath = _configFileName + "." + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".bak";
+                File.Copy(_configFileName, backupPath, false);
+                File.WriteAllLines(_configFileName, lines, Encoding.Default);
+                notes.Add("CCF exposure saved requested=" + exposureText + " keys=" + string.Join(",", matchedKeys.ToArray()));
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Offline CCF exposure update failed.", ex);
+                notes.Add("CCF exposure update failed: " + ex.Message);
+            }
+        }
+
+        private static bool IsExposureConfigKey(string key)
+        {
+            return string.Equals(key, "ExposureTime", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "ExposureTimeAbs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "Exposure", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "ExposureTimeRaw", StringComparison.OrdinalIgnoreCase);
         }
 
         private bool TrySetNumericFeature(decimal value, System.Collections.Generic.List<string> notes, params string[] featureNames)
