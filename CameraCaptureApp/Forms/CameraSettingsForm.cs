@@ -103,7 +103,21 @@ namespace CameraCaptureApp.Forms
                 int intValue;
                 TriggerMode triggerMode;
 
-                if (TryReadDecimal(values, out decimalValue, "ExposureTime", "ExposureTimeAbs", "Exposure"))
+                if (TryReadDecimal(
+                    values,
+                    out decimalValue,
+                    "ExposureTime",
+                    "ExposureTimeAbs",
+                    "Exposure",
+                    "ExposureTimeRaw",
+                    "LineIntegrateDuration",
+                    "LineIntegrationDuration",
+                    "LINE_INTEGRATE_DURATION",
+                    "TimeIntegrateDuration",
+                    "TimeIntegrationDuration",
+                    "TIME_INTEGRATE_DURATION",
+                    "CamTriggerDuration",
+                    "CAM_TRIGGER_DURATION"))
                 {
                     numericExposure.Value = ClampToNumericRange(numericExposure, decimalValue);
                     appliedFields.Add("Exposure");
@@ -154,12 +168,30 @@ namespace CameraCaptureApp.Forms
 
         private void buttonProbeLiveFeatures_Click(object sender, EventArgs e)
         {
-            labelReadResult.Text = "Probe Live Features is disabled for stability on this camera path.";
+            try
+            {
+                var filePath = _cameraService.ExportLiveFeatureReport();
+                labelReadResult.Text = "Live feature report exported: " + filePath;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Probe Live Features failed.", ex);
+                labelReadResult.Text = "Probe Live Features failed: " + ex.Message;
+            }
         }
 
         private void buttonProbeAcquisitionParameters_Click(object sender, EventArgs e)
         {
-            labelReadResult.Text = "Probe Acquisition Parameters is disabled for stability on this camera path.";
+            try
+            {
+                var filePath = _cameraService.ExportAcquisitionParameterReport();
+                labelReadResult.Text = "Acquisition parameter report exported: " + filePath;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Probe Acquisition Parameters failed.", ex);
+                labelReadResult.Text = "Probe Acquisition Parameters failed: " + ex.Message;
+            }
         }
 
         private void buttonOk_Click(object sender, EventArgs e)

@@ -194,7 +194,6 @@ namespace CameraCaptureApp.Forms
             this.buttonProbeLiveFeatures.TabIndex = 8;
             this.buttonProbeLiveFeatures.Text = "Probe Live Features";
             this.buttonProbeLiveFeatures.UseVisualStyleBackColor = true;
-            this.buttonProbeLiveFeatures.Visible = false;
             this.buttonProbeLiveFeatures.Click += new System.EventHandler(this.buttonProbeLiveFeatures_Click);
             // 
             // buttonProbeAcquisitionParameters
@@ -205,7 +204,6 @@ namespace CameraCaptureApp.Forms
             this.buttonProbeAcquisitionParameters.TabIndex = 8;
             this.buttonProbeAcquisitionParameters.Text = "Probe Acquisition Parameters";
             this.buttonProbeAcquisitionParameters.UseVisualStyleBackColor = true;
-            this.buttonProbeAcquisitionParameters.Visible = false;
             this.buttonProbeAcquisitionParameters.Click += new System.EventHandler(this.buttonProbeAcquisitionParameters_Click);
             // 
             // labelReadResult

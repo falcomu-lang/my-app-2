@@ -236,6 +236,9 @@ namespace CameraCaptureApp.Services
             reportBuilder.AppendLine("ConfigFile=" + _configFileName);
             reportBuilder.AppendLine();
 
+            var featureSummaries = new List<string>();
+            var allFeatureBuilder = new StringBuilder();
+
             for (var i = 0; i < _acqDevice.FeatureCount; i++)
             {
                 var feature = new SapFeature();
@@ -250,16 +253,42 @@ namespace CameraCaptureApp.Services
                     continue;
                 }
 
-                reportBuilder.AppendLine("[Feature] " + name);
-                reportBuilder.AppendLine("DisplayName=" + SafeString(feature.DisplayName));
-                reportBuilder.AppendLine("Category=" + SafeString(feature.Category));
-                reportBuilder.AppendLine("Type=" + feature.DataType);
-                reportBuilder.AppendLine("AccessMode=" + feature.DataAccessMode);
-                reportBuilder.AppendLine("Visibility=" + feature.UserVisibility);
-                reportBuilder.AppendLine("Description=" + SafeString(feature.Description));
-                reportBuilder.AppendLine("Value=" + ReadFeatureValue(name, feature.DataType));
-                reportBuilder.AppendLine();
+                if (IsLineScanCandidateFeature(name, feature))
+                {
+                    featureSummaries.Add(
+                        name
+                        + " | DisplayName=" + SafeString(feature.DisplayName)
+                        + " | Type=" + feature.DataType
+                        + " | AccessMode=" + feature.DataAccessMode
+                        + " | Value=" + ReadFeatureValue(name, feature.DataType));
+                }
+
+                allFeatureBuilder.AppendLine("[Feature] " + name);
+                allFeatureBuilder.AppendLine("DisplayName=" + SafeString(feature.DisplayName));
+                allFeatureBuilder.AppendLine("Category=" + SafeString(feature.Category));
+                allFeatureBuilder.AppendLine("Type=" + feature.DataType);
+                allFeatureBuilder.AppendLine("AccessMode=" + feature.DataAccessMode);
+                allFeatureBuilder.AppendLine("Visibility=" + feature.UserVisibility);
+                allFeatureBuilder.AppendLine("Description=" + SafeString(feature.Description));
+                allFeatureBuilder.AppendLine("Value=" + ReadFeatureValue(name, feature.DataType));
+                allFeatureBuilder.AppendLine();
             }
+
+            reportBuilder.AppendLine("[Line Scan Candidate Features]");
+            if (featureSummaries.Count == 0)
+            {
+                reportBuilder.AppendLine("No exposure/integration/line/gain/trigger candidate features were found.");
+            }
+            else
+            {
+                foreach (var summary in featureSummaries)
+                {
+                    reportBuilder.AppendLine(summary);
+                }
+            }
+            reportBuilder.AppendLine();
+            reportBuilder.AppendLine("[All Features]");
+            reportBuilder.Append(allFeatureBuilder.ToString());
 
             var filePath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
@@ -769,7 +798,15 @@ namespace CameraCaptureApp.Services
             return string.Equals(key, "ExposureTime", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, "ExposureTimeAbs", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, "Exposure", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(key, "ExposureTimeRaw", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(key, "ExposureTimeRaw", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "LineIntegrateDuration", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "LineIntegrationDuration", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "LINE_INTEGRATE_DURATION", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "TimeIntegrateDuration", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "TimeIntegrationDuration", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "TIME_INTEGRATE_DURATION", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "CamTriggerDuration", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "CAM_TRIGGER_DURATION", StringComparison.OrdinalIgnoreCase);
         }
 
         private bool TrySetNumericFeature(decimal value, System.Collections.Generic.List<string> notes, params string[] featureNames)
@@ -1609,6 +1646,27 @@ namespace CameraCaptureApp.Services
             }
 
             return "<unreadable>";
+        }
+
+        private static bool IsLineScanCandidateFeature(string name, SapFeature feature)
+        {
+            var searchable = (
+                (name ?? string.Empty)
+                + " "
+                + (feature.DisplayName ?? string.Empty)
+                + " "
+                + (feature.Category ?? string.Empty)
+                + " "
+                + (feature.Description ?? string.Empty)).ToLowerInvariant();
+
+            return searchable.Contains("exposure")
+                || searchable.Contains("integration")
+                || searchable.Contains("integrate")
+                || searchable.Contains("shutter")
+                || searchable.Contains("line")
+                || searchable.Contains("rate")
+                || searchable.Contains("gain")
+                || searchable.Contains("trigger");
         }
 
         private string ReadFeatureValue(string featureName, SapFeature.Type dataType)
