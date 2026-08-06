@@ -206,6 +206,7 @@ namespace CameraCaptureApp.Services
                 var location = dialog.ServerLocation;
                 _settings.DeviceFeatureServerName = location.ServerName;
                 _settings.DeviceFeatureResourceIndex = location.ResourceIndex;
+                _settings.DeviceFeatureConfigFilePath = dialog.ConfigFile;
                 _status.LastMessage = "Device feature settings updated from Sapera: " + location.ServerName + "#" + location.ResourceIndex;
                 DisposeAcqDeviceOnly();
                 _deviceFeaturesAvailable = false;
@@ -234,6 +235,9 @@ namespace CameraCaptureApp.Services
             reportBuilder.AppendLine("Server=" + _serverLocation.ServerName);
             reportBuilder.AppendLine("ResourceIndex=" + _serverLocation.ResourceIndex);
             reportBuilder.AppendLine("ConfigFile=" + _configFileName);
+            reportBuilder.AppendLine("DeviceFeatureServer=" + _settings.DeviceFeatureServerName);
+            reportBuilder.AppendLine("DeviceFeatureResourceIndex=" + _settings.DeviceFeatureResourceIndex);
+            reportBuilder.AppendLine("DeviceFeatureConfigFile=" + _settings.DeviceFeatureConfigFilePath);
             reportBuilder.AppendLine();
 
             var featureSummaries = new List<string>();
@@ -1056,7 +1060,10 @@ namespace CameraCaptureApp.Services
 
         private SapAcqDevice TryBuildAndCreateConfiguredAcqDevice(SapLocation location)
         {
-            var device = TryBuildAcqDevice(() => new SapAcqDevice(location, _configFileName));
+            var deviceConfigFile = string.IsNullOrWhiteSpace(_settings.DeviceFeatureConfigFilePath)
+                ? _configFileName
+                : _settings.DeviceFeatureConfigFilePath;
+            var device = TryBuildAcqDevice(() => new SapAcqDevice(location, deviceConfigFile));
             if (device == null)
             {
                 return null;

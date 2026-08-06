@@ -191,7 +191,9 @@ namespace CameraCaptureApp.Forms
             }
 
             Settings = _cameraService.CurrentSettings;
-            labelReadResult.Text = "Sapera device feature settings loaded. Use Live Features after connecting.";
+            labelReadResult.Text = string.IsNullOrWhiteSpace(Settings.DeviceFeatureConfigFilePath)
+                ? "Sapera device feature settings loaded without a config file. Use Live Features after connecting."
+                : "Sapera device feature settings loaded: " + Settings.DeviceFeatureConfigFilePath;
         }
 
         private void buttonProbeAcquisitionParameters_Click(object sender, EventArgs e)
