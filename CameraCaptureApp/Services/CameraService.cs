@@ -67,7 +67,14 @@ namespace CameraCaptureApp.Services
                 return;
             }
 
-            _status.LastMessage = "Camera settings applied.";
+            if (TryApplySettingsWithoutActiveConnection())
+            {
+                return;
+            }
+
+            _status.LastMessage = HasStoredConnectionSettings()
+                ? "Camera settings saved locally. Sapera offline apply could not be completed."
+                : "Camera settings saved locally. Select connection settings before applying to hardware.";
         }
 
         public bool Connect()
@@ -585,7 +592,7 @@ namespace CameraCaptureApp.Services
                 throw new InvalidOperationException("Sapera objects could not be created.");
             }
 
-            ApplyWritableCameraSettings(false);
+            ApplyWritableCameraSettings(true);
 
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
@@ -622,6 +629,68 @@ namespace CameraCaptureApp.Services
             }
             _status.ScanStateText = "Connected";
             return true;
+        }
+
+        private bool TryApplySettingsWithoutActiveConnection()
+        {
+            if (!TryPrepareConnectionSettings())
+            {
+                return false;
+            }
+
+            SapAcquisition temporaryAcquisition = null;
+            try
+            {
+                temporaryAcquisition = new SapAcquisition(_serverLocation, _configFileName);
+                _acquisition = temporaryAcquisition;
+                if (!_acquisition.Create())
+                {
+                    _status.LastMessage = "Camera settings saved locally, but Sapera offline acquisition could not be opened.";
+                    return true;
+                }
+
+                ApplyWritableCameraSettings(true);
+                if (string.IsNullOrWhiteSpace(_status.LastMessage))
+                {
+                    _status.LastMessage = "Camera settings written without active preview connection.";
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _status.LastMessage = "Camera settings saved locally, but Sapera offline apply failed: " + ex.Message;
+                return true;
+            }
+            finally
+            {
+                if (temporaryAcquisition != null)
+                {
+                    try
+                    {
+                        if (temporaryAcquisition.Initialized)
+                        {
+                            temporaryAcquisition.Destroy();
+                        }
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        temporaryAcquisition.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                _acquisition = null;
+                DisposeAcqDeviceOnly();
+                _deviceFeaturesAvailable = false;
+                _acqDevicePathSummary = string.Empty;
+            }
         }
 
         private void ApplyWritableCameraSettings(bool includeDeviceFeatures)
@@ -1099,6 +1168,7 @@ namespace CameraCaptureApp.Services
             switch (_settings.TriggerMode)
             {
                 case TriggerMode.Continuous:
+                    var useInternalLineTrigger = _settings.InternalLineRate > 0;
                     if (TrySetAcquisitionBoolPattern(
                         notes,
                         new[]
@@ -1109,10 +1179,12 @@ namespace CameraCaptureApp.Services
                             new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0)
+                            new ParameterWrite(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, useInternalLineTrigger ? 1 : 0)
                         }))
                     {
-                        notes.Add("Acquisition trigger continuous applied");
+                        notes.Add(useInternalLineTrigger
+                            ? "Acquisition trigger continuous with internal line rate applied"
+                            : "Acquisition trigger continuous applied");
                         return true;
                     }
                     break;
