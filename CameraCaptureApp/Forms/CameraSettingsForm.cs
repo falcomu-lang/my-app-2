@@ -47,8 +47,6 @@ namespace CameraCaptureApp.Forms
             textBoxServerName.Text = Settings.ServerName;
             textBoxServerIndex.Text = Settings.ServerIndex >= 0 ? Settings.ServerIndex.ToString() : string.Empty;
             textBoxResourceIndex.Text = Settings.ResourceIndex.ToString();
-            textBoxDeviceFeatureServerName.Text = Settings.DeviceFeatureServerName ?? string.Empty;
-            textBoxDeviceFeatureResourceIndex.Text = Settings.DeviceFeatureResourceIndex >= 0 ? Settings.DeviceFeatureResourceIndex.ToString() : string.Empty;
             numericExposure.Value = Settings.ExposureTime;
             numericGain.Value = Settings.Gain;
             numericLength.Value = Settings.Length > 0 ? Settings.Length : 1;
@@ -198,8 +196,6 @@ namespace CameraCaptureApp.Forms
             Settings.ServerName = textBoxServerName.Text.Trim();
             Settings.ServerIndex = ParseInt(textBoxServerIndex.Text, Settings.ServerIndex);
             Settings.ResourceIndex = ParseInt(textBoxResourceIndex.Text, Settings.ResourceIndex);
-            Settings.DeviceFeatureServerName = textBoxDeviceFeatureServerName.Text.Trim();
-            Settings.DeviceFeatureResourceIndex = ParseInt(textBoxDeviceFeatureResourceIndex.Text, Settings.DeviceFeatureResourceIndex);
             Settings.ExposureTime = numericExposure.Value;
             Settings.Gain = numericGain.Value;
             Settings.Length = decimal.ToInt32(numericLength.Value);
