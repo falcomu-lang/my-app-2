@@ -780,11 +780,6 @@ namespace CameraCaptureApp.Services
                 applied = true;
             }
 
-            if (TrySetExposureParameters(notes))
-            {
-                applied = true;
-            }
-
             if (TrySetLengthParameters(notes))
             {
                 _status.FrameHeight = _settings.Length;
@@ -792,6 +787,11 @@ namespace CameraCaptureApp.Services
             }
 
             if (TryApplyAcquisitionTriggerMode(notes))
+            {
+                applied = true;
+            }
+
+            if (TrySetExposureParameters(notes))
             {
                 applied = true;
             }
