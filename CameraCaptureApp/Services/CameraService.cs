@@ -587,7 +587,7 @@ namespace CameraCaptureApp.Services
                 throw new InvalidOperationException("Sapera objects could not be created.");
             }
 
-            ApplyWritableCameraSettings(true);
+            ApplyWritableCameraSettings(false);
 
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
@@ -608,6 +608,8 @@ namespace CameraCaptureApp.Services
                 throw new InvalidOperationException("Sapera buffer or transfer objects could not be created.");
             }
 
+            ApplyWritableCameraSettings(true);
+
             _status.IsConnected = true;
             _status.HasSignal = _acquisition.SignalStatus != SapAcquisition.AcqSignalStatus.None;
             _status.CameraName = _serverLocation.ServerName;
@@ -620,7 +622,10 @@ namespace CameraCaptureApp.Services
             }
             else
             {
-                _status.LastMessage = "Camera connected successfully.";
+                if (string.IsNullOrWhiteSpace(_status.LastMessage) || _status.LastMessage == "Camera parameters written to Sapera device.")
+                {
+                    _status.LastMessage = "Camera connected successfully.";
+                }
             }
             _status.ScanStateText = "Connected";
             return true;
@@ -714,7 +719,7 @@ namespace CameraCaptureApp.Services
             var appliedFeature = string.Empty;
             if (TrySetDeviceFeature(featureNames, (double)value, out appliedFeature))
             {
-                notes.Add(appliedFeature + " applied");
+                notes.Add(appliedFeature + " applied requested=" + value + " readback=" + ReadNumericFeatureValue(appliedFeature));
                 return true;
             }
 
@@ -958,7 +963,7 @@ namespace CameraCaptureApp.Services
             var appliedFeature = string.Empty;
             if (TrySetDeviceFeature(featureNames, value, out appliedFeature))
             {
-                notes.Add(appliedFeature + " applied");
+                notes.Add(appliedFeature + " applied requested=" + value + " readback=" + ReadNumericFeatureValue(appliedFeature));
                 return true;
             }
 
@@ -1241,7 +1246,7 @@ namespace CameraCaptureApp.Services
                     {
                         if (_acquisition.SetParameter(parameter, value, true))
                         {
-                            notes.Add(parameter + " applied");
+                            notes.Add(parameter + " applied requested=" + value + " readback=" + ReadAcquisitionIntParameter(parameter));
                             return true;
                         }
                     }
@@ -1315,6 +1320,37 @@ namespace CameraCaptureApp.Services
             }
             catch
             {
+            }
+
+            try
+            {
+                if (_acqDevice.SetFeatureValue(featureName, (float)value))
+                {
+                    _acqDevice.UpdateFeaturesToDevice();
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            if (Math.Abs(value - Math.Round(value)) < 0.000001)
+            {
+                var integralValue = Convert.ToInt64(Math.Round(value));
+                if (integralValue >= int.MinValue && integralValue <= int.MaxValue)
+                {
+                    try
+                    {
+                        if (_acqDevice.SetFeatureValue(featureName, Convert.ToInt32(integralValue)))
+                        {
+                            _acqDevice.UpdateFeaturesToDevice();
+                            return true;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
             }
 
             return false;
@@ -1404,6 +1440,74 @@ namespace CameraCaptureApp.Services
             }
 
             return true;
+        }
+
+        private string ReadNumericFeatureValue(string featureName)
+        {
+            if (_acqDevice == null || !_acqDevice.Initialized || string.IsNullOrWhiteSpace(featureName))
+            {
+                return "<unavailable>";
+            }
+
+            try
+            {
+                double doubleValue;
+                if (_acqDevice.GetFeatureValue(featureName, out doubleValue))
+                {
+                    return doubleValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                float floatValue;
+                if (_acqDevice.GetFeatureValue(featureName, out floatValue))
+                {
+                    return floatValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                int intValue;
+                if (_acqDevice.GetFeatureValue(featureName, out intValue))
+                {
+                    return intValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+            catch
+            {
+            }
+
+            return "<unreadable>";
+        }
+
+        private string ReadAcquisitionIntParameter(SapAcquisition.Prm parameter)
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return "<unavailable>";
+            }
+
+            try
+            {
+                int intValue;
+                if (_acquisition.GetParameter(parameter, out intValue))
+                {
+                    return intValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+            catch
+            {
+            }
+
+            return "<unreadable>";
         }
 
         private string ReadFeatureValue(string featureName, SapFeature.Type dataType)
