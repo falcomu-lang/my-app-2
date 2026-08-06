@@ -171,7 +171,9 @@ namespace CameraCaptureApp.Forms
             try
             {
                 var filePath = _cameraService.ExportLiveFeatureReport();
-                labelReadResult.Text = "Live feature report exported: " + filePath;
+                labelReadResult.Text = Path.GetFileName(filePath).StartsWith("live_features_failed_", StringComparison.OrdinalIgnoreCase)
+                    ? "Live features unavailable. Diagnostic report exported: " + filePath
+                    : "Live feature report exported: " + filePath;
             }
             catch (Exception ex)
             {

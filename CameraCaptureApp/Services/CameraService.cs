@@ -225,7 +225,7 @@ namespace CameraCaptureApp.Services
             EnsureAcqDeviceAvailable();
             if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
             {
-                throw new InvalidOperationException("SapAcqDevice is not available for this connection path.");
+                return ExportLiveFeatureFailureReport("SapAcqDevice is not available for this connection path. This camera/frame-grabber path may expose only SapAcquisition parameters.");
             }
 
             var reportBuilder = new StringBuilder();
@@ -300,6 +300,70 @@ namespace CameraCaptureApp.Services
             File.WriteAllText(filePath, reportBuilder.ToString(), Encoding.UTF8);
             _status.LastMessage = "Live feature report exported: " + Path.GetFileName(filePath);
             return filePath;
+        }
+
+        private string ExportLiveFeatureFailureReport(string reason)
+        {
+            var reportBuilder = new StringBuilder();
+            reportBuilder.AppendLine("CameraCaptureApp Live Feature Failure Report");
+            reportBuilder.AppendLine("GeneratedAt=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            reportBuilder.AppendLine("Reason=" + reason);
+            reportBuilder.AppendLine("LastMessage=" + _status.LastMessage);
+            reportBuilder.AppendLine("CameraName=" + _status.CameraName);
+            reportBuilder.AppendLine("Connected=" + _status.IsConnected);
+            reportBuilder.AppendLine("AcquisitionServer=" + (_serverLocation == null ? string.Empty : _serverLocation.ServerName));
+            reportBuilder.AppendLine("AcquisitionResourceIndex=" + (_serverLocation == null ? -1 : _serverLocation.ResourceIndex));
+            reportBuilder.AppendLine("AcquisitionConfigFile=" + _configFileName);
+            reportBuilder.AppendLine("DeviceFeatureServer=" + _settings.DeviceFeatureServerName);
+            reportBuilder.AppendLine("DeviceFeatureResourceIndex=" + _settings.DeviceFeatureResourceIndex);
+            reportBuilder.AppendLine("DeviceFeatureConfigFile=" + _settings.DeviceFeatureConfigFilePath);
+            reportBuilder.AppendLine("AcqDeviceProbeSummary=" + FormatAcqDeviceProbeSummary());
+            reportBuilder.AppendLine();
+            reportBuilder.AppendLine("[Sapera Servers]");
+            AppendSaperaResourceReport(reportBuilder);
+
+            var filePath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "live_features_failed_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
+            File.WriteAllText(filePath, reportBuilder.ToString(), Encoding.UTF8);
+            _status.LastMessage = "Live features unavailable. Diagnostic report exported: " + Path.GetFileName(filePath);
+            return filePath;
+        }
+
+        private static void AppendSaperaResourceReport(StringBuilder reportBuilder)
+        {
+            try
+            {
+                for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
+                {
+                    var serverName = SapManager.GetServerName(serverIndex);
+                    reportBuilder.AppendLine("Server[" + serverIndex + "]=" + serverName);
+                    AppendSaperaResourceTypeReport(reportBuilder, serverName, SapManager.ResourceType.Acq, "Acq");
+                    AppendSaperaResourceTypeReport(reportBuilder, serverName, SapManager.ResourceType.AcqDevice, "AcqDevice");
+                }
+            }
+            catch (Exception ex)
+            {
+                reportBuilder.AppendLine("Sapera server enumeration failed: " + ex.Message);
+            }
+        }
+
+        private static void AppendSaperaResourceTypeReport(StringBuilder reportBuilder, string serverName, SapManager.ResourceType resourceType, string label)
+        {
+            try
+            {
+                var count = SapManager.GetResourceCount(serverName, resourceType);
+                reportBuilder.AppendLine("  " + label + "Count=" + count);
+                for (var resourceIndex = 0; resourceIndex < count; resourceIndex++)
+                {
+                    var resourceName = SapManager.GetResourceName(serverName, resourceType, resourceIndex);
+                    reportBuilder.AppendLine("  " + label + "[" + resourceIndex + "]=" + resourceName);
+                }
+            }
+            catch (Exception ex)
+            {
+                reportBuilder.AppendLine("  " + label + " enumeration failed: " + ex.Message);
+            }
         }
 
         public string ExportAcquisitionParameterReport()
