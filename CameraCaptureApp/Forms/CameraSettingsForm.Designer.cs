@@ -19,6 +19,20 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Button buttonProbeLiveFeatures;
         private System.Windows.Forms.Button buttonProbeAcquisitionParameters;
         private System.Windows.Forms.Label labelReadResult;
+        private System.Windows.Forms.Label labelCameraName;
+        private System.Windows.Forms.Label labelCcfFile;
+        private System.Windows.Forms.Label labelAcquisitionServer;
+        private System.Windows.Forms.Label labelServerIndex;
+        private System.Windows.Forms.Label labelResourceIndex;
+        private System.Windows.Forms.Label labelExposure;
+        private System.Windows.Forms.Label labelGain;
+        private System.Windows.Forms.Label labelLength;
+        private System.Windows.Forms.Label labelInternalLineRate;
+        private System.Windows.Forms.Label labelImageNote;
+        private System.Windows.Forms.Label labelTriggerMode;
+        private System.Windows.Forms.Label labelTriggerNote;
+        private System.Windows.Forms.Label labelSaveFolder;
+        private System.Windows.Forms.Label labelFileNamePattern;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
         private System.Windows.Forms.NumericUpDown numericLength;
@@ -56,14 +70,28 @@ namespace CameraCaptureApp.Forms
             this.textBoxServerName = new System.Windows.Forms.TextBox();
             this.textBoxConfigFile = new System.Windows.Forms.TextBox();
             this.textBoxCameraName = new System.Windows.Forms.TextBox();
+            this.labelCameraName = new System.Windows.Forms.Label();
+            this.labelCcfFile = new System.Windows.Forms.Label();
+            this.labelAcquisitionServer = new System.Windows.Forms.Label();
+            this.labelServerIndex = new System.Windows.Forms.Label();
+            this.labelResourceIndex = new System.Windows.Forms.Label();
             this.tabPageImage = new System.Windows.Forms.TabPage();
+            this.labelExposure = new System.Windows.Forms.Label();
+            this.labelGain = new System.Windows.Forms.Label();
+            this.labelLength = new System.Windows.Forms.Label();
+            this.labelInternalLineRate = new System.Windows.Forms.Label();
+            this.labelImageNote = new System.Windows.Forms.Label();
             this.numericInternalLineRate = new System.Windows.Forms.NumericUpDown();
             this.numericLength = new System.Windows.Forms.NumericUpDown();
             this.numericGain = new System.Windows.Forms.NumericUpDown();
             this.numericExposure = new System.Windows.Forms.NumericUpDown();
             this.tabPageTrigger = new System.Windows.Forms.TabPage();
+            this.labelTriggerMode = new System.Windows.Forms.Label();
+            this.labelTriggerNote = new System.Windows.Forms.Label();
             this.comboBoxTriggerMode = new System.Windows.Forms.ComboBox();
             this.tabPageSaving = new System.Windows.Forms.TabPage();
+            this.labelSaveFolder = new System.Windows.Forms.Label();
+            this.labelFileNamePattern = new System.Windows.Forms.Label();
             this.textBoxFileNamePattern = new System.Windows.Forms.TextBox();
             this.textBoxSaveFolder = new System.Windows.Forms.TextBox();
             this.checkBoxAutoSave = new System.Windows.Forms.CheckBox();
@@ -95,19 +123,21 @@ namespace CameraCaptureApp.Forms
             // 
             // tabPageConnection
             // 
-            this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 25), Text = "Camera Name" });
+            this.tabPageConnection.Controls.Add(this.labelCameraName);
             this.tabPageConnection.Controls.Add(this.textBoxCameraName);
-            this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 78), Text = "CCF File" });
+            this.tabPageConnection.Controls.Add(this.labelCcfFile);
             this.tabPageConnection.Controls.Add(this.textBoxConfigFile);
-            this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 164), Text = "Acquisition Server" });
+            this.tabPageConnection.Controls.Add(this.labelAcquisitionServer);
             this.tabPageConnection.Controls.Add(this.textBoxServerName);
-            this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 217), Text = "Server Index" });
+            this.tabPageConnection.Controls.Add(this.labelServerIndex);
             this.tabPageConnection.Controls.Add(this.textBoxServerIndex);
-            this.tabPageConnection.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(196, 217), Text = "Resource Index" });
+            this.tabPageConnection.Controls.Add(this.labelResourceIndex);
             this.tabPageConnection.Controls.Add(this.textBoxResourceIndex);
             this.tabPageConnection.Controls.Add(this.checkBoxAutoConnect);
             this.tabPageConnection.Controls.Add(this.buttonBrowseSapera);
             this.tabPageConnection.Controls.Add(this.buttonReadCcfToFields);
+            this.tabPageConnection.Controls.Add(this.buttonProbeAcquisitionParameters);
+            this.tabPageConnection.Controls.Add(this.buttonProbeLiveFeatures);
             this.tabPageConnection.Controls.Add(this.labelReadResult);
             this.tabPageConnection.Location = new System.Drawing.Point(4, 26);
             this.tabPageConnection.Name = "tabPageConnection";
@@ -123,6 +153,51 @@ namespace CameraCaptureApp.Forms
             this.textBoxCameraName.Name = "textBoxCameraName";
             this.textBoxCameraName.Size = new System.Drawing.Size(280, 23);
             this.textBoxCameraName.TabIndex = 0;
+            // 
+            // labelCameraName
+            // 
+            this.labelCameraName.AutoSize = true;
+            this.labelCameraName.Location = new System.Drawing.Point(32, 25);
+            this.labelCameraName.Name = "labelCameraName";
+            this.labelCameraName.Size = new System.Drawing.Size(98, 16);
+            this.labelCameraName.TabIndex = 11;
+            this.labelCameraName.Text = "Camera Name";
+            // 
+            // labelCcfFile
+            // 
+            this.labelCcfFile.AutoSize = true;
+            this.labelCcfFile.Location = new System.Drawing.Point(32, 78);
+            this.labelCcfFile.Name = "labelCcfFile";
+            this.labelCcfFile.Size = new System.Drawing.Size(57, 16);
+            this.labelCcfFile.TabIndex = 12;
+            this.labelCcfFile.Text = "CCF File";
+            // 
+            // labelAcquisitionServer
+            // 
+            this.labelAcquisitionServer.AutoSize = true;
+            this.labelAcquisitionServer.Location = new System.Drawing.Point(32, 164);
+            this.labelAcquisitionServer.Name = "labelAcquisitionServer";
+            this.labelAcquisitionServer.Size = new System.Drawing.Size(122, 16);
+            this.labelAcquisitionServer.TabIndex = 13;
+            this.labelAcquisitionServer.Text = "Acquisition Server";
+            // 
+            // labelServerIndex
+            // 
+            this.labelServerIndex.AutoSize = true;
+            this.labelServerIndex.Location = new System.Drawing.Point(32, 217);
+            this.labelServerIndex.Name = "labelServerIndex";
+            this.labelServerIndex.Size = new System.Drawing.Size(85, 16);
+            this.labelServerIndex.TabIndex = 14;
+            this.labelServerIndex.Text = "Server Index";
+            // 
+            // labelResourceIndex
+            // 
+            this.labelResourceIndex.AutoSize = true;
+            this.labelResourceIndex.Location = new System.Drawing.Point(196, 217);
+            this.labelResourceIndex.Name = "labelResourceIndex";
+            this.labelResourceIndex.Size = new System.Drawing.Size(105, 16);
+            this.labelResourceIndex.TabIndex = 15;
+            this.labelResourceIndex.Text = "Resource Index";
             // 
             // textBoxConfigFile
             // 
@@ -188,45 +263,45 @@ namespace CameraCaptureApp.Forms
             // 
             // buttonProbeLiveFeatures
             // 
-            this.buttonProbeLiveFeatures.Location = new System.Drawing.Point(430, 316);
+            this.buttonProbeLiveFeatures.Location = new System.Drawing.Point(577, 276);
             this.buttonProbeLiveFeatures.Name = "buttonProbeLiveFeatures";
-            this.buttonProbeLiveFeatures.Size = new System.Drawing.Size(285, 32);
+            this.buttonProbeLiveFeatures.Size = new System.Drawing.Size(138, 28);
             this.buttonProbeLiveFeatures.TabIndex = 8;
-            this.buttonProbeLiveFeatures.Text = "Probe Live Features";
+            this.buttonProbeLiveFeatures.Text = "Live Features";
             this.buttonProbeLiveFeatures.UseVisualStyleBackColor = true;
             this.buttonProbeLiveFeatures.Click += new System.EventHandler(this.buttonProbeLiveFeatures_Click);
             // 
             // buttonProbeAcquisitionParameters
             // 
-            this.buttonProbeAcquisitionParameters.Location = new System.Drawing.Point(430, 240);
+            this.buttonProbeAcquisitionParameters.Location = new System.Drawing.Point(430, 276);
             this.buttonProbeAcquisitionParameters.Name = "buttonProbeAcquisitionParameters";
-            this.buttonProbeAcquisitionParameters.Size = new System.Drawing.Size(285, 32);
+            this.buttonProbeAcquisitionParameters.Size = new System.Drawing.Size(138, 28);
             this.buttonProbeAcquisitionParameters.TabIndex = 8;
-            this.buttonProbeAcquisitionParameters.Text = "Probe Acquisition Parameters";
+            this.buttonProbeAcquisitionParameters.Text = "Acq Params";
             this.buttonProbeAcquisitionParameters.UseVisualStyleBackColor = true;
             this.buttonProbeAcquisitionParameters.Click += new System.EventHandler(this.buttonProbeAcquisitionParameters_Click);
             // 
             // labelReadResult
             // 
             this.labelReadResult.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.labelReadResult.Location = new System.Drawing.Point(35, 307);
+            this.labelReadResult.Location = new System.Drawing.Point(35, 312);
             this.labelReadResult.Name = "labelReadResult";
             this.labelReadResult.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.labelReadResult.Size = new System.Drawing.Size(680, 44);
+            this.labelReadResult.Size = new System.Drawing.Size(680, 36);
             this.labelReadResult.TabIndex = 10;
             this.labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
             // 
             // tabPageImage
             // 
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 35), Text = "Exposure" });
+            this.tabPageImage.Controls.Add(this.labelExposure);
             this.tabPageImage.Controls.Add(this.numericExposure);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(208, 35), Text = "Gain" });
+            this.tabPageImage.Controls.Add(this.labelGain);
             this.tabPageImage.Controls.Add(this.numericGain);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(384, 35), Text = "Length (Lines)" });
+            this.tabPageImage.Controls.Add(this.labelLength);
             this.tabPageImage.Controls.Add(this.numericLength);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(560, 35), Text = "Internal Line Rate" });
+            this.tabPageImage.Controls.Add(this.labelInternalLineRate);
             this.tabPageImage.Controls.Add(this.numericInternalLineRate);
-            this.tabPageImage.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 103), Size = new System.Drawing.Size(680, 16), Text = "Exposure, gain, length, and internal line rate will be written to supported Sapera parameters when available." });
+            this.tabPageImage.Controls.Add(this.labelImageNote);
             this.tabPageImage.Location = new System.Drawing.Point(4, 26);
             this.tabPageImage.Name = "tabPageImage";
             this.tabPageImage.Padding = new System.Windows.Forms.Padding(3);
@@ -234,6 +309,51 @@ namespace CameraCaptureApp.Forms
             this.tabPageImage.TabIndex = 1;
             this.tabPageImage.Text = "Image";
             this.tabPageImage.UseVisualStyleBackColor = true;
+            // 
+            // labelExposure
+            // 
+            this.labelExposure.AutoSize = true;
+            this.labelExposure.Location = new System.Drawing.Point(32, 35);
+            this.labelExposure.Name = "labelExposure";
+            this.labelExposure.Size = new System.Drawing.Size(63, 16);
+            this.labelExposure.TabIndex = 5;
+            this.labelExposure.Text = "Exposure";
+            // 
+            // labelGain
+            // 
+            this.labelGain.AutoSize = true;
+            this.labelGain.Location = new System.Drawing.Point(208, 35);
+            this.labelGain.Name = "labelGain";
+            this.labelGain.Size = new System.Drawing.Size(36, 16);
+            this.labelGain.TabIndex = 6;
+            this.labelGain.Text = "Gain";
+            // 
+            // labelLength
+            // 
+            this.labelLength.AutoSize = true;
+            this.labelLength.Location = new System.Drawing.Point(384, 35);
+            this.labelLength.Name = "labelLength";
+            this.labelLength.Size = new System.Drawing.Size(93, 16);
+            this.labelLength.TabIndex = 7;
+            this.labelLength.Text = "Length (Lines)";
+            // 
+            // labelInternalLineRate
+            // 
+            this.labelInternalLineRate.AutoSize = true;
+            this.labelInternalLineRate.Location = new System.Drawing.Point(560, 35);
+            this.labelInternalLineRate.Name = "labelInternalLineRate";
+            this.labelInternalLineRate.Size = new System.Drawing.Size(113, 16);
+            this.labelInternalLineRate.TabIndex = 8;
+            this.labelInternalLineRate.Text = "Internal Line Rate";
+            // 
+            // labelImageNote
+            // 
+            this.labelImageNote.AutoSize = true;
+            this.labelImageNote.Location = new System.Drawing.Point(32, 103);
+            this.labelImageNote.Name = "labelImageNote";
+            this.labelImageNote.Size = new System.Drawing.Size(652, 16);
+            this.labelImageNote.TabIndex = 9;
+            this.labelImageNote.Text = "Exposure, gain, length, and internal line rate will be written to supported Sapera parameters when available.";
             // 
             // image controls
             // 
@@ -259,9 +379,9 @@ namespace CameraCaptureApp.Forms
             // 
             // tabPageTrigger
             // 
-            this.tabPageTrigger.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 35), Text = "Trigger Mode" });
+            this.tabPageTrigger.Controls.Add(this.labelTriggerMode);
             this.tabPageTrigger.Controls.Add(this.comboBoxTriggerMode);
-            this.tabPageTrigger.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 103), Size = new System.Drawing.Size(600, 16), Text = "Trigger Mode will be written to supported Sapera trigger features when the camera provides them." });
+            this.tabPageTrigger.Controls.Add(this.labelTriggerNote);
             this.tabPageTrigger.Location = new System.Drawing.Point(4, 26);
             this.tabPageTrigger.Name = "tabPageTrigger";
             this.tabPageTrigger.Padding = new System.Windows.Forms.Padding(3);
@@ -269,6 +389,24 @@ namespace CameraCaptureApp.Forms
             this.tabPageTrigger.TabIndex = 2;
             this.tabPageTrigger.Text = "Trigger";
             this.tabPageTrigger.UseVisualStyleBackColor = true;
+            // 
+            // labelTriggerMode
+            // 
+            this.labelTriggerMode.AutoSize = true;
+            this.labelTriggerMode.Location = new System.Drawing.Point(32, 35);
+            this.labelTriggerMode.Name = "labelTriggerMode";
+            this.labelTriggerMode.Size = new System.Drawing.Size(91, 16);
+            this.labelTriggerMode.TabIndex = 2;
+            this.labelTriggerMode.Text = "Trigger Mode";
+            // 
+            // labelTriggerNote
+            // 
+            this.labelTriggerNote.AutoSize = true;
+            this.labelTriggerNote.Location = new System.Drawing.Point(32, 103);
+            this.labelTriggerNote.Name = "labelTriggerNote";
+            this.labelTriggerNote.Size = new System.Drawing.Size(584, 16);
+            this.labelTriggerNote.TabIndex = 3;
+            this.labelTriggerNote.Text = "Trigger Mode will be written to supported Sapera trigger features when the camera provides them.";
             // 
             // comboBoxTriggerMode
             // 
@@ -280,9 +418,9 @@ namespace CameraCaptureApp.Forms
             // tabPageSaving
             // 
             this.tabPageSaving.Controls.Add(this.checkBoxAutoSave);
-            this.tabPageSaving.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 75), Text = "Save Folder" });
+            this.tabPageSaving.Controls.Add(this.labelSaveFolder);
             this.tabPageSaving.Controls.Add(this.textBoxSaveFolder);
-            this.tabPageSaving.Controls.Add(new System.Windows.Forms.Label() { AutoSize = true, Location = new System.Drawing.Point(32, 179), Text = "File Name Pattern" });
+            this.tabPageSaving.Controls.Add(this.labelFileNamePattern);
             this.tabPageSaving.Controls.Add(this.textBoxFileNamePattern);
             this.tabPageSaving.Location = new System.Drawing.Point(4, 26);
             this.tabPageSaving.Name = "tabPageSaving";
@@ -291,6 +429,24 @@ namespace CameraCaptureApp.Forms
             this.tabPageSaving.TabIndex = 3;
             this.tabPageSaving.Text = "Saving";
             this.tabPageSaving.UseVisualStyleBackColor = true;
+            // 
+            // labelSaveFolder
+            // 
+            this.labelSaveFolder.AutoSize = true;
+            this.labelSaveFolder.Location = new System.Drawing.Point(32, 75);
+            this.labelSaveFolder.Name = "labelSaveFolder";
+            this.labelSaveFolder.Size = new System.Drawing.Size(78, 16);
+            this.labelSaveFolder.TabIndex = 4;
+            this.labelSaveFolder.Text = "Save Folder";
+            // 
+            // labelFileNamePattern
+            // 
+            this.labelFileNamePattern.AutoSize = true;
+            this.labelFileNamePattern.Location = new System.Drawing.Point(32, 179);
+            this.labelFileNamePattern.Name = "labelFileNamePattern";
+            this.labelFileNamePattern.Size = new System.Drawing.Size(118, 16);
+            this.labelFileNamePattern.TabIndex = 5;
+            this.labelFileNamePattern.Text = "File Name Pattern";
             // 
             // save controls
             // 
