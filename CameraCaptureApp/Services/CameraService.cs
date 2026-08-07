@@ -876,7 +876,7 @@ namespace CameraCaptureApp.Services
                 builder.AppendLine("DeviceFeatureResourceIndex=" + _settings.DeviceFeatureResourceIndex);
                 builder.AppendLine("DeviceFeatureConfigFile=" + SafeString(_settings.DeviceFeatureConfigFilePath));
                 builder.AppendLine("RequestedExposureTime=" + _settings.ExposureTime.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                builder.AppendLine("RequestedExposureTimeIntegerString=" + decimal.ToInt32(decimal.Truncate(_settings.ExposureTime)).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                builder.AppendLine("RequestedExposureTimeString=" + decimal.ToInt32(decimal.Truncate(_settings.ExposureTime)).ToString(System.Globalization.CultureInfo.InvariantCulture));
                 builder.AppendLine("RequestedGain=" + _settings.Gain.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 builder.AppendLine("RequestedGainIntegerString=" + decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture));
                 builder.AppendLine("RequestedLength=" + _settings.Length);
@@ -1643,24 +1643,26 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var exposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
+            var methodApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_METHOD, 1);
             var enableApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 1);
             var durationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, exposureValue);
 
             notes.Add(
                 "LineIntegrate exposure "
+                + "methodWrite=" + FormatApplyResult(methodApplied, "1")
                 + "enableWrite=" + FormatApplyResult(enableApplied, "1")
                 + "enable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE)
                 + " method=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_METHOD)
                 + " requested=" + exposureValue
                 + " duration=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_DURATION)
-                + " note=enable is now requested; method is read-only diagnostic");
+                + " note=method 1 is now requested before enable/duration");
 
-            if (enableApplied || durationApplied)
+            if (methodApplied || enableApplied || durationApplied)
             {
                 return true;
             }
 
-            notes.Add("LINE_INTEGRATE_ENABLE/DURATION not supported or locked");
+            notes.Add("LINE_INTEGRATE_METHOD/ENABLE/DURATION not supported or locked");
             return false;
         }
 
