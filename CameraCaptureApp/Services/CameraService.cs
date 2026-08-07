@@ -715,6 +715,7 @@ namespace CameraCaptureApp.Services
 
             var offlineNotes = new System.Collections.Generic.List<string>();
             TryWriteOfflineConfigExposure(offlineNotes);
+            TryWriteOfflineConfigInternalLineRate(offlineNotes);
             TryApplyNotebookDeviceFeatures(offlineNotes);
 
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
@@ -966,6 +967,88 @@ namespace CameraCaptureApp.Services
                 || string.Equals(key, "TIME_INTEGRATE_DURATION", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, "CamTriggerDuration", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, "CAM_TRIGGER_DURATION", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void TryWriteOfflineConfigInternalLineRate(System.Collections.Generic.List<string> notes)
+        {
+            if (string.IsNullOrWhiteSpace(_configFileName) || !File.Exists(_configFileName))
+            {
+                notes.Add("CCF internal line rate not updated: config file not found");
+                return;
+            }
+
+            try
+            {
+                var lines = File.ReadAllLines(_configFileName, Encoding.Default);
+                var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var updated = false;
+                var matchedKeys = new System.Collections.Generic.List<string>();
+
+                for (var i = 0; i < lines.Length; i++)
+                {
+                    var line = lines[i];
+                    var trimmed = line.TrimStart();
+                    if (trimmed.Length == 0 || trimmed.StartsWith(";") || trimmed.StartsWith("#") || trimmed.StartsWith("["))
+                    {
+                        continue;
+                    }
+
+                    var separatorIndex = line.IndexOf('=');
+                    if (separatorIndex <= 0)
+                    {
+                        continue;
+                    }
+
+                    var key = line.Substring(0, separatorIndex).Trim();
+                    if (!IsInternalLineRateConfigKey(key))
+                    {
+                        continue;
+                    }
+
+                    lines[i] = line.Substring(0, separatorIndex + 1) + lineRateText;
+                    matchedKeys.Add(key);
+                    updated = true;
+                }
+
+                if (!updated)
+                {
+                    notes.Add("CCF internal line rate key not found; acquisition/device feature write will be tried");
+                    return;
+                }
+
+                var backupPath = _configFileName + "." + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".line_rate.bak";
+                File.Copy(_configFileName, backupPath, false);
+                File.WriteAllLines(_configFileName, lines, Encoding.Default);
+                notes.Add("CCF internal line rate saved requested=" + lineRateText + " keys=" + string.Join(",", matchedKeys.ToArray()));
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Offline CCF internal line rate update failed.", ex);
+                notes.Add("CCF internal line rate update failed: " + ex.Message);
+            }
+        }
+
+        private static bool IsInternalLineRateConfigKey(string key)
+        {
+            foreach (var featureName in GetInternalLineRateFeatureNames())
+            {
+                if (string.Equals(key, featureName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return string.Equals(key, "LineFrequency", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "LINE_FREQUENCY", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "LineTriggerFreq", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "LINE_TRIGGER_FREQ", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "InternalLineTriggerFreq", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "INTERNAL_LINE_TRIGGER_FREQ", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "IntLineTriggerFreq", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "INT_LINE_TRIGGER_FREQUENCY", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "LineRateHz", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "AcquisitionLineRateHz", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "DeviceLineRateHz", StringComparison.OrdinalIgnoreCase);
         }
 
         private void TryApplyNotebookDeviceFeatures(System.Collections.Generic.List<string> notes)
