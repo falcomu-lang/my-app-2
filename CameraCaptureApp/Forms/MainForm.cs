@@ -57,7 +57,7 @@ namespace CameraCaptureApp.Forms
                 DialogResult dialogResult;
                 dialogResult = form.ShowDialog(this);
 
-                if (dialogResult != DialogResult.OK)
+                if (dialogResult != DialogResult.OK && !form.SettingsApplied)
                 {
                     return;
                 }

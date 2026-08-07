@@ -62,15 +62,17 @@ namespace CameraCaptureApp.Services
             _status.FrameWidth = _settings.Width;
             _status.FrameHeight = _settings.Length > 0 ? _settings.Length : _settings.Height;
             _status.CameraName = _settings.CameraName;
+
+            var requestedSettingsPath = WriteRequestedSettingsReport("ApplySettings");
             if (_status.IsConnected)
             {
-                _status.LastMessage = "Camera settings saved only. Disconnect first; acquisition parameters will be written on the next connect.";
+                _status.LastMessage = "Camera settings saved only. Disconnect first; acquisition parameters will be written on the next connect. Requested: " + requestedSettingsPath;
                 return;
             }
 
             _status.LastMessage = HasStoredConnectionSettings()
-                ? "Camera settings saved locally. Acquisition parameters will be written on the next connect."
-                : "Camera settings saved locally. Select connection settings before applying to hardware.";
+                ? "Camera settings saved locally. Acquisition parameters will be written on the next connect. Requested: " + requestedSettingsPath
+                : "Camera settings saved locally. Select connection settings before applying to hardware. Requested: " + requestedSettingsPath;
         }
 
         public bool Connect()
@@ -852,6 +854,45 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        private string WriteRequestedSettingsReport(string source)
+        {
+            try
+            {
+                var logPath = AppLogger.GetLogPath();
+                var logDirectory = Path.GetDirectoryName(logPath);
+                var reportPath = Path.Combine(logDirectory, "last_requested_settings.txt");
+                var builder = new StringBuilder();
+
+                builder.AppendLine("CameraCaptureApp Requested Settings Report");
+                builder.AppendLine("Generated=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                builder.AppendLine("Source=" + SafeString(source));
+                builder.AppendLine("IsConnected=" + _status.IsConnected);
+                builder.AppendLine("CameraName=" + SafeString(_settings.CameraName));
+                builder.AppendLine("Server=" + SafeString(_settings.ServerName));
+                builder.AppendLine("ServerIndex=" + _settings.ServerIndex);
+                builder.AppendLine("ResourceIndex=" + _settings.ResourceIndex);
+                builder.AppendLine("ConfigFile=" + SafeString(_settings.ConfigFilePath));
+                builder.AppendLine("DeviceFeatureServer=" + SafeString(_settings.DeviceFeatureServerName));
+                builder.AppendLine("DeviceFeatureResourceIndex=" + _settings.DeviceFeatureResourceIndex);
+                builder.AppendLine("DeviceFeatureConfigFile=" + SafeString(_settings.DeviceFeatureConfigFilePath));
+                builder.AppendLine("RequestedExposureTime=" + _settings.ExposureTime.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                builder.AppendLine("RequestedExposureTimeIntegerString=" + decimal.ToInt32(decimal.Truncate(_settings.ExposureTime)).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                builder.AppendLine("RequestedGain=" + _settings.Gain.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                builder.AppendLine("RequestedGainIntegerString=" + decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                builder.AppendLine("RequestedLength=" + _settings.Length);
+                builder.AppendLine("RequestedInternalLineRate=" + _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                builder.AppendLine("RequestedTriggerMode=" + _settings.TriggerMode);
+
+                File.WriteAllText(reportPath, builder.ToString(), Encoding.UTF8);
+                return reportPath;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Requested settings report write failed.", ex);
+                return "<requested report unavailable>";
+            }
+        }
+
         private void TryWriteOfflineConfigExposure(System.Collections.Generic.List<string> notes)
         {
             if (string.IsNullOrWhiteSpace(_configFileName) || !File.Exists(_configFileName))
@@ -1602,22 +1643,24 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var exposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
+            var enableApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 1);
             var durationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, exposureValue);
 
             notes.Add(
                 "LineIntegrate exposure "
+                + "enableWrite=" + FormatApplyResult(enableApplied, "1")
                 + "enable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE)
                 + " method=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_METHOD)
                 + " requested=" + exposureValue
                 + " duration=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_DURATION)
-                + " note=method/enable are read-only diagnostics and are not changed automatically");
+                + " note=enable is now requested; method is read-only diagnostic");
 
-            if (durationApplied)
+            if (enableApplied || durationApplied)
             {
                 return true;
             }
 
-            notes.Add("LINE_INTEGRATE_DURATION not supported or locked");
+            notes.Add("LINE_INTEGRATE_ENABLE/DURATION not supported or locked");
             return false;
         }
 

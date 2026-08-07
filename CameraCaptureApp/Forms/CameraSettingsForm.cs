@@ -31,6 +31,8 @@ namespace CameraCaptureApp.Forms
 
         public CameraSettings Settings { get; private set; }
 
+        public bool SettingsApplied { get; private set; }
+
         private void BindSettings()
         {
             comboBoxTriggerMode.Items.Clear();
@@ -163,6 +165,7 @@ namespace CameraCaptureApp.Forms
         {
             SaveSettings();
             _cameraService.ApplySettings(Settings);
+            SettingsApplied = true;
             ShowApplyResult();
         }
 
@@ -193,6 +196,7 @@ namespace CameraCaptureApp.Forms
             }
 
             Settings = _cameraService.CurrentSettings;
+            SettingsApplied = true;
             labelReadResult.Text = string.IsNullOrWhiteSpace(Settings.DeviceFeatureConfigFilePath)
                 ? "Sapera device feature settings loaded without a config file. Use Live Features after connecting."
                 : "Sapera device feature settings loaded: " + Settings.DeviceFeatureConfigFilePath;
@@ -216,6 +220,7 @@ namespace CameraCaptureApp.Forms
         {
             SaveSettings();
             _cameraService.ApplySettings(Settings);
+            SettingsApplied = true;
             ShowApplyResult();
             DialogResult = DialogResult.OK;
             Close();
