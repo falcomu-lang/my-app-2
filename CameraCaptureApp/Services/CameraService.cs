@@ -1114,18 +1114,10 @@ namespace CameraCaptureApp.Services
 
         private static NotebookApplyResult TryPrepareNotebookExposureMode(SapAcqDevice device)
         {
-            var details = new System.Collections.Generic.List<string>();
-            var applied = false;
-
-            applied |= TrySetNotebookModeFeature(device, details, "ExposureAuto", "Off");
-            applied |= TrySetNotebookModeFeature(device, details, "ExposureMode", "Timed");
-            applied |= TrySetNotebookModeFeature(device, details, "ExposureMode", "TimedExposure");
-            applied |= TrySetNotebookModeFeature(device, details, "ShutterMode", "Timed");
-
             return new NotebookApplyResult
             {
-                Applied = applied,
-                Message = "ExposureModeFeatures[" + string.Join(",", details.ToArray()) + "]"
+                Applied = false,
+                Message = "ExposureModeFeatures[skipped: avoid read-only Sapera dialogs]"
             };
         }
 
@@ -1184,7 +1176,7 @@ namespace CameraCaptureApp.Services
                     continue;
                 }
 
-                if (!CanWriteNotebookFeature(device, featureName))
+                if (!CanWriteNotebookFeatureStrict(device, featureName))
                 {
                     details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(device, featureName));
                     continue;
@@ -1257,6 +1249,67 @@ namespace CameraCaptureApp.Services
                 Applied = applied,
                 Message = "LineRateFeatures[" + string.Join(",", details.ToArray()) + "]"
             };
+        }
+
+        private static bool CanWriteNotebookFeatureStrict(SapAcqDevice device, string featureName)
+        {
+            if (device == null || string.IsNullOrWhiteSpace(featureName))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (!device.IsFeatureAvailable(featureName))
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            SapFeature feature = null;
+            try
+            {
+                feature = new SapFeature(device.Location);
+                feature.Create();
+                if (device.GetFeatureInfo(featureName, feature))
+                {
+                    var accessMode = feature.DataAccessMode.ToString();
+                    return accessMode.IndexOf("Write", StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                if (feature != null)
+                {
+                    try
+                    {
+                        if (feature.Initialized)
+                        {
+                            feature.Destroy();
+                        }
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        feature.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static bool TrySetNotebookNumericFeatureValue(SapAcqDevice device, string featureName, string value)
