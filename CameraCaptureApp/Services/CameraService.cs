@@ -1324,7 +1324,13 @@ namespace CameraCaptureApp.Services
                 if (device.GetFeatureInfo(featureName, feature))
                 {
                     var accessMode = feature.DataAccessMode.ToString();
-                    return accessMode.IndexOf("Write", StringComparison.OrdinalIgnoreCase) >= 0;
+                    if (accessMode.IndexOf("ReadOnly", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        string.Equals(accessMode, "Read", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+
+                    return true;
                 }
             }
             catch
