@@ -1114,10 +1114,17 @@ namespace CameraCaptureApp.Services
 
         private static NotebookApplyResult TryPrepareNotebookExposureMode(SapAcqDevice device)
         {
+            var details = new System.Collections.Generic.List<string>();
+            var applied = false;
+
+            applied |= TrySetNotebookModeFeature(device, details, "ExposureAuto", "Off");
+            applied |= TrySetNotebookModeFeature(device, details, "ExposureMode", "Timed");
+            applied |= TrySetNotebookModeFeature(device, details, "ShutterMode", "Timed");
+
             return new NotebookApplyResult
             {
-                Applied = false,
-                Message = "ExposureModeFeatures[skipped: avoid read-only Sapera dialogs]"
+                Applied = applied,
+                Message = "ExposureModeFeatures[" + string.Join(",", details.ToArray()) + "]"
             };
         }
 
@@ -1129,7 +1136,7 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
-            if (!CanWriteNotebookFeature(device, featureName))
+            if (!CanWriteNotebookFeatureStrict(device, featureName))
             {
                 details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(device, featureName));
                 return false;
