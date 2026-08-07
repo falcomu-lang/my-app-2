@@ -1110,7 +1110,25 @@ namespace CameraCaptureApp.Services
         {
             var featureNames = new[]
             {
-                "ExposureTime"
+                "ExposureTime",
+                "ExposureTimeAbs",
+                "ExposureTimeRaw",
+                "Exposure",
+                "LineExposureTime",
+                "AcquisitionExposureTime",
+                "ShutterTime",
+                "ShutterDuration",
+                "TriggerWidth",
+                "TriggerDuration",
+                "CamTriggerDuration",
+                "CAM_TRIGGER_DURATION",
+                "StrobeDuration",
+                "StrobePulseWidth",
+                "PulseWidth",
+                "PulseDuration",
+                "LINE_INTEGRATE_DURATION",
+                "LineIntegrateDuration",
+                "LineIntegrationDuration"
             };
 
             var details = new System.Collections.Generic.List<string>();
@@ -1139,7 +1157,6 @@ namespace CameraCaptureApp.Services
 
                 applied = true;
                 details.Add(featureName + "=ok(" + exposureText + ") readback=" + ReadNotebookFeatureValue(device, featureName));
-                break;
             }
 
             return new NotebookApplyResult
