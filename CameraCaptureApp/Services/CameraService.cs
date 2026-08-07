@@ -713,6 +713,7 @@ namespace CameraCaptureApp.Services
 
             var offlineNotes = new System.Collections.Generic.List<string>();
             TryWriteOfflineConfigExposure(offlineNotes);
+            TryApplyNotebookDeviceFeatures(offlineNotes);
 
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             _acquisition.SignalNotify += OnSignalNotify;
@@ -884,6 +885,91 @@ namespace CameraCaptureApp.Services
                 || string.Equals(key, "TIME_INTEGRATE_DURATION", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, "CamTriggerDuration", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, "CAM_TRIGGER_DURATION", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void TryApplyNotebookDeviceFeatures(System.Collections.Generic.List<string> notes)
+        {
+            SapAcqDevice notebookDevice = null;
+            try
+            {
+                notebookDevice = new SapAcqDevice();
+                var exposureText = _settings.ExposureTime.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var gainText = _settings.Gain.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var triggerEnabled = _settings.TriggerMode != TriggerMode.Continuous;
+
+                var exposureApplied = TrySetNotebookFeatureValue(notebookDevice, "ExposureTime", exposureText);
+                var triggerApplied = TrySetNotebookFeatureValue(notebookDevice, "TriggerMode", triggerEnabled);
+                var gainApplied = TrySetNotebookFeatureValue(notebookDevice, "Gain", gainText);
+
+                if (exposureApplied || triggerApplied || gainApplied)
+                {
+                    TryUpdateNotebookFeaturesToDevice(notebookDevice);
+                }
+
+                notes.Add(
+                    "Notebook features "
+                    + "ExposureTime=" + FormatApplyResult(exposureApplied, exposureText)
+                    + " TriggerMode=" + FormatApplyResult(triggerApplied, triggerEnabled.ToString())
+                    + " Gain=" + FormatApplyResult(gainApplied, gainText));
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Notebook feature write failed.", ex);
+                notes.Add("Notebook features unavailable: " + ex.Message);
+            }
+            finally
+            {
+                if (notebookDevice != null)
+                {
+                    try
+                    {
+                        notebookDevice.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
+        private static bool TrySetNotebookFeatureValue(SapAcqDevice device, string featureName, string value)
+        {
+            try
+            {
+                return device.SetFeatureValue(featureName, value);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TrySetNotebookFeatureValue(SapAcqDevice device, string featureName, bool value)
+        {
+            try
+            {
+                return device.SetFeatureValue(featureName, value);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void TryUpdateNotebookFeaturesToDevice(SapAcqDevice device)
+        {
+            try
+            {
+                device.UpdateFeaturesToDevice();
+            }
+            catch
+            {
+            }
+        }
+
+        private static string FormatApplyResult(bool applied, string value)
+        {
+            return applied ? "ok(" + value + ")" : "failed(" + value + ")";
         }
 
         private bool TrySetNumericFeature(decimal value, System.Collections.Generic.List<string> notes, params string[] featureNames)
