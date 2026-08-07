@@ -1643,10 +1643,9 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var requestedExposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
-            var durationValue = ConvertOfficialExposureToLineIntegrateDuration(_settings.ExposureTime);
             var methodApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_METHOD, 1);
             var enableApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 1);
-            var durationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, durationValue);
+            var durationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, requestedExposureValue);
 
             notes.Add(
                 "LineIntegrate exposure "
@@ -1655,9 +1654,8 @@ namespace CameraCaptureApp.Services
                 + "enable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE)
                 + " method=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_METHOD)
                 + " requested=" + requestedExposureValue
-                + " durationRequest=" + durationValue
                 + " duration=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_DURATION)
-                + " note=official exposure value is converted to line integrate duration by /10");
+                + " note=method 1 is requested before enable/duration");
 
             if (methodApplied || enableApplied || durationApplied)
             {
@@ -1666,13 +1664,6 @@ namespace CameraCaptureApp.Services
 
             notes.Add("LINE_INTEGRATE_METHOD/ENABLE/DURATION not supported or locked");
             return false;
-        }
-
-        private static int ConvertOfficialExposureToLineIntegrateDuration(decimal exposureTime)
-        {
-            var scaledValue = exposureTime / 10m;
-            var durationValue = decimal.ToInt32(decimal.Truncate(scaledValue));
-            return Math.Max(1, durationValue);
         }
 
         private bool TrySetLengthParameters(System.Collections.Generic.List<string> notes)
@@ -2157,6 +2148,10 @@ namespace CameraCaptureApp.Services
                 || searchable.Contains("integration")
                 || searchable.Contains("integrate")
                 || searchable.Contains("shutter")
+                || searchable.Contains("strobe")
+                || searchable.Contains("pulse")
+                || searchable.Contains("width")
+                || searchable.Contains("duration")
                 || searchable.Contains("line")
                 || searchable.Contains("rate")
                 || searchable.Contains("gain")
