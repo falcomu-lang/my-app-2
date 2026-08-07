@@ -1106,6 +1106,130 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        private NotebookApplyResult TrySetNotebookInternalLineRateFeatures(string lineRateText, string lineRateIntegerText)
+        {
+            SapAcqDevice notebookDevice = null;
+            try
+            {
+                var autoSelectedLocation = false;
+                var notebookLocation = BuildNotebookFeatureLocation(out autoSelectedLocation);
+                if (notebookLocation == null)
+                {
+                    return new NotebookApplyResult
+                    {
+                        Applied = false,
+                        Message = "InternalLineRate notebook features skipped: no selected or unique AcqDevice feature path was found. Select Load Features first."
+                    };
+                }
+
+                notebookDevice = new SapAcqDevice(notebookLocation);
+                if (!notebookDevice.Create())
+                {
+                    return new NotebookApplyResult
+                    {
+                        Applied = false,
+                        Message = "InternalLineRate notebook features unavailable: SapAcqDevice.Create failed for " + FormatSapLocation(notebookLocation)
+                    };
+                }
+
+                TrySetNotebookEnumFeatureValue(notebookDevice, "TriggerSelector", new[] { "LineStart", "LineTrigger", "AcquisitionLine" });
+                TrySetNotebookEnumFeatureValue(notebookDevice, "TriggerMode", new[] { "On" });
+                TrySetNotebookEnumFeatureValue(notebookDevice, "TriggerSource", new[] { "Internal", "Timer", "FixedRate", "LineRate", "Software" });
+
+                var details = new System.Collections.Generic.List<string>();
+                var applied = false;
+                foreach (var featureName in GetInternalLineRateFeatureNames())
+                {
+                    if (!IsNotebookFeatureAvailable(notebookDevice, featureName))
+                    {
+                        details.Add(featureName + "=missing");
+                        continue;
+                    }
+
+                    if (!CanWriteNotebookFeature(notebookDevice, featureName))
+                    {
+                        details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
+                        continue;
+                    }
+
+                    if (!TrySetNotebookNumericFeatureValue(notebookDevice, featureName, lineRateText)
+                        && !TrySetNotebookNumericFeatureValue(notebookDevice, featureName, lineRateIntegerText))
+                    {
+                        details.Add(featureName + "=failed(" + lineRateText + ")");
+                        continue;
+                    }
+
+                    applied = true;
+                    details.Add(featureName + "=ok(" + lineRateText + ") readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
+                    break;
+                }
+
+                if (applied)
+                {
+                    TryUpdateNotebookFeaturesToDevice(notebookDevice);
+                }
+
+                return new NotebookApplyResult
+                {
+                    Applied = applied,
+                    Message = "InternalLineRate notebook target=" + FormatSapLocation(notebookLocation) + " "
+                        + (autoSelectedLocation ? "targetSource=auto-selected " : "targetSource=selected ")
+                        + "Features[" + string.Join(",", details.ToArray()) + "]"
+                };
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Notebook internal line rate write failed.", ex);
+                return new NotebookApplyResult
+                {
+                    Applied = false,
+                    Message = "InternalLineRate notebook features unavailable: " + ex.Message
+                };
+            }
+            finally
+            {
+                if (notebookDevice != null)
+                {
+                    try
+                    {
+                        if (notebookDevice.Initialized)
+                        {
+                            notebookDevice.Destroy();
+                        }
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        notebookDevice.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
+        private static bool TrySetNotebookEnumFeatureValue(SapAcqDevice device, string featureName, string[] values)
+        {
+            if (!CanWriteNotebookFeature(device, featureName))
+            {
+                return false;
+            }
+
+            foreach (var value in values)
+            {
+                if (TrySetNotebookFeatureValue(device, featureName, value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static NotebookApplyResult TrySetNotebookExposureFeatures(SapAcqDevice device, string exposureText)
         {
             var featureNames = new[]
@@ -1840,15 +1964,20 @@ namespace CameraCaptureApp.Services
         private bool TrySetInternalLineRate(System.Collections.Generic.List<string> notes)
         {
             var acquisitionRate = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate));
+            var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lineRateIntegerText = acquisitionRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
             TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE);
             if (TrySetAcquisitionIntParameter(notes, acquisitionRate, SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ))
             {
                 return true;
             }
 
+            TryConfigureInternalLineTriggerSource();
+
             var appliedFeature = string.Empty;
             if (TrySetDeviceFeature(
-                new[] { "AcquisitionLineRate", "LineRate", "DeviceLineRate", "InternalLineRate" },
+                GetInternalLineRateFeatureNames(),
                 (double)_settings.InternalLineRate,
                 out appliedFeature))
             {
@@ -1856,8 +1985,42 @@ namespace CameraCaptureApp.Services
                 return true;
             }
 
+            if (TrySetDeviceFeature(
+                GetInternalLineRateFeatureNames(),
+                lineRateText,
+                out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied value=" + lineRateText);
+                return true;
+            }
+
+            if (TrySetDeviceFeature(
+                GetInternalLineRateFeatureNames(),
+                lineRateIntegerText,
+                out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied value=" + lineRateIntegerText);
+                return true;
+            }
+
+            var notebookResult = TrySetNotebookInternalLineRateFeatures(lineRateText, lineRateIntegerText);
+            notes.Add(notebookResult.Message);
+            if (notebookResult.Applied)
+            {
+                return true;
+            }
+
             notes.Add("InternalLineRate not supported");
             return false;
+        }
+
+        private void TryConfigureInternalLineTriggerSource()
+        {
+            TryConfigureTriggerSelector("LineStart", true, "Internal");
+            TryConfigureTriggerSelector("LineStart", true, "Timer");
+            TryConfigureTriggerSelector("LineStart", true, "FixedRate");
+            TryConfigureTriggerSelector("LineTrigger", true, "Internal");
+            TryConfigureTriggerSelector("AcquisitionLine", true, "Internal");
         }
 
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
@@ -1982,6 +2145,34 @@ namespace CameraCaptureApp.Services
             return selectorApplied && modeApplied && sourceApplied;
         }
 
+        private static string[] GetInternalLineRateFeatureNames()
+        {
+            return new[]
+            {
+                "AcquisitionLineRate",
+                "AcquisitionLineRateAbs",
+                "AcquisitionLineRateRaw",
+                "LineRate",
+                "LineRateAbs",
+                "LineRateRaw",
+                "DeviceLineRate",
+                "InternalLineRate",
+                "InternalLineRateAbs",
+                "InternalLineFrequency",
+                "LineFrequency",
+                "LineTriggerFrequency",
+                "InternalLineTriggerFrequency",
+                "LineTimerFrequency",
+                "TimerFrequency",
+                "TimerDuration",
+                "LinePeriod",
+                "AcquisitionLinePeriod",
+                "DeviceLinePeriod",
+                "InternalLinePeriod",
+                "INT_LINE_TRIGGER_FREQ"
+            };
+        }
+
         private bool TrySetDeviceFeature(string[] featureNames, double value, out string appliedFeature)
         {
             appliedFeature = string.Empty;
@@ -2018,6 +2209,31 @@ namespace CameraCaptureApp.Services
             foreach (var featureName in featureNames)
             {
                 if (!_acqDevice.IsFeatureAvailable(featureName))
+                {
+                    continue;
+                }
+
+                if (TrySetFeatureValue(featureName, value))
+                {
+                    appliedFeature = featureName;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TrySetDeviceFeature(string[] featureNames, string value, out string appliedFeature)
+        {
+            appliedFeature = string.Empty;
+            if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
+            {
+                return false;
+            }
+
+            foreach (var featureName in featureNames)
+            {
+                if (!CanWriteDeviceFeature(featureName))
                 {
                     continue;
                 }
