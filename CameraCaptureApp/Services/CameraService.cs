@@ -990,16 +990,18 @@ namespace CameraCaptureApp.Services
                 var exposureText = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var gainText = decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
+                var exposureModeResult = TryPrepareNotebookExposureMode(notebookDevice);
                 var exposureResult = TrySetNotebookExposureFeatures(notebookDevice, exposureText);
                 var gainApplied = TrySetNotebookFeatureValue(notebookDevice, "Gain", gainText);
 
-                if (exposureResult.Applied || gainApplied)
+                if (exposureModeResult.Applied || exposureResult.Applied || gainApplied)
                 {
                     TryUpdateNotebookFeaturesToDevice(notebookDevice);
                 }
 
                 notes.Add(
                     "Notebook features target=" + FormatSapLocation(notebookLocation) + " "
+                    + exposureModeResult.Message + " "
                     + exposureResult.Message
                     + " Gain=" + FormatApplyResult(gainApplied, gainText)
                     + " TriggerMode=skipped");
@@ -1072,17 +1074,59 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        private static NotebookApplyResult TryPrepareNotebookExposureMode(SapAcqDevice device)
+        {
+            var details = new System.Collections.Generic.List<string>();
+            var applied = false;
+
+            applied |= TrySetNotebookModeFeature(device, details, "ExposureAuto", "Off");
+            applied |= TrySetNotebookModeFeature(device, details, "ExposureMode", "Timed");
+            applied |= TrySetNotebookModeFeature(device, details, "ExposureMode", "TimedExposure");
+            applied |= TrySetNotebookModeFeature(device, details, "ShutterMode", "Timed");
+
+            return new NotebookApplyResult
+            {
+                Applied = applied,
+                Message = "ExposureModeFeatures[" + string.Join(",", details.ToArray()) + "]"
+            };
+        }
+
+        private static bool TrySetNotebookModeFeature(SapAcqDevice device, System.Collections.Generic.List<string> details, string featureName, string value)
+        {
+            if (!IsNotebookFeatureAvailable(device, featureName))
+            {
+                details.Add(featureName + "=missing");
+                return false;
+            }
+
+            var applied = TrySetNotebookFeatureValue(device, featureName, value);
+            details.Add(featureName + "=" + FormatApplyResult(applied, value) + " readback=" + ReadNotebookFeatureValue(device, featureName));
+            return applied;
+        }
+
         private static NotebookApplyResult TrySetNotebookExposureFeatures(SapAcqDevice device, string exposureText)
         {
             var featureNames = new[]
             {
-                "LINE_INTEGRATE_DURATION",
-                "LineIntegrateDuration",
-                "LineIntegrationDuration",
                 "ExposureTime",
                 "ExposureTimeAbs",
                 "ExposureTimeRaw",
-                "Exposure"
+                "Exposure",
+                "LineExposureTime",
+                "AcquisitionExposureTime",
+                "ShutterTime",
+                "ShutterDuration",
+                "TriggerWidth",
+                "TriggerDuration",
+                "CamTriggerDuration",
+                "CAM_TRIGGER_DURATION",
+                "StrobeDuration",
+                "StrobePulseWidth",
+                "PulseWidth",
+                "PulseDuration",
+                "LINE_INTEGRATE_DURATION",
+                "LineIntegrateDuration",
+                "LineIntegrationDuration"
             };
 
             var details = new System.Collections.Generic.List<string>();
@@ -1096,7 +1140,7 @@ namespace CameraCaptureApp.Services
                     continue;
                 }
 
-                var setOk = TrySetNotebookFeatureValue(device, featureName, exposureText);
+                var setOk = TrySetNotebookNumericFeatureValue(device, featureName, exposureText);
                 if (!setOk)
                 {
                     details.Add(featureName + "=failed(" + exposureText + ")");
@@ -1112,6 +1156,46 @@ namespace CameraCaptureApp.Services
                 Applied = applied,
                 Message = "ExposureFeatures[" + string.Join(",", details.ToArray()) + "]"
             };
+        }
+
+        private static bool TrySetNotebookNumericFeatureValue(SapAcqDevice device, string featureName, string value)
+        {
+            if (TrySetNotebookFeatureValue(device, featureName, value))
+            {
+                return true;
+            }
+
+            int intValue;
+            if (int.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out intValue))
+            {
+                try
+                {
+                    if (device.SetFeatureValue(featureName, intValue))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            double doubleValue;
+            if (double.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out doubleValue))
+            {
+                try
+                {
+                    if (device.SetFeatureValue(featureName, doubleValue))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return false;
         }
 
         private static bool IsNotebookFeatureAvailable(SapAcqDevice device, string featureName)
