@@ -804,11 +804,51 @@ namespace CameraCaptureApp.Services
 
             if (notes.Count > 0)
             {
-                _status.LastMessage = string.Join(" | ", notes.ToArray());
+                var reportPath = WriteApplyParameterReport(notes);
+                _status.LastMessage = string.IsNullOrWhiteSpace(reportPath)
+                    ? string.Join(" | ", notes.ToArray())
+                    : "Camera parameters applied. Details: " + reportPath;
             }
             else if (applied)
             {
                 _status.LastMessage = "Camera parameters written to Sapera device.";
+            }
+        }
+
+        private string WriteApplyParameterReport(System.Collections.Generic.List<string> notes)
+        {
+            try
+            {
+                var logPath = AppLogger.GetLogPath();
+                var logDirectory = Path.GetDirectoryName(logPath);
+                var reportPath = Path.Combine(logDirectory, "last_apply_params.txt");
+                var builder = new StringBuilder();
+
+                builder.AppendLine("CameraCaptureApp Apply Parameter Report");
+                builder.AppendLine("Generated=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                builder.AppendLine("Server=" + SafeString(_settings.ServerName));
+                builder.AppendLine("ConfigFile=" + SafeString(_settings.ConfigFilePath));
+                builder.AppendLine("DeviceFeatureServer=" + SafeString(_settings.DeviceFeatureServerName));
+                builder.AppendLine("DeviceFeatureResourceIndex=" + _settings.DeviceFeatureResourceIndex);
+                builder.AppendLine("DeviceFeatureConfigFile=" + SafeString(_settings.DeviceFeatureConfigFilePath));
+                builder.AppendLine("RequestedExposureTime=" + _settings.ExposureTime.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                builder.AppendLine("RequestedGain=" + _settings.Gain.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                builder.AppendLine("RequestedInternalLineRate=" + _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                builder.AppendLine();
+                builder.AppendLine("[Apply Notes]");
+
+                foreach (var note in notes)
+                {
+                    builder.AppendLine(note);
+                }
+
+                File.WriteAllText(reportPath, builder.ToString(), Encoding.UTF8);
+                return reportPath;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Apply parameter report write failed.", ex);
+                return string.Empty;
             }
         }
 
