@@ -892,7 +892,20 @@ namespace CameraCaptureApp.Services
             SapAcqDevice notebookDevice = null;
             try
             {
-                notebookDevice = new SapAcqDevice();
+                var notebookLocation = BuildNotebookFeatureLocation();
+                if (notebookLocation == null)
+                {
+                    notes.Add("Notebook features skipped: select Load Features first.");
+                    return;
+                }
+
+                notebookDevice = new SapAcqDevice(notebookLocation);
+                if (!notebookDevice.Create())
+                {
+                    notes.Add("Notebook features unavailable: SapAcqDevice.Create failed for " + FormatSapLocation(notebookLocation));
+                    return;
+                }
+
                 var exposureText = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var gainText = decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -905,7 +918,7 @@ namespace CameraCaptureApp.Services
                 }
 
                 notes.Add(
-                    "Notebook features "
+                    "Notebook features target=" + FormatSapLocation(notebookLocation) + " "
                     + "ExposureTime=" + FormatApplyResult(exposureApplied, exposureText)
                     + " Gain=" + FormatApplyResult(gainApplied, gainText)
                     + " TriggerMode=skipped");
@@ -921,6 +934,17 @@ namespace CameraCaptureApp.Services
                 {
                     try
                     {
+                        if (notebookDevice.Initialized)
+                        {
+                            notebookDevice.Destroy();
+                        }
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
                         notebookDevice.Dispose();
                     }
                     catch
@@ -928,6 +952,26 @@ namespace CameraCaptureApp.Services
                     }
                 }
             }
+        }
+
+        private SapLocation BuildNotebookFeatureLocation()
+        {
+            if (!string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName) && _settings.DeviceFeatureResourceIndex >= 0)
+            {
+                return new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex);
+            }
+
+            return null;
+        }
+
+        private static string FormatSapLocation(SapLocation location)
+        {
+            if (location == null)
+            {
+                return "<none>";
+            }
+
+            return location.ServerName + "#" + location.ResourceIndex;
         }
 
         private static bool TrySetNotebookFeatureValue(SapAcqDevice device, string featureName, string value)
