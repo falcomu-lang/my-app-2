@@ -990,14 +990,10 @@ namespace CameraCaptureApp.Services
 
                 var exposureText = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var gainText = decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture);
-                var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-                var exposureModeResult = TryPrepareNotebookExposureMode(notebookDevice);
                 var exposureResult = TrySetNotebookExposureFeatures(notebookDevice, exposureText);
-                var lineRateResult = TrySetNotebookLineRateFeatures(notebookDevice, lineRateText);
                 var gainApplied = TrySetNotebookFeatureValue(notebookDevice, "Gain", gainText);
 
-                if (exposureModeResult.Applied || exposureResult.Applied || lineRateResult.Applied || gainApplied)
+                if (exposureResult.Applied || gainApplied)
                 {
                     TryUpdateNotebookFeaturesToDevice(notebookDevice);
                 }
@@ -1005,9 +1001,7 @@ namespace CameraCaptureApp.Services
                 notes.Add(
                     "Notebook features target=" + FormatSapLocation(notebookLocation) + " "
                     + (autoSelectedLocation ? "targetSource=auto-selected " : "targetSource=selected ")
-                    + exposureModeResult.Message + " "
                     + exposureResult.Message
-                    + " " + lineRateResult.Message
                     + " Gain=" + FormatApplyResult(gainApplied, gainText)
                     + " TriggerMode=skipped");
             }
@@ -1099,7 +1093,7 @@ namespace CameraCaptureApp.Services
         {
             try
             {
-                if (!CanWriteNotebookFeature(device, featureName))
+                if (!IsNotebookFeatureAvailable(device, featureName))
                 {
                     return false;
                 }
@@ -1112,64 +1106,11 @@ namespace CameraCaptureApp.Services
             }
         }
 
-        private static NotebookApplyResult TryPrepareNotebookExposureMode(SapAcqDevice device)
-        {
-            var details = new System.Collections.Generic.List<string>();
-            var applied = false;
-
-            applied |= TrySetNotebookModeFeature(device, details, "ExposureAuto", "Off");
-            applied |= TrySetNotebookModeFeature(device, details, "ExposureMode", "Timed");
-            applied |= TrySetNotebookModeFeature(device, details, "ShutterMode", "Timed");
-
-            return new NotebookApplyResult
-            {
-                Applied = applied,
-                Message = "ExposureModeFeatures[" + string.Join(",", details.ToArray()) + "]"
-            };
-        }
-
-        private static bool TrySetNotebookModeFeature(SapAcqDevice device, System.Collections.Generic.List<string> details, string featureName, string value)
-        {
-            if (!IsNotebookFeatureAvailable(device, featureName))
-            {
-                details.Add(featureName + "=missing");
-                return false;
-            }
-
-            if (!CanWriteNotebookFeatureStrict(device, featureName))
-            {
-                details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(device, featureName));
-                return false;
-            }
-
-            var applied = TrySetNotebookFeatureValue(device, featureName, value);
-            details.Add(featureName + "=" + FormatApplyResult(applied, value) + " readback=" + ReadNotebookFeatureValue(device, featureName));
-            return applied;
-        }
-
         private static NotebookApplyResult TrySetNotebookExposureFeatures(SapAcqDevice device, string exposureText)
         {
             var featureNames = new[]
             {
-                "ExposureTime",
-                "ExposureTimeAbs",
-                "ExposureTimeRaw",
-                "Exposure",
-                "LineExposureTime",
-                "AcquisitionExposureTime",
-                "ShutterTime",
-                "ShutterDuration",
-                "TriggerWidth",
-                "TriggerDuration",
-                "CamTriggerDuration",
-                "CAM_TRIGGER_DURATION",
-                "StrobeDuration",
-                "StrobePulseWidth",
-                "PulseWidth",
-                "PulseDuration",
-                "LINE_INTEGRATE_DURATION",
-                "LineIntegrateDuration",
-                "LineIntegrationDuration"
+                "ExposureTime"
             };
 
             var details = new System.Collections.Generic.List<string>();
@@ -1205,56 +1146,6 @@ namespace CameraCaptureApp.Services
             {
                 Applied = applied,
                 Message = "ExposureFeatures[" + string.Join(",", details.ToArray()) + "]"
-            };
-        }
-
-        private static NotebookApplyResult TrySetNotebookLineRateFeatures(SapAcqDevice device, string lineRateText)
-        {
-            var featureNames = new[]
-            {
-                "AcquisitionLineRate",
-                "LineRate",
-                "DeviceLineRate",
-                "InternalLineRate",
-                "AcquisitionFrameRate",
-                "FrameRate",
-                "AcquisitionLinePeriod",
-                "LinePeriod"
-            };
-
-            var details = new System.Collections.Generic.List<string>();
-            var applied = false;
-
-            foreach (var featureName in featureNames)
-            {
-                if (!IsNotebookFeatureAvailable(device, featureName))
-                {
-                    details.Add(featureName + "=missing");
-                    continue;
-                }
-
-                if (!CanWriteNotebookFeature(device, featureName))
-                {
-                    details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(device, featureName));
-                    continue;
-                }
-
-                var setOk = TrySetNotebookNumericFeatureValue(device, featureName, lineRateText);
-                if (!setOk)
-                {
-                    details.Add(featureName + "=failed(" + lineRateText + ")");
-                    continue;
-                }
-
-                applied = true;
-                details.Add(featureName + "=ok(" + lineRateText + ") readback=" + ReadNotebookFeatureValue(device, featureName));
-                break;
-            }
-
-            return new NotebookApplyResult
-            {
-                Applied = applied,
-                Message = "LineRateFeatures[" + string.Join(",", details.ToArray()) + "]"
             };
         }
 
