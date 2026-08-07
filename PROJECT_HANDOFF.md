@@ -3,7 +3,7 @@
 ## Overview
 
 This repository contains a WinForms line-scan camera capture application targeting `.NET Framework 4.7.2` and `x64`.
-The project is designed so the WinForms UI remains editable by a person in the Designer, while camera control, settings persistence, and image viewing logic are separated from `MainForm`.
+The project uses Teledyne DALSA Sapera LT / SapClassBasic APIs for Camera Link acquisition and camera feature control.
 
 Repository: `https://github.com/falcomu-lang/my-app-2`
 
@@ -14,8 +14,8 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Main project: `CameraCaptureApp/CameraCaptureApp.csproj`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
-- Current handoff date: `2026-08-06`
-- Latest pushed commit before this handoff update: `13111e1 Avoid locked Sapera parameter writes`
+- Current handoff date: `2026-08-07`
+- Latest pushed commit before this handoff update: `838ec0d Restore exposure feature candidates`
 
 Latest verified local build command:
 
@@ -25,82 +25,125 @@ Latest verified local build command:
 
 Latest local build result: `0 warning / 0 error`
 
-## What Is Ready
+## What Is Working Now
 
-- Main WinForms application layout for a `1280 x 720` program window.
-- `MainForm` hosts the viewer at runtime to avoid Designer load issues.
-- `CameraSettingsForm` remains Designer-editable.
-- `settings.ini` persistence is implemented and generated beside the built executable.
-- Sapera connection flow is present through:
-  - `SapAcquisition`
-  - `SapBufferWithTrash`
-  - `SapAcqToBuf`
-  - `SignalNotify`
-  - `XferNotify`
-- Manual connection, disconnection, preview, stop, and snap capture actions exist.
-- Preview frames are throttled to about `5 Hz` to keep the UI responsive.
-- Large image loading and viewing supports:
-  - very large image dimensions
-  - async loading
-  - zoom and pan
-  - reduced flicker
-  - tiled / pyramid-style rendering work from earlier iterations
-- Snapshot save on manual capture has been added.
+- Camera connection, disconnection, preview, stop, and snap capture.
+- WinForms Designer-editable `CameraSettingsForm`.
+- Runtime-hosted camera viewer in `MainForm`.
+- `settings.ini` persistence beside the built executable.
+- Large image viewing support with zoom / pan and reduced UI flicker.
+- Camera parameters currently confirmed by user as working in this version:
+  - `Exposure Time`
+  - `Gain`
+  - `Length`
+- Current confirmed user feedback:
+  - Exposure, gain, and length can be operated normally in the current version.
+  - The app still contains diagnostic / probing code that was added while finding the correct Sapera feature path.
 
-## Current Camera Parameter Status
+## Parameter Apply Workflow
 
-The current stable behavior prioritizes avoiding Sapera error popups and keeping connection/preview stable.
+- Pressing `Apply` in the settings window saves the requested values locally.
+- Hardware parameter writes are intentionally performed on the next offline reconnect path, not immediately while live/connected.
+- Expected workflow:
+  1. Disconnect / stay offline.
+  2. Edit settings.
+  3. Press `Apply`.
+  4. Connect again.
+- This workflow is deliberate because some Sapera acquisition parameters become locked after buffers/transfers are created.
 
-- `Exposure Time`: acquisition-side writes have previously shown successful readback, but current stable flow applies acquisition parameters during reconnect rather than while already connected.
-- `Internal Line Rate`: acquisition-side writes have previously shown successful readback for:
+## Current Parameter Implementation Notes
+
+### Exposure
+
+- The currently useful exposure path is the camera-side `SapAcqDevice` feature write path.
+- The app tries several exposure-related feature names to discover the one the installed camera accepts.
+- This probing is still present because the exact final production feature name has not been fully narrowed down.
+- The app also still writes/readbacks acquisition-side line integrate diagnostics:
+  - `LINE_INTEGRATE_METHOD`
+  - `LINE_INTEGRATE_ENABLE`
+  - `LINE_INTEGRATE_DURATION`
+- These acquisition-side values may read back successfully but are not necessarily the parameter that changes actual brightness for this camera.
+
+### Gain
+
+- `Gain` is currently working through the camera-side `SapAcqDevice.SetFeatureValue("Gain", valueString)` path.
+- The value is sent as a string, matching the user's reference notebook snippet.
+
+### Length
+
+- Length is currently working for the user's setup.
+- It is still routed through Sapera acquisition parameter logic where supported by the loaded CCF / camera path.
+
+### Internal Line Rate
+
+- Internal line rate is not yet confirmed working.
+- The next version should focus on this feature.
+- Existing acquisition-side attempts include:
   - `INT_LINE_TRIGGER_ENABLE`
   - `INT_LINE_TRIGGER_FREQ`
-- `Length`: some acquisition length paths work depending on camera / CCF state, but `Acquisition length parameter not supported` may still appear for unsupported Sapera parameters.
-- `Gain`: not currently working through this application.
-  - The attempted `SapAcqDevice` path is not available for the current acquisition connection.
-  - Sapera reported errors such as `CorAcqDeviceGetHandle not implemented()` when probing that path.
-  - The current stable version disables the risky `SapAcqDevice` probing to avoid error popups.
+- These may write/read back but have not yet been confirmed to affect line-scan behavior.
+
+## Diagnostic Code Still Present
+
+Some diagnostic / probing code remains intentionally. It was added while finding the correct camera parameter path and should be cleaned up once final feature names are known.
+
+Important diagnostic outputs:
+
+- `CameraCaptureApp\bin\Debug\logs\last_requested_settings.txt`
+  - Written when `ApplySettings()` receives UI settings.
+  - Shows requested exposure/gain/length/internal line rate before hardware writes.
+- `CameraCaptureApp\bin\Debug\logs\last_apply_params.txt`
+  - Written when parameters are applied during connect/reconnect.
+  - Shows Sapera write attempts, readbacks, and notebook feature results.
+- `live_features_*.txt`
+  - Exported by `Live Features`.
+  - Used to inspect camera-side feature names and access modes.
+- `live_features_failed_*.txt`
+  - Exported when `SapAcqDevice` live feature probing is unavailable.
+
+Keep these diagnostics for now because they are still useful for mapping the camera-specific line rate parameter.
 
 ## Important Sapera Notes
 
-- Parameters can become locked after buffer / transfer objects are created.
-- To avoid `CorAcqSetPrmEx parameters locked()`, acquisition parameters are currently applied early in the connection flow.
-- Already-connected `Apply` currently saves settings and expects reconnect for hardware application.
-- The current Sapera DLL reference still points to a local SDK/demo DLL path, so another computer must have a compatible Sapera SDK/runtime setup.
+- The camera is a line-scan camera.
+- Sapera acquisition parameters can become locked after buffer / transfer creation.
+- Avoid writing acquisition parameters late in the live preview path unless transfer is safely stopped and the parameter is confirmed writable.
+- The working camera-side path uses `SapAcqDevice` bound to the selected or auto-selected AcqDevice location.
+- If no user-selected DeviceFeature path exists and only one AcqDevice is found, the app auto-selects that unique path.
+- The Sapera DLL reference still points to a local SDK/demo DLL path, so another computer needs a compatible Sapera SDK/runtime setup.
 
 ## Known Issues
 
-- `Gain` cannot currently be written from the app.
-- `Exposure Time` and `Internal Line Rate` need a cleaner, confirmed user workflow for when values are written:
-  - before connect
-  - during reconnect
-  - while preview is stopped
-- Online parameter changes are intentionally conservative right now to avoid locked-parameter errors.
-- Some Sapera official dialogs may still show SDK-level message boxes if invalid paths are probed.
+- `Internal Line Rate` is not yet functional.
+- Some exploratory exposure feature writes are still present and should be trimmed once the exact working feature is confirmed from `last_apply_params.txt`.
 - No automated tests.
 - No installer or deployment package.
+- The downloaded PDF `20161221032935911.pdf` is currently untracked and should not be committed unless intentionally needed.
 
 ## Next Version Goals
 
-The next version should focus on reliable camera parameter control:
+1. Add reliable `Internal Line Rate` control.
+2. Identify the exact Sapera feature or acquisition parameter that controls line rate for this line-scan setup.
+3. Reduce exposure probing code after the final working exposure feature name is confirmed.
+4. Keep exposure, gain, and length behavior stable while adding line rate.
 
-1. Make `Exposure Time` controllable from the app with a clear apply timing.
-2. Make `Gain` controllable from the app by finding the same parameter path used by the official camera settings tool.
-3. Make `Internal Line Rate` controllable and verify that it affects line-scan acquisition behavior.
+Recommended next-version approach:
 
-Recommended approach for the next version:
-
-- Do not re-enable broad `SapAcqDevice` probing until the exact official feature path is known.
-- Investigate how the official Sapera / camera configuration window obtains the writable `Gain` handle.
-- Add readback display for every parameter write that remains enabled.
-- Consider a two-mode apply workflow:
-  - `Save Only`
-  - `Apply On Reconnect`
-- Keep online writes disabled or guarded until the lock behavior is fully mapped.
+- First compare `last_apply_params.txt` and `live_features_*.txt` before/after changing line rate in the official tool.
+- Look for feature names containing:
+  - `LineRate`
+  - `AcquisitionLineRate`
+  - `DeviceLineRate`
+  - `LinePeriod`
+  - `AcquisitionLinePeriod`
+  - `Encoder`
+  - `Trigger`
+- Prefer a single confirmed feature write over broad candidate probing.
+- Preserve the current reconnect-based apply timing unless live write safety is proven.
 
 ## Notes For The Next Person
 
-- If WinForms Designer fails, check whether `CameraDisplayControl` was inserted directly into Designer files.
-- Avoid writing Sapera acquisition parameters after transfer/buffer creation unless the transfer is safely stopped and the parameter is confirmed writable.
-- Avoid calling `SapAcqDevice` creation paths blindly; some paths trigger official Sapera message boxes.
-- Keep the Camera Settings UI clean. Temporary diagnostic fields should not remain in the layout if they block normal use.
+- Do not remove the diagnostic reports until internal line rate is working.
+- Avoid broad `SapAcqDevice` probing that creates SDK message boxes.
+- Keep `CameraSettingsForm` Designer-editable.
+- Treat exposure/gain/length as currently stable behavior; test them after any line rate changes.
