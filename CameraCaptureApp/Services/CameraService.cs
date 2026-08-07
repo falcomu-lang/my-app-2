@@ -1642,10 +1642,11 @@ namespace CameraCaptureApp.Services
 
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
-            var exposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
+            var requestedExposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
+            var durationValue = ConvertOfficialExposureToLineIntegrateDuration(_settings.ExposureTime);
             var methodApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_METHOD, 1);
             var enableApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 1);
-            var durationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, exposureValue);
+            var durationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, durationValue);
 
             notes.Add(
                 "LineIntegrate exposure "
@@ -1653,9 +1654,10 @@ namespace CameraCaptureApp.Services
                 + "enableWrite=" + FormatApplyResult(enableApplied, "1")
                 + "enable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE)
                 + " method=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_METHOD)
-                + " requested=" + exposureValue
+                + " requested=" + requestedExposureValue
+                + " durationRequest=" + durationValue
                 + " duration=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_DURATION)
-                + " note=method 1 is now requested before enable/duration");
+                + " note=official exposure value is converted to line integrate duration by /10");
 
             if (methodApplied || enableApplied || durationApplied)
             {
@@ -1664,6 +1666,13 @@ namespace CameraCaptureApp.Services
 
             notes.Add("LINE_INTEGRATE_METHOD/ENABLE/DURATION not supported or locked");
             return false;
+        }
+
+        private static int ConvertOfficialExposureToLineIntegrateDuration(decimal exposureTime)
+        {
+            var scaledValue = exposureTime / 10m;
+            var durationValue = decimal.ToInt32(decimal.Truncate(scaledValue));
+            return Math.Max(1, durationValue);
         }
 
         private bool TrySetLengthParameters(System.Collections.Generic.List<string> notes)
