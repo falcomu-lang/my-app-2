@@ -973,10 +973,11 @@ namespace CameraCaptureApp.Services
             SapAcqDevice notebookDevice = null;
             try
             {
-                var notebookLocation = BuildNotebookFeatureLocation();
+                var autoSelectedLocation = false;
+                var notebookLocation = BuildNotebookFeatureLocation(out autoSelectedLocation);
                 if (notebookLocation == null)
                 {
-                    notes.Add("Notebook features skipped: select Load Features first.");
+                    notes.Add("Notebook features skipped: no selected or unique AcqDevice feature path was found. Select Load Features first.");
                     return;
                 }
 
@@ -1001,6 +1002,7 @@ namespace CameraCaptureApp.Services
 
                 notes.Add(
                     "Notebook features target=" + FormatSapLocation(notebookLocation) + " "
+                    + (autoSelectedLocation ? "targetSource=auto-selected " : "targetSource=selected ")
                     + exposureModeResult.Message + " "
                     + exposureResult.Message
                     + " Gain=" + FormatApplyResult(gainApplied, gainText)
@@ -1037,14 +1039,47 @@ namespace CameraCaptureApp.Services
             }
         }
 
-        private SapLocation BuildNotebookFeatureLocation()
+        private SapLocation BuildNotebookFeatureLocation(out bool autoSelected)
         {
+            autoSelected = false;
+
             if (!string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName) && _settings.DeviceFeatureResourceIndex >= 0)
             {
                 return new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex);
             }
 
+            var candidates = new System.Collections.Generic.List<SapLocation>();
+            foreach (var location in EnumerateAllDirectAcqDeviceLocations())
+            {
+                candidates.Add(location);
+            }
+
+            if (candidates.Count == 1)
+            {
+                autoSelected = true;
+                _settings.DeviceFeatureServerName = candidates[0].ServerName;
+                _settings.DeviceFeatureResourceIndex = candidates[0].ResourceIndex;
+                return candidates[0];
+            }
+
             return null;
+        }
+
+        private static IEnumerable<SapLocation> EnumerateAllDirectAcqDeviceLocations()
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
+            {
+                var serverName = SapManager.GetServerName(serverIndex);
+                foreach (var location in EnumerateDirectAcqDeviceLocations(serverName))
+                {
+                    var key = location.ServerName + "|" + location.ResourceIndex;
+                    if (seen.Add(key))
+                    {
+                        yield return location;
+                    }
+                }
+            }
         }
 
         private static string FormatSapLocation(SapLocation location)
