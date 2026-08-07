@@ -1199,6 +1199,7 @@ namespace CameraCaptureApp.Services
 
                 applied = true;
                 details.Add(featureName + "=ok(" + exposureText + ") readback=" + ReadNotebookFeatureValue(device, featureName));
+                break;
             }
 
             return new NotebookApplyResult
@@ -1248,6 +1249,7 @@ namespace CameraCaptureApp.Services
 
                 applied = true;
                 details.Add(featureName + "=ok(" + lineRateText + ") readback=" + ReadNotebookFeatureValue(device, featureName));
+                break;
             }
 
             return new NotebookApplyResult
