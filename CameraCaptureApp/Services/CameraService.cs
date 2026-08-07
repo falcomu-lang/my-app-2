@@ -1183,7 +1183,7 @@ namespace CameraCaptureApp.Services
                     continue;
                 }
 
-                if (!CanWriteNotebookFeatureStrict(device, featureName))
+                if (!CanWriteNotebookFeature(device, featureName))
                 {
                     details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(device, featureName));
                     continue;
