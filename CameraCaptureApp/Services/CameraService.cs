@@ -893,15 +893,13 @@ namespace CameraCaptureApp.Services
             try
             {
                 notebookDevice = new SapAcqDevice();
-                var exposureText = _settings.ExposureTime.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                var gainText = _settings.Gain.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                var triggerEnabled = _settings.TriggerMode != TriggerMode.Continuous;
+                var exposureText = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var gainText = decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
                 var exposureApplied = TrySetNotebookFeatureValue(notebookDevice, "ExposureTime", exposureText);
-                var triggerApplied = TrySetNotebookFeatureValue(notebookDevice, "TriggerMode", triggerEnabled);
                 var gainApplied = TrySetNotebookFeatureValue(notebookDevice, "Gain", gainText);
 
-                if (exposureApplied || triggerApplied || gainApplied)
+                if (exposureApplied || gainApplied)
                 {
                     TryUpdateNotebookFeaturesToDevice(notebookDevice);
                 }
@@ -909,8 +907,8 @@ namespace CameraCaptureApp.Services
                 notes.Add(
                     "Notebook features "
                     + "ExposureTime=" + FormatApplyResult(exposureApplied, exposureText)
-                    + " TriggerMode=" + FormatApplyResult(triggerApplied, triggerEnabled.ToString())
-                    + " Gain=" + FormatApplyResult(gainApplied, gainText));
+                    + " Gain=" + FormatApplyResult(gainApplied, gainText)
+                    + " TriggerMode=skipped");
             }
             catch (Exception ex)
             {
@@ -933,18 +931,6 @@ namespace CameraCaptureApp.Services
         }
 
         private static bool TrySetNotebookFeatureValue(SapAcqDevice device, string featureName, string value)
-        {
-            try
-            {
-                return device.SetFeatureValue(featureName, value);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static bool TrySetNotebookFeatureValue(SapAcqDevice device, string featureName, bool value)
         {
             try
             {
