@@ -406,8 +406,10 @@ namespace CameraCaptureApp.Services
                 }
             }
 
+            var logPath = AppLogger.GetLogPath();
+            var logDirectory = Path.GetDirectoryName(logPath);
             var filePath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
+                logDirectory,
                 "acquisition_params_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
             File.WriteAllText(filePath, reportBuilder.ToString(), Encoding.UTF8);
             _status.LastMessage = "Acquisition parameter report exported: " + Path.GetFileName(filePath);
@@ -845,6 +847,8 @@ namespace CameraCaptureApp.Services
                     builder.AppendLine(note);
                 }
 
+                AppendAcquisitionTimingParameterSnapshot(builder);
+
                 File.WriteAllText(reportPath, builder.ToString(), Encoding.UTF8);
                 return reportPath;
             }
@@ -853,6 +857,62 @@ namespace CameraCaptureApp.Services
                 AppLogger.Log("Apply parameter report write failed.", ex);
                 return string.Empty;
             }
+        }
+
+        private void AppendAcquisitionTimingParameterSnapshot(StringBuilder builder)
+        {
+            builder.AppendLine();
+            builder.AppendLine("[Acquisition Timing/Trigger Parameters]");
+
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                builder.AppendLine("<acquisition unavailable>");
+                return;
+            }
+
+            foreach (SapAcquisition.Prm parameter in Enum.GetValues(typeof(SapAcquisition.Prm)))
+            {
+                var name = parameter.ToString();
+                if (!IsTimingOrTriggerParameterName(name))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if (!_acquisition.IsParameterAvailable(parameter))
+                    {
+                        continue;
+                    }
+
+                    builder.AppendLine(
+                        name
+                        + " type=" + SafeGetAcquisitionParameterType(parameter)
+                        + " value=" + ReadAcquisitionParameterValue(parameter));
+                }
+                catch (Exception ex)
+                {
+                    builder.AppendLine(name + " value=<error: " + ex.Message + ">");
+                }
+            }
+        }
+
+        private static bool IsTimingOrTriggerParameterName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return false;
+            }
+
+            var upperName = name.ToUpperInvariant();
+            return upperName.Contains("LINE")
+                || upperName.Contains("TRIGGER")
+                || upperName.Contains("RATE")
+                || upperName.Contains("FREQ")
+                || upperName.Contains("TIME")
+                || upperName.Contains("DURATION")
+                || upperName.Contains("PERIOD")
+                || upperName.Contains("INTEGRATE");
         }
 
         private string WriteRequestedSettingsReport(string source)
