@@ -716,7 +716,7 @@ namespace CameraCaptureApp.Services
             DisposeSdkObjects();
 
             var offlineNotes = new System.Collections.Generic.List<string>();
-            offlineNotes.Add("Connect skipped automatic parameter writes; use Apply/Upload after the camera is connected.");
+            offlineNotes.Add("Connect skipped internal line rate writes; use Apply/Upload after the camera is connected.");
 
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             _acquisition.SignalNotify += OnSignalNotify;
@@ -726,6 +726,8 @@ namespace CameraCaptureApp.Services
             {
                 throw new InvalidOperationException("Sapera objects could not be created.");
             }
+
+            ApplyWritableCameraSettings(false, offlineNotes, false);
 
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
@@ -769,15 +771,20 @@ namespace CameraCaptureApp.Services
 
         private void ApplyWritableCameraSettings(bool includeDeviceFeatures)
         {
-            ApplyWritableCameraSettings(includeDeviceFeatures, null);
+            ApplyWritableCameraSettings(includeDeviceFeatures, null, true);
         }
 
         private void ApplyWritableCameraSettings(bool includeDeviceFeatures, System.Collections.Generic.List<string> initialNotes)
         {
+            ApplyWritableCameraSettings(includeDeviceFeatures, initialNotes, true);
+        }
+
+        private void ApplyWritableCameraSettings(bool includeDeviceFeatures, System.Collections.Generic.List<string> initialNotes, bool applyInternalLineRate)
+        {
             var applied = false;
             var notes = initialNotes ?? new System.Collections.Generic.List<string>();
 
-            if (TrySetInternalLineRate(notes))
+            if (applyInternalLineRate && TrySetInternalLineRate(notes))
             {
                 applied = true;
             }
