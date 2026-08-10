@@ -1297,9 +1297,7 @@ namespace CameraCaptureApp.Services
                     };
                 }
 
-                TrySetNotebookEnumFeatureValue(notebookDevice, "TriggerSelector", new[] { "LineStart", "LineTrigger", "AcquisitionLine" });
-                TrySetNotebookEnumFeatureValue(notebookDevice, "TriggerMode", new[] { "On" });
-                TrySetNotebookEnumFeatureValue(notebookDevice, "TriggerSource", new[] { "Internal", "Timer", "FixedRate", "LineRate", "Software" });
+                TrySetNotebookLineTriggerInput(notebookDevice);
 
                 var details = new System.Collections.Generic.List<string>();
                 var applied = false;
@@ -1421,6 +1419,23 @@ namespace CameraCaptureApp.Services
             }
 
             return false;
+        }
+
+        private static bool TrySetNotebookLineTriggerInput(SapAcqDevice device)
+        {
+            var applied = false;
+            var selectors = new[] { "LineStart", "LineTrigger", "AcquisitionLine", "ExposureStart", "FrameStart" };
+            var sources = new[] { "CC1", "Line1", "Input1", "CameraControl1", "CameraLinkCC1", "CL_CC1", "External", "ExternalLine", "LineTrigger" };
+
+            foreach (var selector in selectors)
+            {
+                var selectorApplied = TrySetNotebookEnumFeatureValue(device, "TriggerSelector", new[] { selector });
+                var modeApplied = TrySetNotebookEnumFeatureValue(device, "TriggerMode", new[] { "On" });
+                var sourceApplied = TrySetNotebookEnumFeatureValue(device, "TriggerSource", sources);
+                applied = applied || (selectorApplied && modeApplied && sourceApplied);
+            }
+
+            return applied;
         }
 
         private static NotebookApplyResult TrySetNotebookExposureFeatures(SapAcqDevice device, string exposureText)
@@ -2299,11 +2314,15 @@ namespace CameraCaptureApp.Services
 
         private void TryConfigureInternalLineTriggerSource()
         {
-            TryConfigureTriggerSelector("LineStart", true, "Internal");
-            TryConfigureTriggerSelector("LineStart", true, "Timer");
-            TryConfigureTriggerSelector("LineStart", true, "FixedRate");
-            TryConfigureTriggerSelector("LineTrigger", true, "Internal");
-            TryConfigureTriggerSelector("AcquisitionLine", true, "Internal");
+            TryConfigureTriggerSelector("LineStart", true, "CC1");
+            TryConfigureTriggerSelector("LineStart", true, "Line1");
+            TryConfigureTriggerSelector("LineStart", true, "Input1");
+            TryConfigureTriggerSelector("LineStart", true, "CameraControl1");
+            TryConfigureTriggerSelector("LineStart", true, "CameraLinkCC1");
+            TryConfigureTriggerSelector("LineStart", true, "CL_CC1");
+            TryConfigureTriggerSelector("LineTrigger", true, "CC1");
+            TryConfigureTriggerSelector("AcquisitionLine", true, "CC1");
+            TryConfigureTriggerSelector("ExposureStart", true, "CC1");
         }
 
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
