@@ -2162,7 +2162,7 @@ namespace CameraCaptureApp.Services
             var linePeriodMicrosecondsText = CalculateLinePeriodMicrosecondsText(_settings.InternalLineRate);
             var linePeriodMicroseconds = Convert.ToDouble(decimal.Parse(linePeriodMicrosecondsText, System.Globalization.CultureInfo.InvariantCulture));
 
-            TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.LINE_TRIGGER_ENABLE);
+            TryEnableLineTriggerWhenSupported(notes);
             TrySetAcquisitionIntParameter(notes, 0, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
             TrySetAcquisitionIntParameter(notes, 0, SapAcquisition.Prm.SHAFT_ENCODER_ENABLE);
             TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE);
@@ -2228,6 +2228,60 @@ namespace CameraCaptureApp.Services
 
             notes.Add("InternalLineRate not supported");
             return false;
+        }
+
+        private bool TryEnableLineTriggerWhenSupported(System.Collections.Generic.List<string> notes)
+        {
+            var method = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.LINE_TRIGGER_METHOD);
+            if (method <= 0)
+            {
+                var supportedMethod = ReadFirstSupportedLineTriggerMethod();
+                if (supportedMethod > 0)
+                {
+                    if (TrySetAcquisitionIntParameter(notes, supportedMethod, SapAcquisition.Prm.LINE_TRIGGER_METHOD))
+                    {
+                        method = supportedMethod;
+                    }
+                }
+            }
+
+            if (method <= 0)
+            {
+                notes.Add("LINE_TRIGGER_ENABLE skipped: no supported LINE_TRIGGER_METHOD was available");
+                return false;
+            }
+
+            return TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.LINE_TRIGGER_ENABLE);
+        }
+
+        private int ReadFirstSupportedLineTriggerMethod()
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return 0;
+            }
+
+            try
+            {
+                int capability;
+                if (!_acquisition.GetCapability(SapAcquisition.Cap.LINE_TRIGGER_METHOD, out capability))
+                {
+                    return 0;
+                }
+
+                for (var bit = 1; bit != 0 && bit > 0; bit <<= 1)
+                {
+                    if ((capability & bit) != 0)
+                    {
+                        return bit;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return 0;
         }
 
         private static string CalculateLinePeriodMicrosecondsText(decimal lineRateHz)
@@ -2296,12 +2350,16 @@ namespace CameraCaptureApp.Services
             {
                 case TriggerMode.Continuous:
                     var useInternalLineTrigger = _settings.InternalLineRate > 0;
+                    if (useInternalLineTrigger)
+                    {
+                        TryEnableLineTriggerWhenSupported(notes);
+                    }
+
                     if (TrySetAcquisitionBoolPattern(
                         notes,
                         new[]
                         {
                             new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, useInternalLineTrigger ? 1 : 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0),
@@ -2795,6 +2853,28 @@ namespace CameraCaptureApp.Services
             }
 
             return "<unreadable>";
+        }
+
+        private int ReadAcquisitionIntParameterValue(SapAcquisition.Prm parameter)
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return 0;
+            }
+
+            try
+            {
+                int intValue;
+                if (_acquisition.GetParameter(parameter, out intValue))
+                {
+                    return intValue;
+                }
+            }
+            catch
+            {
+            }
+
+            return 0;
         }
 
         private static string SafeGetAcquisitionParameterType(SapAcquisition.Prm parameter)
