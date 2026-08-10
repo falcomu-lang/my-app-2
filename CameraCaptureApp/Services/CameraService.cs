@@ -716,7 +716,9 @@ namespace CameraCaptureApp.Services
             DisposeSdkObjects();
 
             var offlineNotes = new System.Collections.Generic.List<string>();
-            offlineNotes.Add("Connect skipped internal line rate writes; use Apply/Upload after the camera is connected.");
+            TryWriteOfflineConfigExposure(offlineNotes);
+            TryWriteOfflineConfigInternalLineRate(offlineNotes);
+            TryApplyNotebookDeviceFeatures(offlineNotes);
 
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             _acquisition.SignalNotify += OnSignalNotify;
@@ -727,7 +729,7 @@ namespace CameraCaptureApp.Services
                 throw new InvalidOperationException("Sapera objects could not be created.");
             }
 
-            ApplyWritableCameraSettings(false, offlineNotes, false);
+            ApplyWritableCameraSettings(false, offlineNotes, true);
 
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
