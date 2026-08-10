@@ -1886,6 +1886,13 @@ namespace CameraCaptureApp.Services
             return applied ? "ok(" + value + ")" : "failed(" + value + ")";
         }
 
+        private static string FormatNullableInt(int? value)
+        {
+            return value.HasValue
+                ? value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : "<unavailable>";
+        }
+
         private sealed class NotebookApplyResult
         {
             public bool Applied { get; set; }
@@ -2311,6 +2318,12 @@ namespace CameraCaptureApp.Services
         private bool TrySetInternalLineRate(System.Collections.Generic.List<string> notes)
         {
             var acquisitionRate = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate));
+            if (acquisitionRate <= 0)
+            {
+                notes.Add("InternalLineRate skipped: requested value must be greater than 0");
+                return false;
+            }
+
             var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var lineRateIntegerText = acquisitionRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var linePeriodMicrosecondsText = CalculateLinePeriodMicrosecondsText(_settings.InternalLineRate);
@@ -2325,10 +2338,53 @@ namespace CameraCaptureApp.Services
             var disabledLineIntegrate = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 0);
             notes.Add("LINE_INTEGRATE_ENABLE disabled before internal line trigger " + FormatApplyResult(disabledLineIntegrate, "0") + " readback=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE));
             TryEnableLineTriggerWhenSupported(notes);
-            TrySetAcquisitionIntParameter(notes, 0, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
-            TrySetAcquisitionIntParameter(notes, 0, SapAcquisition.Prm.SHAFT_ENCODER_ENABLE);
-            TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE);
-            if (TrySetAcquisitionIntParameter(notes, acquisitionRate, SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ))
+
+            if (IsAcquisitionParameterAvailable(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE) &&
+                IsAcquisitionParameterAvailable(SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ))
+            {
+                var minimumRate = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ_MIN);
+                var maximumRate = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ_MAX);
+                var cameraMinimumRate = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.CAM_LINE_TRIGGER_FREQ_MIN);
+                var cameraMaximumRate = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.CAM_LINE_TRIGGER_FREQ_MAX);
+                var requestedRate = ClampInternalLineRate(acquisitionRate, minimumRate, maximumRate, cameraMinimumRate, cameraMaximumRate);
+
+                notes.Add(
+                    "InternalLineRate range requested=" + acquisitionRate
+                    + " appliedRequest=" + requestedRate
+                    + " intMin=" + FormatNullableInt(minimumRate)
+                    + " intMax=" + FormatNullableInt(maximumRate)
+                    + " camMin=" + FormatNullableInt(cameraMinimumRate)
+                    + " camMax=" + FormatNullableInt(cameraMaximumRate));
+
+                var disabledExternalLine = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0);
+                var disabledShaftEncoder = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0);
+                var disabledExternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0);
+                var disabledInternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0);
+                var enabledInternalLine = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 1);
+                var frequencyApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ, requestedRate);
+
+                notes.Add(
+                    "InternalLineRate acquisition "
+                    + "extLineOff=" + FormatApplyResult(disabledExternalLine, "0")
+                    + " shaftEncoderOff=" + FormatApplyResult(disabledShaftEncoder, "0")
+                    + " extFrameOff=" + FormatApplyResult(disabledExternalFrame, "0")
+                    + " intFrameOff=" + FormatApplyResult(disabledInternalFrame, "0")
+                    + " intLineEnableWrite=" + FormatApplyResult(enabledInternalLine, "1")
+                    + " intLineEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE)
+                    + " freqWrite=" + FormatApplyResult(frequencyApplied, requestedRate.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                    + " freq=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ));
+
+                if (enabledInternalLine && frequencyApplied)
+                {
+                    applied = true;
+                }
+            }
+            else
+            {
+                notes.Add("InternalLineRate acquisition parameters unavailable");
+            }
+
+            if (applied)
             {
                 applied = true;
             }
@@ -2428,7 +2484,7 @@ namespace CameraCaptureApp.Services
 
         private bool TryEnableLineTriggerWhenSupported(System.Collections.Generic.List<string> notes)
         {
-            var method = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.LINE_TRIGGER_METHOD);
+            var method = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.LINE_TRIGGER_METHOD).GetValueOrDefault();
             if (method <= 0)
             {
                 var supportedMethod = ReadFirstSupportedLineTriggerMethod();
@@ -2502,6 +2558,32 @@ namespace CameraCaptureApp.Services
             TryConfigureTriggerSelector("LineTrigger", true, "CC1");
             TryConfigureTriggerSelector("AcquisitionLine", true, "CC1");
             TryConfigureTriggerSelector("ExposureStart", true, "CC1");
+        }
+
+        private int ClampInternalLineRate(int requestedRate, int? minimumRate, int? maximumRate, int? cameraMinimumRate, int? cameraMaximumRate)
+        {
+            var clampedRate = requestedRate;
+            if (minimumRate.HasValue && clampedRate < minimumRate.Value)
+            {
+                clampedRate = minimumRate.Value;
+            }
+
+            if (cameraMinimumRate.HasValue && clampedRate < cameraMinimumRate.Value)
+            {
+                clampedRate = cameraMinimumRate.Value;
+            }
+
+            if (maximumRate.HasValue && clampedRate > maximumRate.Value)
+            {
+                clampedRate = maximumRate.Value;
+            }
+
+            if (cameraMaximumRate.HasValue && clampedRate > cameraMaximumRate.Value)
+            {
+                clampedRate = cameraMaximumRate.Value;
+            }
+
+            return clampedRate;
         }
 
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
@@ -3071,11 +3153,28 @@ namespace CameraCaptureApp.Services
             return "<unreadable>";
         }
 
-        private int ReadAcquisitionIntParameterValue(SapAcquisition.Prm parameter)
+        private bool IsAcquisitionParameterAvailable(SapAcquisition.Prm parameter)
         {
             if (_acquisition == null || !_acquisition.Initialized)
             {
-                return 0;
+                return false;
+            }
+
+            try
+            {
+                return _acquisition.IsParameterAvailable(parameter);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private int? ReadAcquisitionIntParameterValue(SapAcquisition.Prm parameter)
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return null;
             }
 
             try
@@ -3090,7 +3189,7 @@ namespace CameraCaptureApp.Services
             {
             }
 
-            return 0;
+            return null;
         }
 
         private static string SafeGetAcquisitionParameterType(SapAcquisition.Prm parameter)
