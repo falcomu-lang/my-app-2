@@ -319,8 +319,21 @@ namespace CameraCaptureApp.Forms
                 labelHeaderCameraValue.Text = status.CameraName;
             }
 
-            buttonConnect.Enabled = !status.IsConnected;
-            buttonDisconnect.Enabled = status.IsConnected;
+            UpdateCommandStates(status);
+        }
+
+        private void UpdateCommandStates(CameraStatus status)
+        {
+            var isConnected = status != null && status.IsConnected;
+            var isPreviewing = status != null && status.IsPreviewing;
+
+            buttonCameraSettings.Enabled = true;
+            buttonConnect.Enabled = !isConnected;
+            buttonDisconnect.Enabled = isConnected;
+            buttonStartPreview.Enabled = isConnected && !isPreviewing;
+            buttonStop.Enabled = isConnected && isPreviewing;
+            buttonCapture.Enabled = isConnected && !isPreviewing;
+            buttonLoadImage.Enabled = !isPreviewing;
         }
 
         private void CancelPendingImageLoad()
