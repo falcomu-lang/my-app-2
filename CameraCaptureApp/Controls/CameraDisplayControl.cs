@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -13,6 +14,7 @@ namespace CameraCaptureApp.Controls
         private const float TileRenderZoomThreshold = 0.12f;
         private const float TilePreviewHandoffRatio = 1.02f;
         private const int TileRefreshIntervalMs = 33;
+        private const int MaxLivePreviewDimension = 1600;
 
         private readonly object _imageLock = new object();
         private readonly System.Windows.Forms.Timer _tileRefreshTimer;
@@ -79,7 +81,15 @@ namespace CameraCaptureApp.Controls
         public async Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken)
         {
             var version = Interlocked.Increment(ref _imageVersion);
-            await ApplyBitmapAsync(frame, version, cancellationToken);
+            var previewFrame = await Task.Run(
+                () =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return CreateLivePreviewBitmap(frame);
+                },
+                cancellationToken);
+            frame.Dispose();
+            await ApplyBitmapAsync(previewFrame, version, cancellationToken);
         }
 
         private async Task ApplyLargeImageAsync(LargeImageSource source, int version, CancellationToken cancellationToken)
@@ -166,6 +176,7 @@ namespace CameraCaptureApp.Controls
             {
                 var drawWidth = bitmap.Width * zoom;
                 var drawHeight = bitmap.Height * zoom;
+                e.Graphics.InterpolationMode = InterpolationMode.Low;
                 e.Graphics.DrawImage(bitmap, offset.X, offset.Y, drawWidth, drawHeight);
                 return;
             }
@@ -525,6 +536,34 @@ namespace CameraCaptureApp.Controls
                 _largeImageSource.Dispose();
                 _largeImageSource = null;
             }
+        }
+
+        private static Bitmap CreateLivePreviewBitmap(Bitmap source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            var maxDimension = Math.Max(source.Width, source.Height);
+            if (maxDimension <= MaxLivePreviewDimension)
+            {
+                return (Bitmap)source.Clone();
+            }
+
+            var scale = MaxLivePreviewDimension / (float)maxDimension;
+            var previewWidth = Math.Max(1, (int)Math.Round(source.Width * scale));
+            var previewHeight = Math.Max(1, (int)Math.Round(source.Height * scale));
+            var preview = new Bitmap(previewWidth, previewHeight, PixelFormat.Format24bppRgb);
+            using (var graphics = Graphics.FromImage(preview))
+            {
+                graphics.InterpolationMode = InterpolationMode.Low;
+                graphics.PixelOffsetMode = PixelOffsetMode.Half;
+                graphics.SmoothingMode = SmoothingMode.None;
+                graphics.DrawImage(source, 0, 0, previewWidth, previewHeight);
+            }
+
+            return preview;
         }
 
         private static Rectangle GetVisibleSourceRectangle(int sourceWidth, int sourceHeight, Rectangle viewBounds, float zoom, PointF offset)
