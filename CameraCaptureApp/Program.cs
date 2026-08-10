@@ -13,6 +13,7 @@ namespace CameraCaptureApp
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             UiExceptionHandler.Register();
+            AppLogger.Log("Application started. BaseDirectory=" + AppDomain.CurrentDomain.BaseDirectory);
 
             ISettingsService settingsService = new SettingsService();
             ICameraService cameraService = new CameraService();

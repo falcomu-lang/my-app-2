@@ -981,6 +981,7 @@ namespace CameraCaptureApp.Services
             {
                 var lines = File.ReadAllLines(_configFileName, Encoding.Default);
                 var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var linePeriodMicrosecondsText = CalculateLinePeriodMicrosecondsText(_settings.InternalLineRate);
                 var updated = false;
                 var matchedKeys = new System.Collections.Generic.List<string>();
 
@@ -1000,13 +1001,14 @@ namespace CameraCaptureApp.Services
                     }
 
                     var key = line.Substring(0, separatorIndex).Trim();
-                    if (!IsInternalLineRateConfigKey(key))
+                    if (!IsInternalLineRateConfigKey(key) && !IsInternalLinePeriodConfigKey(key))
                     {
                         continue;
                     }
 
-                    lines[i] = line.Substring(0, separatorIndex + 1) + lineRateText;
-                    matchedKeys.Add(key);
+                    var requestedValue = IsInternalLinePeriodConfigKey(key) ? linePeriodMicrosecondsText : lineRateText;
+                    lines[i] = line.Substring(0, separatorIndex + 1) + requestedValue;
+                    matchedKeys.Add(key + "=" + requestedValue);
                     updated = true;
                 }
 
@@ -1049,6 +1051,24 @@ namespace CameraCaptureApp.Services
                 || string.Equals(key, "LineRateHz", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, "AcquisitionLineRateHz", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, "DeviceLineRateHz", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsInternalLinePeriodConfigKey(string key)
+        {
+            foreach (var featureName in GetInternalLinePeriodFeatureNames())
+            {
+                if (string.Equals(key, featureName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return string.Equals(key, "LinePeriodUs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "LinePeriodMicroseconds", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "AcquisitionLinePeriodUs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "InternalLinePeriodUs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "TimerDurationUs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "LineTimerDuration", StringComparison.OrdinalIgnoreCase);
         }
 
         private void TryApplyNotebookDeviceFeatures(System.Collections.Generic.List<string> notes)
@@ -1194,6 +1214,8 @@ namespace CameraCaptureApp.Services
             SapAcqDevice notebookDevice = null;
             try
             {
+                var lineRateDecimal = decimal.Parse(lineRateText, System.Globalization.CultureInfo.InvariantCulture);
+                var linePeriodMicrosecondsText = CalculateLinePeriodMicrosecondsText(lineRateDecimal);
                 var autoSelectedLocation = false;
                 var notebookLocation = BuildNotebookFeatureLocation(out autoSelectedLocation);
                 if (notebookLocation == null)
@@ -1245,6 +1267,34 @@ namespace CameraCaptureApp.Services
                     applied = true;
                     details.Add(featureName + "=ok(" + lineRateText + ") readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
                     break;
+                }
+
+                if (!applied)
+                {
+                    foreach (var featureName in GetInternalLinePeriodFeatureNames())
+                    {
+                        if (!IsNotebookFeatureAvailable(notebookDevice, featureName))
+                        {
+                            details.Add(featureName + "=missing");
+                            continue;
+                        }
+
+                        if (!CanWriteNotebookFeature(notebookDevice, featureName))
+                        {
+                            details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
+                            continue;
+                        }
+
+                        if (!TrySetNotebookNumericFeatureValue(notebookDevice, featureName, linePeriodMicrosecondsText))
+                        {
+                            details.Add(featureName + "=failed(" + linePeriodMicrosecondsText + "us)");
+                            continue;
+                        }
+
+                        applied = true;
+                        details.Add(featureName + "=ok(" + linePeriodMicrosecondsText + "us) readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
+                        break;
+                    }
                 }
 
                 if (applied)
@@ -2049,6 +2099,8 @@ namespace CameraCaptureApp.Services
             var acquisitionRate = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate));
             var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var lineRateIntegerText = acquisitionRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var linePeriodMicrosecondsText = CalculateLinePeriodMicrosecondsText(_settings.InternalLineRate);
+            var linePeriodMicroseconds = Convert.ToDouble(decimal.Parse(linePeriodMicrosecondsText, System.Globalization.CultureInfo.InvariantCulture));
 
             TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE);
             if (TrySetAcquisitionIntParameter(notes, acquisitionRate, SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ))
@@ -2086,6 +2138,24 @@ namespace CameraCaptureApp.Services
                 return true;
             }
 
+            if (TrySetDeviceFeature(
+                GetInternalLinePeriodFeatureNames(),
+                linePeriodMicroseconds,
+                out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied periodMicroseconds=" + linePeriodMicrosecondsText);
+                return true;
+            }
+
+            if (TrySetDeviceFeature(
+                GetInternalLinePeriodFeatureNames(),
+                linePeriodMicrosecondsText,
+                out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied periodMicroseconds=" + linePeriodMicrosecondsText);
+                return true;
+            }
+
             var notebookResult = TrySetNotebookInternalLineRateFeatures(lineRateText, lineRateIntegerText);
             notes.Add(notebookResult.Message);
             if (notebookResult.Applied)
@@ -2095,6 +2165,17 @@ namespace CameraCaptureApp.Services
 
             notes.Add("InternalLineRate not supported");
             return false;
+        }
+
+        private static string CalculateLinePeriodMicrosecondsText(decimal lineRateHz)
+        {
+            if (lineRateHz <= 0)
+            {
+                return "0";
+            }
+
+            var periodMicroseconds = 1000000m / lineRateHz;
+            return periodMicroseconds.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
         }
 
         private void TryConfigureInternalLineTriggerSource()
@@ -2247,12 +2328,25 @@ namespace CameraCaptureApp.Services
                 "InternalLineTriggerFrequency",
                 "LineTimerFrequency",
                 "TimerFrequency",
+                "INT_LINE_TRIGGER_FREQ"
+            };
+        }
+
+        private static string[] GetInternalLinePeriodFeatureNames()
+        {
+            return new[]
+            {
                 "TimerDuration",
+                "LineTimerDuration",
                 "LinePeriod",
+                "LinePeriodAbs",
+                "LinePeriodRaw",
                 "AcquisitionLinePeriod",
+                "AcquisitionLinePeriodAbs",
+                "AcquisitionLinePeriodRaw",
                 "DeviceLinePeriod",
                 "InternalLinePeriod",
-                "INT_LINE_TRIGGER_FREQ"
+                "InternalLinePeriodAbs"
             };
         }
 
