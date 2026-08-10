@@ -489,7 +489,7 @@ namespace CameraCaptureApp.Services
             }
 
             _acquisition.SignalNotifyEnable = true;
-            return false;
+            return true;
         }
 
         private void DestroySdkObjects()
@@ -716,9 +716,7 @@ namespace CameraCaptureApp.Services
             DisposeSdkObjects();
 
             var offlineNotes = new System.Collections.Generic.List<string>();
-            TryWriteOfflineConfigExposure(offlineNotes);
-            TryWriteOfflineConfigInternalLineRate(offlineNotes);
-            TryApplyNotebookDeviceFeatures(offlineNotes);
+            offlineNotes.Add("Connect skipped automatic parameter writes; use Apply/Upload after the camera is connected.");
 
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             _acquisition.SignalNotify += OnSignalNotify;
@@ -728,8 +726,6 @@ namespace CameraCaptureApp.Services
             {
                 throw new InvalidOperationException("Sapera objects could not be created.");
             }
-
-            ApplyWritableCameraSettings(false, offlineNotes);
 
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
