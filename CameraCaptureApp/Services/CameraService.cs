@@ -1407,6 +1407,23 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        private static bool TrySetNotebookFeatureValue(SapAcqDevice device, string featureName, long value)
+        {
+            try
+            {
+                if (!IsNotebookFeatureAvailable(device, featureName))
+                {
+                    return false;
+                }
+
+                return device.SetFeatureValue(featureName, value);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private NotebookApplyResult TrySetNotebookInternalLineRateFeatures(string lineRateText, string lineRateIntegerText)
         {
             SapAcqDevice notebookDevice = null;
@@ -1437,6 +1454,8 @@ namespace CameraCaptureApp.Services
 
                 var details = new System.Collections.Generic.List<string>();
                 var applied = false;
+                long lineRateInt64;
+                var hasLineRateInt64 = long.TryParse(lineRateIntegerText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out lineRateInt64);
                 foreach (var featureName in GetInternalLineRateFeatureNames())
                 {
                     if (!IsNotebookFeatureAvailable(notebookDevice, featureName))
@@ -1451,7 +1470,8 @@ namespace CameraCaptureApp.Services
                         continue;
                     }
 
-                    if (!TrySetNotebookNumericFeatureValue(notebookDevice, featureName, lineRateText)
+                    if (!(hasLineRateInt64 && TrySetNotebookFeatureValue(notebookDevice, featureName, lineRateInt64))
+                        && !TrySetNotebookNumericFeatureValue(notebookDevice, featureName, lineRateText)
                         && !TrySetNotebookNumericFeatureValue(notebookDevice, featureName, lineRateIntegerText))
                     {
                         details.Add(featureName + "=failed(" + lineRateText + ")");
@@ -2459,6 +2479,14 @@ namespace CameraCaptureApp.Services
         {
             var appliedFeature = string.Empty;
             var featureNames = new[] { "AcquisitionLineRate", "AcquisitionLineRateAbs", "AcquisitionLineRateRaw" };
+            long lineRateInt64;
+
+            if (long.TryParse(lineRateIntegerText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out lineRateInt64)
+                && TrySetDeviceFeature(featureNames, lineRateInt64, out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied first int64=" + lineRateIntegerText + " readback=" + ReadNumericFeatureValue(appliedFeature));
+                return true;
+            }
 
             if (TrySetDeviceFeature(featureNames, lineRateText, out appliedFeature))
             {
@@ -2819,6 +2847,31 @@ namespace CameraCaptureApp.Services
             return false;
         }
 
+        private bool TrySetDeviceFeature(string[] featureNames, long value, out string appliedFeature)
+        {
+            appliedFeature = string.Empty;
+            if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
+            {
+                return false;
+            }
+
+            foreach (var featureName in featureNames)
+            {
+                if (!_acqDevice.IsFeatureAvailable(featureName))
+                {
+                    continue;
+                }
+
+                if (TrySetFeatureValue(featureName, value))
+                {
+                    appliedFeature = featureName;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private bool TrySetDeviceFeature(string[] featureNames, string value, out string appliedFeature)
         {
             appliedFeature = string.Empty;
@@ -3016,6 +3069,23 @@ namespace CameraCaptureApp.Services
             return false;
         }
 
+        private bool TrySetFeatureValue(string featureName, long value)
+        {
+            try
+            {
+                if (_acqDevice.SetFeatureValue(featureName, value))
+                {
+                    _acqDevice.UpdateFeaturesToDevice();
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
         private bool TrySetFeatureValue(string featureName, string value)
         {
             try
@@ -3112,6 +3182,18 @@ namespace CameraCaptureApp.Services
                 if (_acqDevice.GetFeatureValue(featureName, out floatValue))
                 {
                     return floatValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                long longValue;
+                if (_acqDevice.GetFeatureValue(featureName, out longValue))
+                {
+                    return longValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 }
             }
             catch
