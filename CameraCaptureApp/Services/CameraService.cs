@@ -297,7 +297,7 @@ namespace CameraCaptureApp.Services
             reportBuilder.Append(allFeatureBuilder.ToString());
 
             var filePath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
+                Path.GetDirectoryName(AppLogger.GetLogPath()),
                 "live_features_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
             File.WriteAllText(filePath, reportBuilder.ToString(), Encoding.UTF8);
             _status.LastMessage = "Live feature report exported: " + Path.GetFileName(filePath);
@@ -325,7 +325,7 @@ namespace CameraCaptureApp.Services
             AppendSaperaResourceReport(reportBuilder);
 
             var filePath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
+                Path.GetDirectoryName(AppLogger.GetLogPath()),
                 "live_features_failed_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
             File.WriteAllText(filePath, reportBuilder.ToString(), Encoding.UTF8);
             _status.LastMessage = "Live features unavailable. Diagnostic report exported: " + Path.GetFileName(filePath);
@@ -848,6 +848,7 @@ namespace CameraCaptureApp.Services
                 }
 
                 AppendAcquisitionTimingParameterSnapshot(builder);
+                AppendLiveFeatureSnapshot(builder);
 
                 File.WriteAllText(reportPath, builder.ToString(), Encoding.UTF8);
                 return reportPath;
@@ -856,6 +857,55 @@ namespace CameraCaptureApp.Services
             {
                 AppLogger.Log("Apply parameter report write failed.", ex);
                 return string.Empty;
+            }
+        }
+
+        private void AppendLiveFeatureSnapshot(StringBuilder builder)
+        {
+            builder.AppendLine();
+            builder.AppendLine("[Live Device Feature Snapshot]");
+
+            try
+            {
+                EnsureAcqDeviceAvailable();
+                if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
+                {
+                    builder.AppendLine("SapAcqDevice unavailable. ProbeSummary=" + FormatAcqDeviceProbeSummary());
+                    return;
+                }
+
+                var matched = false;
+                for (var i = 0; i < _acqDevice.FeatureCount; i++)
+                {
+                    var feature = new SapFeature();
+                    if (!_acqDevice.GetFeatureInfo(i, feature))
+                    {
+                        continue;
+                    }
+
+                    var name = feature.Name ?? string.Empty;
+                    if (name.Length == 0 || !IsLineScanCandidateFeature(name, feature))
+                    {
+                        continue;
+                    }
+
+                    matched = true;
+                    builder.AppendLine(
+                        name
+                        + " type=" + feature.DataType
+                        + " access=" + feature.DataAccessMode
+                        + " value=" + ReadFeatureValue(name, feature.DataType)
+                        + " display=" + SafeString(feature.DisplayName));
+                }
+
+                if (!matched)
+                {
+                    builder.AppendLine("No line/trigger/rate/exposure candidate features were found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                builder.AppendLine("Live feature snapshot failed: " + ex.Message);
             }
         }
 
