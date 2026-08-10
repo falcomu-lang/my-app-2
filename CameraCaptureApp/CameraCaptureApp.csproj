@@ -87,6 +87,7 @@
     <Compile Include="Services\AppLogger.cs" />
     <Compile Include="Services\CameraService.cs" />
     <Compile Include="Services\CameraFrameEventArgs.cs" />
+    <Compile Include="Services\FrameRecorder.cs" />
     <Compile Include="Services\ICameraService.cs" />
     <Compile Include="Services\ISettingsService.cs" />
     <Compile Include="Services\SettingsService.cs" />

@@ -15,6 +15,7 @@ namespace CameraCaptureApp.Forms
         private readonly ICameraService _cameraService;
         private readonly ISettingsService _settingsService;
         private readonly Controls.CameraDisplayControl _cameraDisplayControl;
+        private readonly FrameRecorder _frameRecorder;
         private readonly System.Windows.Forms.Timer _statusRefreshTimer;
         private CameraSettings _settings;
         private CancellationTokenSource _imageLoadTokenSource;
@@ -32,6 +33,7 @@ namespace CameraCaptureApp.Forms
 
             InitializeComponent();
 
+            _frameRecorder = new FrameRecorder();
             _cameraDisplayControl = new Controls.CameraDisplayControl();
             _cameraDisplayControl.Dock = DockStyle.Fill;
             panelViewerHost.Controls.Add(_cameraDisplayControl);
@@ -125,10 +127,42 @@ namespace CameraCaptureApp.Forms
             if (_cameraService.CaptureFrame())
             {
                 Interlocked.Increment(ref _pendingSnapshotSaveCount);
-                labelFooterMessageValue.Text = "Capture requested. Waiting for frame to save...";
+                labelFooterMessageValue.Text = "Capture requested. Waiting for the next frame to save...";
             }
 
             UpdateStatus();
+        }
+
+        private async void SaveLatestRecordedFrameIfRequestedAsync()
+        {
+            if (Interlocked.CompareExchange(ref _pendingSnapshotSaveCount, 0, 0) <= 0)
+            {
+                return;
+            }
+
+            if (Interlocked.Decrement(ref _pendingSnapshotSaveCount) < 0)
+            {
+                Interlocked.Exchange(ref _pendingSnapshotSaveCount, 0);
+                return;
+            }
+
+            using (var snapshot = _frameRecorder.SnapshotLatest())
+            {
+                if (snapshot == null)
+                {
+                    return;
+                }
+
+                try
+                {
+                    var savedPath = await Task.Run(() => SaveSnapshotBitmap(snapshot, _settings));
+                    labelFooterMessageValue.Text = "Captured image saved: " + Path.GetFileName(savedPath);
+                }
+                catch (Exception ex)
+                {
+                    labelFooterMessageValue.Text = "Captured image save failed: " + ex.Message;
+                }
+            }
         }
 
         private async void buttonLoadImage_Click(object sender, EventArgs e)
@@ -171,6 +205,7 @@ namespace CameraCaptureApp.Forms
             _statusRefreshTimer.Dispose();
             CancelPendingImageLoad();
             CancelPendingPreviewFrame();
+            _frameRecorder.Dispose();
             var pendingFrame = Interlocked.Exchange(ref _pendingPreviewFrame, null);
             if (pendingFrame != null)
             {
@@ -189,6 +224,8 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
+            _frameRecorder.StoreLatest(e.Frame);
+            SaveLatestRecordedFrameIfRequestedAsync();
             var previousFrame = Interlocked.Exchange(ref _pendingPreviewFrame, e.Frame);
             if (previousFrame != null)
             {
@@ -235,7 +272,6 @@ namespace CameraCaptureApp.Forms
 
         private async Task DisplayPreviewFrameAsync(Bitmap frame)
         {
-            await SaveFrameIfRequestedAsync(frame);
             CancelPendingPreviewFrame();
             _previewFrameTokenSource = new CancellationTokenSource();
             var token = _previewFrameTokenSource.Token;
@@ -254,33 +290,6 @@ namespace CameraCaptureApp.Forms
                 if (!displayOwnsFrame)
                 {
                     frame.Dispose();
-                }
-            }
-        }
-
-        private async Task SaveFrameIfRequestedAsync(Bitmap frame)
-        {
-            if (Interlocked.CompareExchange(ref _pendingSnapshotSaveCount, 0, 0) <= 0)
-            {
-                return;
-            }
-
-            if (Interlocked.Decrement(ref _pendingSnapshotSaveCount) < 0)
-            {
-                Interlocked.Exchange(ref _pendingSnapshotSaveCount, 0);
-                return;
-            }
-
-            using (var snapshot = new Bitmap(frame))
-            {
-                try
-                {
-                    var savedPath = await Task.Run(() => SaveSnapshotBitmap(snapshot, _settings));
-                    labelFooterMessageValue.Text = "Captured image saved: " + Path.GetFileName(savedPath);
-                }
-                catch (Exception ex)
-                {
-                    labelFooterMessageValue.Text = "Captured image save failed: " + ex.Message;
                 }
             }
         }
