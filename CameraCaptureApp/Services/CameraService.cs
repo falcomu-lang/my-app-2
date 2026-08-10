@@ -2267,6 +2267,12 @@ namespace CameraCaptureApp.Services
             var lineRateIntegerText = acquisitionRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var linePeriodMicrosecondsText = CalculateLinePeriodMicrosecondsText(_settings.InternalLineRate);
             var linePeriodMicroseconds = Convert.ToDouble(decimal.Parse(linePeriodMicrosecondsText, System.Globalization.CultureInfo.InvariantCulture));
+            var applied = false;
+
+            if (TrySetAcquisitionLineRateFeature(notes, lineRateText, lineRateIntegerText))
+            {
+                applied = true;
+            }
 
             var disabledLineIntegrate = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 0);
             notes.Add("LINE_INTEGRATE_ENABLE disabled before internal line trigger " + FormatApplyResult(disabledLineIntegrate, "0") + " readback=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE));
@@ -2276,7 +2282,7 @@ namespace CameraCaptureApp.Services
             TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE);
             if (TrySetAcquisitionIntParameter(notes, acquisitionRate, SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ))
             {
-                return true;
+                applied = true;
             }
 
             TryConfigureInternalLineTriggerSource();
@@ -2334,7 +2340,41 @@ namespace CameraCaptureApp.Services
                 return true;
             }
 
+            if (applied)
+            {
+                return true;
+            }
+
             notes.Add("InternalLineRate not supported");
+            return false;
+        }
+
+        private bool TrySetAcquisitionLineRateFeature(System.Collections.Generic.List<string> notes, string lineRateText, string lineRateIntegerText)
+        {
+            var appliedFeature = string.Empty;
+            var featureNames = new[] { "AcquisitionLineRate", "AcquisitionLineRateAbs", "AcquisitionLineRateRaw" };
+
+            if (TrySetDeviceFeature(featureNames, lineRateText, out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied first value=" + lineRateText + " readback=" + ReadNumericFeatureValue(appliedFeature));
+                return true;
+            }
+
+            if (TrySetDeviceFeature(featureNames, lineRateIntegerText, out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied first value=" + lineRateIntegerText + " readback=" + ReadNumericFeatureValue(appliedFeature));
+                return true;
+            }
+
+            double doubleValue;
+            if (double.TryParse(lineRateText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out doubleValue)
+                && TrySetDeviceFeature(featureNames, doubleValue, out appliedFeature))
+            {
+                notes.Add(appliedFeature + " applied first value=" + lineRateText + " readback=" + ReadNumericFeatureValue(appliedFeature));
+                return true;
+            }
+
+            notes.Add("AcquisitionLineRate first attempt not applied");
             return false;
         }
 
