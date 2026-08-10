@@ -848,6 +848,7 @@ namespace CameraCaptureApp.Services
                 }
 
                 AppendAcquisitionTimingParameterSnapshot(builder);
+                AppendAcquisitionTimingCapabilitySnapshot(builder);
                 AppendConfigTimingKeySnapshot(builder);
                 AppendLiveFeatureSnapshot(builder);
 
@@ -988,6 +989,40 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        private void AppendAcquisitionTimingCapabilitySnapshot(StringBuilder builder)
+        {
+            builder.AppendLine();
+            builder.AppendLine("[Acquisition Timing/Trigger Capabilities]");
+
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                builder.AppendLine("<acquisition unavailable>");
+                return;
+            }
+
+            foreach (SapAcquisition.Cap capability in Enum.GetValues(typeof(SapAcquisition.Cap)))
+            {
+                var name = capability.ToString();
+                if (!IsTimingOrTriggerParameterName(name))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    int value;
+                    builder.AppendLine(
+                        name
+                        + " value="
+                        + (_acquisition.GetCapability(capability, out value) ? value.ToString() : "<unreadable>"));
+                }
+                catch (Exception ex)
+                {
+                    builder.AppendLine(name + " value=<error: " + ex.Message + ">");
+                }
+            }
+        }
+
         private static bool IsTimingOrTriggerParameterName(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -1003,7 +1038,14 @@ namespace CameraCaptureApp.Services
                 || upperName.Contains("TIME")
                 || upperName.Contains("DURATION")
                 || upperName.Contains("PERIOD")
-                || upperName.Contains("INTEGRATE");
+                || upperName.Contains("INTEGRATE")
+                || upperName.Contains("CONNECTOR")
+                || upperName.Contains("CAMLINK")
+                || upperName.Contains("CONTROL")
+                || upperName.Contains("SIGNAL")
+                || upperName.Contains("SYNC")
+                || upperName.Contains("SHAFT")
+                || upperName.Contains("ENCODER");
         }
 
         private string WriteRequestedSettingsReport(string source)
