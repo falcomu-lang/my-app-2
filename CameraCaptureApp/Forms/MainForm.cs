@@ -21,6 +21,8 @@ namespace CameraCaptureApp.Forms
         private CancellationTokenSource _previewFrameTokenSource;
         private bool _autoConnectAttempted;
         private int _pendingSnapshotSaveCount;
+        private Bitmap _pendingPreviewFrame;
+        private int _previewFrameUiUpdateQueued;
 
         public MainForm(ICameraService cameraService, ISettingsService settingsService)
         {
@@ -169,6 +171,12 @@ namespace CameraCaptureApp.Forms
             _statusRefreshTimer.Dispose();
             CancelPendingImageLoad();
             CancelPendingPreviewFrame();
+            var pendingFrame = Interlocked.Exchange(ref _pendingPreviewFrame, null);
+            if (pendingFrame != null)
+            {
+                pendingFrame.Dispose();
+            }
+
             _cameraService.Disconnect();
             base.OnFormClosed(e);
         }
@@ -181,26 +189,72 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            BeginInvoke(new Action(() => DisplayPreviewFrameAsync(e.Frame)));
+            var previousFrame = Interlocked.Exchange(ref _pendingPreviewFrame, e.Frame);
+            if (previousFrame != null)
+            {
+                previousFrame.Dispose();
+            }
+
+            if (Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 1) == 0)
+            {
+                BeginInvoke(new Action(ProcessPendingPreviewFrameAsync));
+            }
         }
 
-        private async void DisplayPreviewFrameAsync(Bitmap frame)
+        private async void ProcessPendingPreviewFrameAsync()
+        {
+            Bitmap frame = null;
+            try
+            {
+                frame = Interlocked.Exchange(ref _pendingPreviewFrame, null);
+                if (frame == null || IsDisposed)
+                {
+                    return;
+                }
+
+                await DisplayPreviewFrameAsync(frame);
+                frame = null;
+            }
+            finally
+            {
+                if (frame != null)
+                {
+                    frame.Dispose();
+                }
+
+                Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 0);
+                if (Interlocked.CompareExchange(ref _pendingPreviewFrame, null, null) != null &&
+                    Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 1) == 0 &&
+                    !IsDisposed &&
+                    IsHandleCreated)
+                {
+                    BeginInvoke(new Action(ProcessPendingPreviewFrameAsync));
+                }
+            }
+        }
+
+        private async Task DisplayPreviewFrameAsync(Bitmap frame)
         {
             await SaveFrameIfRequestedAsync(frame);
             CancelPendingPreviewFrame();
             _previewFrameTokenSource = new CancellationTokenSource();
             var token = _previewFrameTokenSource.Token;
+            var displayOwnsFrame = false;
 
             try
             {
                 await _cameraDisplayControl.ShowFrameAsync(frame, token);
+                displayOwnsFrame = true;
             }
             catch (OperationCanceledException)
             {
             }
             finally
             {
-                frame.Dispose();
+                if (!displayOwnsFrame)
+                {
+                    frame.Dispose();
+                }
             }
         }
 

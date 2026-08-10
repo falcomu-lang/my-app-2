@@ -79,7 +79,7 @@ namespace CameraCaptureApp.Controls
         public async Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken)
         {
             var version = Interlocked.Increment(ref _imageVersion);
-            await ApplyBitmapAsync(new Bitmap(frame), version, cancellationToken);
+            await ApplyBitmapAsync(frame, version, cancellationToken);
         }
 
         private async Task ApplyLargeImageAsync(LargeImageSource source, int version, CancellationToken cancellationToken)
@@ -108,7 +108,6 @@ namespace CameraCaptureApp.Controls
             FitImageToView();
             UpdateStatusLabel();
             viewerPanel.Invalidate();
-            viewerPanel.Update();
         }
 
         private async Task ApplyBitmapAsync(Bitmap bitmap, int version, CancellationToken cancellationToken)
@@ -137,7 +136,6 @@ namespace CameraCaptureApp.Controls
             FitImageToView();
             UpdateStatusLabel();
             viewerPanel.Invalidate();
-            viewerPanel.Update();
         }
 
         private void viewerPanel_Paint(object sender, PaintEventArgs e)
