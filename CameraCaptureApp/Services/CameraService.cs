@@ -1291,10 +1291,13 @@ namespace CameraCaptureApp.Services
 
                 var exposureText = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var gainText = decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var lineRateIntegerText = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var exposureResult = TrySetNotebookExposureFeatures(notebookDevice, exposureText);
                 var gainApplied = TrySetNotebookFeatureValue(notebookDevice, "Gain", gainText);
+                var lineRateResult = TrySetNotebookInternalLineRateFeatures(notebookDevice, lineRateText, lineRateIntegerText, true);
 
-                if (exposureResult.Applied || gainApplied)
+                if (exposureResult.Applied || gainApplied || lineRateResult.Applied)
                 {
                     TryUpdateNotebookFeaturesToDevice(notebookDevice);
                 }
@@ -1304,6 +1307,7 @@ namespace CameraCaptureApp.Services
                     + (autoSelectedLocation ? "targetSource=auto-selected " : "targetSource=selected ")
                     + exposureResult.Message
                     + " Gain=" + FormatApplyResult(gainApplied, gainText)
+                    + " " + lineRateResult.Message
                     + " TriggerMode=skipped");
             }
             catch (Exception ex)
@@ -1452,64 +1456,8 @@ namespace CameraCaptureApp.Services
                     };
                 }
 
-                var details = new System.Collections.Generic.List<string>();
-                var applied = false;
-                long lineRateInt64;
-                var hasLineRateInt64 = long.TryParse(lineRateIntegerText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out lineRateInt64);
-                foreach (var featureName in GetInternalLineRateFeatureNames())
-                {
-                    if (!IsNotebookFeatureAvailable(notebookDevice, featureName))
-                    {
-                        details.Add(featureName + "=missing");
-                        continue;
-                    }
-
-                    if (!CanWriteNotebookFeatureStrict(notebookDevice, featureName))
-                    {
-                        details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
-                        continue;
-                    }
-
-                    if (!(hasLineRateInt64 && TrySetNotebookFeatureValue(notebookDevice, featureName, lineRateInt64))
-                        && !TrySetNotebookNumericFeatureValue(notebookDevice, featureName, lineRateText)
-                        && !TrySetNotebookNumericFeatureValue(notebookDevice, featureName, lineRateIntegerText))
-                    {
-                        details.Add(featureName + "=failed(" + lineRateText + ")");
-                        continue;
-                    }
-
-                    applied = true;
-                    details.Add(featureName + "=ok(" + lineRateText + ") readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
-                    break;
-                }
-
-                if (!applied)
-                {
-                    foreach (var featureName in GetInternalLinePeriodFeatureNames())
-                    {
-                        if (!IsNotebookFeatureAvailable(notebookDevice, featureName))
-                        {
-                            details.Add(featureName + "=missing");
-                            continue;
-                        }
-
-                        if (!CanWriteNotebookFeatureStrict(notebookDevice, featureName))
-                        {
-                            details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
-                            continue;
-                        }
-
-                        if (!TrySetNotebookNumericFeatureValue(notebookDevice, featureName, linePeriodMicrosecondsText))
-                        {
-                            details.Add(featureName + "=failed(" + linePeriodMicrosecondsText + "us)");
-                            continue;
-                        }
-
-                        applied = true;
-                        details.Add(featureName + "=ok(" + linePeriodMicrosecondsText + "us) readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
-                        break;
-                    }
-                }
+                var result = TrySetNotebookInternalLineRateFeatures(notebookDevice, lineRateText, lineRateIntegerText, false);
+                var applied = result.Applied;
 
                 if (applied)
                 {
@@ -1521,7 +1469,7 @@ namespace CameraCaptureApp.Services
                     Applied = applied,
                     Message = "InternalLineRate notebook target=" + FormatSapLocation(notebookLocation) + " "
                         + (autoSelectedLocation ? "targetSource=auto-selected " : "targetSource=selected ")
-                        + "Features[" + string.Join(",", details.ToArray()) + "]"
+                        + result.Message
                 };
             }
             catch (Exception ex)
@@ -1557,6 +1505,67 @@ namespace CameraCaptureApp.Services
                     }
                 }
             }
+        }
+
+        private NotebookApplyResult TrySetNotebookInternalLineRateFeatures(SapAcqDevice notebookDevice, string lineRateText, string lineRateIntegerText, bool earlyApply)
+        {
+            var lineRateDecimal = decimal.Parse(lineRateText, System.Globalization.CultureInfo.InvariantCulture);
+            var linePeriodMicrosecondsText = CalculateLinePeriodMicrosecondsText(lineRateDecimal);
+            var details = new System.Collections.Generic.List<string>();
+            var applied = false;
+            long lineRateInt64;
+            var hasLineRateInt64 = long.TryParse(lineRateIntegerText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out lineRateInt64);
+
+            foreach (var featureName in GetInternalLineRateFeatureNames())
+            {
+                if (!IsNotebookFeatureAvailable(notebookDevice, featureName))
+                {
+                    details.Add(featureName + "=missing");
+                    continue;
+                }
+
+                var readbackBefore = ReadNotebookFeatureValue(notebookDevice, featureName);
+                if (!(hasLineRateInt64 && TrySetNotebookFeatureValue(notebookDevice, featureName, lineRateInt64))
+                    && !TrySetNotebookFeatureValue(notebookDevice, featureName, lineRateText)
+                    && !TrySetNotebookFeatureValue(notebookDevice, featureName, lineRateIntegerText))
+                {
+                    details.Add(featureName + "=failed(" + lineRateText + ") before=" + readbackBefore + " access=" + ReadNotebookFeatureAccessMode(notebookDevice, featureName));
+                    continue;
+                }
+
+                applied = true;
+                details.Add(featureName + "=ok(" + lineRateText + ") before=" + readbackBefore + " readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
+                break;
+            }
+
+            if (!applied)
+            {
+                foreach (var featureName in GetInternalLinePeriodFeatureNames())
+                {
+                    if (!IsNotebookFeatureAvailable(notebookDevice, featureName))
+                    {
+                        details.Add(featureName + "=missing");
+                        continue;
+                    }
+
+                    var readbackBefore = ReadNotebookFeatureValue(notebookDevice, featureName);
+                    if (!TrySetNotebookFeatureValue(notebookDevice, featureName, linePeriodMicrosecondsText))
+                    {
+                        details.Add(featureName + "=failed(" + linePeriodMicrosecondsText + "us) before=" + readbackBefore + " access=" + ReadNotebookFeatureAccessMode(notebookDevice, featureName));
+                        continue;
+                    }
+
+                    applied = true;
+                    details.Add(featureName + "=ok(" + linePeriodMicrosecondsText + "us) before=" + readbackBefore + " readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
+                    break;
+                }
+            }
+
+            return new NotebookApplyResult
+            {
+                Applied = applied,
+                Message = "InternalLineRate " + (earlyApply ? "early " : string.Empty) + "Features[" + string.Join(",", details.ToArray()) + "]"
+            };
         }
 
         private static bool TrySetNotebookEnumFeatureValue(SapAcqDevice device, string featureName, string[] values)
@@ -1713,6 +1722,55 @@ namespace CameraCaptureApp.Services
             }
 
             return false;
+        }
+
+        private static string ReadNotebookFeatureAccessMode(SapAcqDevice device, string featureName)
+        {
+            if (device == null || string.IsNullOrWhiteSpace(featureName))
+            {
+                return "<unavailable>";
+            }
+
+            SapFeature feature = null;
+            try
+            {
+                feature = new SapFeature(device.Location);
+                feature.Create();
+                if (device.GetFeatureInfo(featureName, feature))
+                {
+                    return feature.DataAccessMode.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                return "<error: " + ex.Message + ">";
+            }
+            finally
+            {
+                if (feature != null)
+                {
+                    try
+                    {
+                        if (feature.Initialized)
+                        {
+                            feature.Destroy();
+                        }
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        feature.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            return "<unknown>";
         }
 
         private static bool TrySetNotebookNumericFeatureValue(SapAcqDevice device, string featureName, string value)
