@@ -2162,6 +2162,8 @@ namespace CameraCaptureApp.Services
             var linePeriodMicrosecondsText = CalculateLinePeriodMicrosecondsText(_settings.InternalLineRate);
             var linePeriodMicroseconds = Convert.ToDouble(decimal.Parse(linePeriodMicrosecondsText, System.Globalization.CultureInfo.InvariantCulture));
 
+            var disabledLineIntegrate = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 0);
+            notes.Add("LINE_INTEGRATE_ENABLE disabled before internal line trigger " + FormatApplyResult(disabledLineIntegrate, "0") + " readback=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE));
             TryEnableLineTriggerWhenSupported(notes);
             TrySetAcquisitionIntParameter(notes, 0, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
             TrySetAcquisitionIntParameter(notes, 0, SapAcquisition.Prm.SHAFT_ENCODER_ENABLE);
@@ -2307,6 +2309,20 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var requestedExposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
+            if (_settings.InternalLineRate > 0)
+            {
+                var disabledLineIntegrate = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 0);
+                notes.Add(
+                    "LineIntegrate exposure skipped for internal line rate "
+                    + "disableWrite=" + FormatApplyResult(disabledLineIntegrate, "0")
+                    + " enable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE)
+                    + " method=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_METHOD)
+                    + " requested=" + requestedExposureValue
+                    + " duration=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_DURATION)
+                    + " note=LINE_INTEGRATE_ENABLE is mutually exclusive with LINE_TRIGGER_ENABLE; camera-side ExposureTime remains the exposure path");
+                return disabledLineIntegrate;
+            }
+
             var methodApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_METHOD, 1);
             var enableApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 1);
             var durationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, requestedExposureValue);
