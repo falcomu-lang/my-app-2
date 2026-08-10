@@ -489,7 +489,7 @@ namespace CameraCaptureApp.Services
             }
 
             _acquisition.SignalNotifyEnable = true;
-            return true;
+            return false;
         }
 
         private void DestroySdkObjects()
@@ -1388,8 +1388,6 @@ namespace CameraCaptureApp.Services
                     };
                 }
 
-                TrySetNotebookLineTriggerInput(notebookDevice);
-
                 var details = new System.Collections.Generic.List<string>();
                 var applied = false;
                 foreach (var featureName in GetInternalLineRateFeatureNames())
@@ -1400,7 +1398,7 @@ namespace CameraCaptureApp.Services
                         continue;
                     }
 
-                    if (!CanWriteNotebookFeature(notebookDevice, featureName))
+                    if (!CanWriteNotebookFeatureStrict(notebookDevice, featureName))
                     {
                         details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
                         continue;
@@ -1428,7 +1426,7 @@ namespace CameraCaptureApp.Services
                             continue;
                         }
 
-                        if (!CanWriteNotebookFeature(notebookDevice, featureName))
+                        if (!CanWriteNotebookFeatureStrict(notebookDevice, featureName))
                         {
                             details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(notebookDevice, featureName));
                             continue;
@@ -1652,6 +1650,11 @@ namespace CameraCaptureApp.Services
 
         private static bool TrySetNotebookNumericFeatureValue(SapAcqDevice device, string featureName, string value)
         {
+            if (!CanWriteNotebookFeatureStrict(device, featureName))
+            {
+                return false;
+            }
+
             if (TrySetNotebookFeatureValue(device, featureName, value))
             {
                 return true;
@@ -2920,6 +2923,8 @@ namespace CameraCaptureApp.Services
                     {
                         return false;
                     }
+
+                    return true;
                 }
             }
             catch
@@ -2950,7 +2955,7 @@ namespace CameraCaptureApp.Services
                 }
             }
 
-            return true;
+            return false;
         }
 
         private string ReadNumericFeatureValue(string featureName)
