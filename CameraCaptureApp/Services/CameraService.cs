@@ -848,6 +848,7 @@ namespace CameraCaptureApp.Services
                 }
 
                 AppendAcquisitionTimingParameterSnapshot(builder);
+                AppendConfigTimingKeySnapshot(builder);
                 AppendLiveFeatureSnapshot(builder);
 
                 File.WriteAllText(reportPath, builder.ToString(), Encoding.UTF8);
@@ -867,10 +868,10 @@ namespace CameraCaptureApp.Services
 
             try
             {
-                EnsureAcqDeviceAvailable();
                 if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
                 {
-                    builder.AppendLine("SapAcqDevice unavailable. ProbeSummary=" + FormatAcqDeviceProbeSummary());
+                    builder.AppendLine("SapAcqDevice unavailable or not loaded. ProbeSummary=" + FormatAcqDeviceProbeSummary());
+                    builder.AppendLine("Live feature snapshot skipped to avoid SapAcqDevice.LoadFeatures message boxes. Use Load Features / Live Features manually if this camera exposes an AcqDevice path.");
                     return;
                 }
 
@@ -906,6 +907,46 @@ namespace CameraCaptureApp.Services
             catch (Exception ex)
             {
                 builder.AppendLine("Live feature snapshot failed: " + ex.Message);
+            }
+        }
+
+        private void AppendConfigTimingKeySnapshot(StringBuilder builder)
+        {
+            builder.AppendLine();
+            builder.AppendLine("[CCF Timing/Trigger Keys]");
+
+            if (string.IsNullOrWhiteSpace(_configFileName) || !File.Exists(_configFileName))
+            {
+                builder.AppendLine("Config file unavailable: " + SafeString(_configFileName));
+                return;
+            }
+
+            try
+            {
+                foreach (var rawLine in File.ReadAllLines(_configFileName, Encoding.Default))
+                {
+                    var line = rawLine.Trim();
+                    if (line.Length == 0 || line.StartsWith(";") || line.StartsWith("#") || line.StartsWith("["))
+                    {
+                        continue;
+                    }
+
+                    var separatorIndex = line.IndexOf('=');
+                    if (separatorIndex <= 0)
+                    {
+                        continue;
+                    }
+
+                    var key = line.Substring(0, separatorIndex).Trim();
+                    if (IsTimingOrTriggerParameterName(key) || key.IndexOf("CC", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        builder.AppendLine(line);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                builder.AppendLine("CCF timing key snapshot failed: " + ex.Message);
             }
         }
 
