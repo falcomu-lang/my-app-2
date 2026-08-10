@@ -81,6 +81,8 @@ namespace CameraCaptureApp.Controls
         public async Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken)
         {
             var version = Interlocked.Increment(ref _imageVersion);
+            var sourceWidth = frame.Width;
+            var sourceHeight = frame.Height;
             var previewFrame = await Task.Run(
                 () =>
                 {
@@ -89,7 +91,7 @@ namespace CameraCaptureApp.Controls
                 },
                 cancellationToken);
             frame.Dispose();
-            await ApplyBitmapAsync(previewFrame, version, cancellationToken);
+            await ApplyBitmapAsync(previewFrame, version, sourceWidth, sourceHeight, cancellationToken);
         }
 
         private async Task ApplyLargeImageAsync(LargeImageSource source, int version, CancellationToken cancellationToken)
@@ -120,7 +122,7 @@ namespace CameraCaptureApp.Controls
             viewerPanel.Invalidate();
         }
 
-        private async Task ApplyBitmapAsync(Bitmap bitmap, int version, CancellationToken cancellationToken)
+        private async Task ApplyBitmapAsync(Bitmap bitmap, int version, int sourceWidth, int sourceHeight, CancellationToken cancellationToken)
         {
             var elapsed = DateTime.UtcNow - _lastDisplayUpdateUtc;
             if (elapsed.TotalMilliseconds < 200)
@@ -142,7 +144,7 @@ namespace CameraCaptureApp.Controls
 
             _lastDisplayUpdateUtc = DateTime.UtcNow;
             OverlayText = "Live frame view";
-            ResolutionText = bitmap.Width + " x " + bitmap.Height;
+            ResolutionText = sourceWidth + " x " + sourceHeight;
             FitImageToView();
             UpdateStatusLabel();
             viewerPanel.Invalidate();
