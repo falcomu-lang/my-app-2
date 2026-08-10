@@ -1293,9 +1293,9 @@ namespace CameraCaptureApp.Services
                 var gainText = decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var lineRateIntegerText = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var lineRateResult = TrySetNotebookInternalLineRateFeatures(notebookDevice, lineRateText, lineRateIntegerText, true);
                 var exposureResult = TrySetNotebookExposureFeatures(notebookDevice, exposureText);
                 var gainApplied = TrySetNotebookFeatureValue(notebookDevice, "Gain", gainText);
-                var lineRateResult = TrySetNotebookInternalLineRateFeatures(notebookDevice, lineRateText, lineRateIntegerText, true);
 
                 if (exposureResult.Applied || gainApplied || lineRateResult.Applied)
                 {
@@ -1641,19 +1641,19 @@ namespace CameraCaptureApp.Services
 
                 if (!CanWriteNotebookFeature(device, featureName))
                 {
-                    details.Add(featureName + "=readonly readback=" + ReadNotebookFeatureValue(device, featureName));
-                    continue;
+                    details.Add(featureName + "=readonly-at-check readback=" + ReadNotebookFeatureValue(device, featureName));
                 }
 
-                var setOk = TrySetNotebookNumericFeatureValue(device, featureName, exposureText);
+                var setOk = TrySetNotebookFeatureValue(device, featureName, exposureText);
                 if (!setOk)
                 {
-                    details.Add(featureName + "=failed(" + exposureText + ")");
+                    details.Add(featureName + "=failed(" + exposureText + ") access=" + ReadNotebookFeatureAccessMode(device, featureName));
                     continue;
                 }
 
                 applied = true;
                 details.Add(featureName + "=ok(" + exposureText + ") readback=" + ReadNotebookFeatureValue(device, featureName));
+                break;
             }
 
             return new NotebookApplyResult
@@ -2645,7 +2645,6 @@ namespace CameraCaptureApp.Services
             TryConfigureTriggerSelector("LineStart", true, "CL_CC1");
             TryConfigureTriggerSelector("LineTrigger", true, "CC1");
             TryConfigureTriggerSelector("AcquisitionLine", true, "CC1");
-            TryConfigureTriggerSelector("ExposureStart", true, "CC1");
         }
 
         private int ClampInternalLineRate(int requestedRate, int? minimumRate, int? maximumRate, int? cameraMinimumRate, int? cameraMaximumRate)
