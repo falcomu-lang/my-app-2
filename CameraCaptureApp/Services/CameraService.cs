@@ -2162,6 +2162,9 @@ namespace CameraCaptureApp.Services
             var linePeriodMicrosecondsText = CalculateLinePeriodMicrosecondsText(_settings.InternalLineRate);
             var linePeriodMicroseconds = Convert.ToDouble(decimal.Parse(linePeriodMicrosecondsText, System.Globalization.CultureInfo.InvariantCulture));
 
+            TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.LINE_TRIGGER_ENABLE);
+            TrySetAcquisitionIntParameter(notes, 0, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
+            TrySetAcquisitionIntParameter(notes, 0, SapAcquisition.Prm.SHAFT_ENCODER_ENABLE);
             TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE);
             if (TrySetAcquisitionIntParameter(notes, acquisitionRate, SapAcquisition.Prm.INT_LINE_TRIGGER_FREQ))
             {
@@ -2298,7 +2301,7 @@ namespace CameraCaptureApp.Services
                         new[]
                         {
                             new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, useInternalLineTrigger ? 1 : 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0),
