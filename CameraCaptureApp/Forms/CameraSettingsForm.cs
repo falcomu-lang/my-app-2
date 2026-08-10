@@ -230,12 +230,6 @@ namespace CameraCaptureApp.Forms
         {
             var message = _cameraService.Status.LastMessage;
             labelReadResult.Text = message;
-            MessageBox.Show(
-                this,
-                message,
-                "Camera Apply Result",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
         }
 
         private void buttonCancel_Click(object sender, EventArgs e)
