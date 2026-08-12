@@ -12,7 +12,7 @@ namespace CameraCaptureApp.Forms
         public SaveProgressForm()
         {
             Text = "Saving Image";
-            Width = 420;
+            Width = 520;
             Height = 155;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -24,14 +24,14 @@ namespace CameraCaptureApp.Forms
             labelStatus.AutoEllipsis = true;
             labelStatus.Left = 16;
             labelStatus.Top = 16;
-            labelStatus.Width = 370;
+            labelStatus.Width = 470;
             labelStatus.Height = 22;
             labelStatus.Text = "Preparing image...";
 
             progressBar = new ProgressBar();
             progressBar.Left = 16;
             progressBar.Top = 48;
-            progressBar.Width = 370;
+            progressBar.Width = 470;
             progressBar.Height = 24;
             progressBar.Minimum = 0;
             progressBar.Maximum = 100;
@@ -41,9 +41,9 @@ namespace CameraCaptureApp.Forms
             labelRemaining.AutoEllipsis = true;
             labelRemaining.Left = 16;
             labelRemaining.Top = 82;
-            labelRemaining.Width = 370;
+            labelRemaining.Width = 470;
             labelRemaining.Height = 22;
-            labelRemaining.Text = "還有 0 張待處理...";
+            labelRemaining.Text = "Active 0, Waiting 0, Done 0, Failed 0";
 
             Controls.Add(labelStatus);
             Controls.Add(progressBar);
@@ -76,6 +76,11 @@ namespace CameraCaptureApp.Forms
 
         public void ReportRemaining(int remainingCount)
         {
+            ReportCounts(0, remainingCount, 0, 0);
+        }
+
+        public void ReportCounts(int activeCount, int waitingCount, int completedCount, int failedCount)
+        {
             if (IsDisposed)
             {
                 return;
@@ -85,7 +90,7 @@ namespace CameraCaptureApp.Forms
             {
                 try
                 {
-                    BeginInvoke(new Action<int>(ReportRemaining), remainingCount);
+                    BeginInvoke(new Action<int, int, int, int>(ReportCounts), activeCount, waitingCount, completedCount, failedCount);
                 }
                 catch (InvalidOperationException)
                 {
@@ -94,7 +99,11 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            labelRemaining.Text = "還有 " + Math.Max(0, remainingCount) + " 張待處理...";
+            labelRemaining.Text =
+                "Active " + Math.Max(0, activeCount) +
+                ", Waiting " + Math.Max(0, waitingCount) +
+                ", Done " + Math.Max(0, completedCount) +
+                ", Failed " + Math.Max(0, failedCount);
         }
     }
 }

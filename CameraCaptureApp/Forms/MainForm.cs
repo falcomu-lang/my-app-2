@@ -12,6 +12,8 @@ namespace CameraCaptureApp.Forms
 {
     public partial class MainForm : Form
     {
+        private const int MaxConcurrentSnapshotSaves = 5;
+
         private readonly ICameraService _cameraService;
         private readonly ISettingsService _settingsService;
         private readonly Controls.CameraDisplayControl _cameraDisplayControl;
@@ -22,11 +24,14 @@ namespace CameraCaptureApp.Forms
         private CancellationTokenSource _previewFrameTokenSource;
         private readonly object _pendingPreviewFramesLock = new object();
         private readonly Queue<Bitmap> _pendingRollingPreviewFrames = new Queue<Bitmap>();
-        private readonly SemaphoreSlim _snapshotSaveGate = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _snapshotSaveGate = new SemaphoreSlim(MaxConcurrentSnapshotSaves, MaxConcurrentSnapshotSaves);
         private readonly object _snapshotProgressLock = new object();
         private bool _autoConnectAttempted;
         private int _pendingSnapshotSaveCount;
         private int _snapshotSaveQueueCount;
+        private int _snapshotSaveActiveCount;
+        private int _snapshotSaveCompletedCount;
+        private int _snapshotSaveFailedCount;
         private SaveProgressForm _snapshotProgressForm;
         private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
@@ -162,12 +167,20 @@ namespace CameraCaptureApp.Forms
             {
                 try
                 {
-                    var savedPath = await Task.Run(() => SaveRollingCaptureSnapshot(_settings));
+                    var progressForm = EnsureSaveProgressForm();
+                    var settings = _settings.Clone();
+                    var savedPath = await RunQueuedSnapshotSaveAsync(
+                        progressForm,
+                        () => SaveRollingCaptureSnapshot(settings));
                     SetFooterMessage("Captured image saved: " + Path.GetFileName(savedPath));
                 }
                 catch (Exception ex)
                 {
                     SetFooterMessage("Captured image save failed: " + ex.Message);
+                }
+                finally
+                {
+                    CompleteQueuedSnapshotSave();
                 }
 
                 return;
@@ -182,12 +195,20 @@ namespace CameraCaptureApp.Forms
 
                 try
                 {
-                    var savedPath = await Task.Run(() => SaveSnapshotBitmap(snapshot, _settings));
+                    var progressForm = EnsureSaveProgressForm();
+                    var settings = _settings.Clone();
+                    var savedPath = await RunQueuedSnapshotSaveAsync(
+                        progressForm,
+                        () => SaveSnapshotBitmap(snapshot, settings));
                     SetFooterMessage("Captured image saved: " + Path.GetFileName(savedPath));
                 }
                 catch (Exception ex)
                 {
                     SetFooterMessage("Captured image save failed: " + ex.Message);
+                }
+                finally
+                {
+                    CompleteQueuedSnapshotSave();
                 }
             }
         }
@@ -265,33 +286,49 @@ namespace CameraCaptureApp.Forms
 
         private async Task<string> RunQueuedSnapshotSaveAsync(SaveProgressForm progressForm, Func<string> saveAction)
         {
-            progressForm.Report(0, "Waiting for previous saves. Queue: " + Interlocked.CompareExchange(ref _snapshotSaveQueueCount, 0, 0) + ".");
+            ReportSnapshotSaveCounts(progressForm);
+            progressForm.Report(0, "Waiting for a save slot...");
             await _snapshotSaveGate.WaitAsync();
+            Interlocked.Increment(ref _snapshotSaveActiveCount);
+            ReportSnapshotSaveCounts(progressForm);
             try
             {
-                progressForm.ReportRemaining(Math.Max(0, Interlocked.CompareExchange(ref _snapshotSaveQueueCount, 0, 0) - 1));
-                return await Task.Run(saveAction);
+                progressForm.Report(5, "Saving image...");
+                var savedPath = await Task.Run(saveAction);
+                Interlocked.Increment(ref _snapshotSaveCompletedCount);
+                ReportSnapshotSaveCounts(progressForm);
+                return savedPath;
+            }
+            catch
+            {
+                Interlocked.Increment(ref _snapshotSaveFailedCount);
+                ReportSnapshotSaveCounts(progressForm);
+                throw;
             }
             finally
             {
+                Interlocked.Decrement(ref _snapshotSaveActiveCount);
                 _snapshotSaveGate.Release();
+                ReportSnapshotSaveCounts(progressForm);
             }
         }
 
         private SaveProgressForm EnsureSaveProgressForm()
         {
-            Interlocked.Increment(ref _snapshotSaveQueueCount);
+            var queuedCount = Interlocked.Increment(ref _snapshotSaveQueueCount);
             lock (_snapshotProgressLock)
             {
                 if (_snapshotProgressForm == null || _snapshotProgressForm.IsDisposed)
                 {
+                    Interlocked.Exchange(ref _snapshotSaveCompletedCount, 0);
+                    Interlocked.Exchange(ref _snapshotSaveFailedCount, 0);
                     _snapshotProgressForm = new SaveProgressForm();
                     _snapshotProgressForm.FormClosed += SnapshotProgressForm_FormClosed;
                     _snapshotProgressForm.Show(this);
                 }
 
-                _snapshotProgressForm.Report(0, "Queued save jobs: " + _snapshotSaveQueueCount + ".");
-                _snapshotProgressForm.ReportRemaining(Math.Max(0, _snapshotSaveQueueCount - 1));
+                _snapshotProgressForm.Report(0, "Queued save jobs: " + queuedCount + ".");
+                ReportSnapshotSaveCounts(_snapshotProgressForm);
                 return _snapshotProgressForm;
             }
         }
@@ -312,9 +349,25 @@ namespace CameraCaptureApp.Forms
                 }
 
                 _snapshotProgressForm.Report(100, "All save jobs completed.");
+                ReportSnapshotSaveCounts(_snapshotProgressForm);
                 _snapshotProgressForm.Close();
                 _snapshotProgressForm = null;
             }
+        }
+
+        private void ReportSnapshotSaveCounts(SaveProgressForm progressForm)
+        {
+            if (progressForm == null || progressForm.IsDisposed)
+            {
+                return;
+            }
+
+            var outstandingCount = Interlocked.CompareExchange(ref _snapshotSaveQueueCount, 0, 0);
+            var activeCount = Interlocked.CompareExchange(ref _snapshotSaveActiveCount, 0, 0);
+            var completedCount = Interlocked.CompareExchange(ref _snapshotSaveCompletedCount, 0, 0);
+            var failedCount = Interlocked.CompareExchange(ref _snapshotSaveFailedCount, 0, 0);
+            var waitingCount = Math.Max(0, outstandingCount - activeCount);
+            progressForm.ReportCounts(activeCount, waitingCount, completedCount, failedCount);
         }
 
         private void SnapshotProgressForm_FormClosed(object sender, FormClosedEventArgs e)
