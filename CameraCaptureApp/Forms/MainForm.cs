@@ -107,6 +107,7 @@ namespace CameraCaptureApp.Forms
 
         private void buttonStartPreview_Click(object sender, EventArgs e)
         {
+            _frameRecorder.ClearRolling();
             _cameraService.StartPreview();
             UpdateStatus();
         }
@@ -147,7 +148,9 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            using (var snapshot = _frameRecorder.SnapshotLatest())
+            using (var snapshot = _settings.RollingCaptureEnabled
+                ? _frameRecorder.SnapshotRolling()
+                : _frameRecorder.SnapshotLatest())
             {
                 if (snapshot == null)
                 {
@@ -185,7 +188,7 @@ namespace CameraCaptureApp.Forms
 
                 try
                 {
-                    var savedPath = await Task.Run(() => SaveManualSnapshotBitmap(snapshot));
+                    var savedPath = await Task.Run(() => SaveManualSnapshotBitmap(snapshot, _settings.RollingCaptureEnabled));
                     labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
                 }
                 catch (Exception ex)
@@ -256,6 +259,14 @@ namespace CameraCaptureApp.Forms
             }
 
             _frameRecorder.StoreLatest(e.Frame);
+            if (_settings.RollingCaptureEnabled)
+            {
+                _frameRecorder.StoreRolling(e.Frame, _settings.RollingCaptureFrameCount);
+            }
+            else
+            {
+                _frameRecorder.ClearRolling();
+            }
             SaveLatestRecordedFrameIfRequestedAsync();
             var previousFrame = Interlocked.Exchange(ref _pendingPreviewFrame, e.Frame);
             if (previousFrame != null)
@@ -449,12 +460,14 @@ namespace CameraCaptureApp.Forms
             return filePath;
         }
 
-        private static string SaveManualSnapshotBitmap(Bitmap bitmap)
+        private static string SaveManualSnapshotBitmap(Bitmap bitmap, bool rollingCaptureEnabled)
         {
             var outputFolder = Path.Combine(Application.StartupPath, "snapshot");
             Directory.CreateDirectory(outputFolder);
 
-            var baseName = DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
+            var baseName = rollingCaptureEnabled
+                ? "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss")
+                : DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
             var filePath = BuildManualSnapshotPath(outputFolder, baseName);
             bitmap.Save(filePath, ImageFormat.Png);
             return filePath;
