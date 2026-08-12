@@ -720,7 +720,20 @@ namespace CameraCaptureApp.Forms
 
             var baseName = "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff");
             var filePath = BuildManualSnapshotPath(outputFolder, baseName);
-            rollingSnapshot.SavePng(filePath, direction, reportProgress);
+            Action<int> reportRemaining = null;
+            if (reportProgress != null)
+            {
+                reportRemaining = remainingCount =>
+                {
+                    var progressForm = reportProgress.Target as SaveProgressForm;
+                    if (progressForm != null)
+                    {
+                        progressForm.ReportRemaining(remainingCount);
+                    }
+                };
+            }
+
+            rollingSnapshot.SavePng(filePath, direction, reportProgress, reportRemaining);
 
             if (!File.Exists(filePath))
             {

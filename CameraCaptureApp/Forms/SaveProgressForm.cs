@@ -7,12 +7,13 @@ namespace CameraCaptureApp.Forms
     {
         private readonly ProgressBar progressBar;
         private readonly Label labelStatus;
+        private readonly Label labelRemaining;
 
         public SaveProgressForm()
         {
             Text = "Saving Image";
             Width = 420;
-            Height = 130;
+            Height = 155;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -36,8 +37,17 @@ namespace CameraCaptureApp.Forms
             progressBar.Maximum = 100;
             progressBar.Value = 0;
 
+            labelRemaining = new Label();
+            labelRemaining.AutoEllipsis = true;
+            labelRemaining.Left = 16;
+            labelRemaining.Top = 82;
+            labelRemaining.Width = 370;
+            labelRemaining.Height = 22;
+            labelRemaining.Text = "還剩下 0 張...";
+
             Controls.Add(labelStatus);
             Controls.Add(progressBar);
+            Controls.Add(labelRemaining);
         }
 
         public void Report(int percent, string statusText)
@@ -62,6 +72,29 @@ namespace CameraCaptureApp.Forms
 
             progressBar.Value = Math.Max(progressBar.Minimum, Math.Min(progressBar.Maximum, percent));
             labelStatus.Text = statusText ?? string.Empty;
+        }
+
+        public void ReportRemaining(int remainingCount)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                try
+                {
+                    BeginInvoke(new Action<int>(ReportRemaining), remainingCount);
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                return;
+            }
+
+            labelRemaining.Text = "還剩下 " + Math.Max(0, remainingCount) + " 張...";
         }
     }
 }
