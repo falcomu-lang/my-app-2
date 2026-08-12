@@ -23,8 +23,12 @@ namespace CameraCaptureApp.Forms
         private CancellationTokenSource _previewFrameTokenSource;
         private readonly object _pendingPreviewFramesLock = new object();
         private readonly Queue<Bitmap> _pendingRollingPreviewFrames = new Queue<Bitmap>();
+        private readonly SemaphoreSlim _snapshotSaveGate = new SemaphoreSlim(1, 1);
+        private readonly object _snapshotProgressLock = new object();
         private bool _autoConnectAttempted;
         private int _pendingSnapshotSaveCount;
+        private int _snapshotSaveQueueCount;
+        private SaveProgressForm _snapshotProgressForm;
         private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
 
@@ -198,7 +202,6 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            SaveProgressForm progressForm = null;
             if (_settings.RollingCaptureEnabled)
             {
                 var rollingSnapshot = _frameRecorder.SnapshotRollingFrames();
@@ -210,9 +213,11 @@ namespace CameraCaptureApp.Forms
 
                 try
                 {
-                    progressForm = ShowSaveProgressForm();
+                    var progressForm = EnsureSaveProgressForm();
                     var direction = _settings.RollingCaptureDirection;
-                    var savedPath = await Task.Run(() => SaveManualRollingSnapshot(rollingSnapshot, direction, progressForm.Report));
+                    var savedPath = await RunQueuedSnapshotSaveAsync(
+                        progressForm,
+                        () => SaveManualRollingSnapshot(rollingSnapshot, direction, progressForm.Report));
                     labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
                 }
                 catch (Exception ex)
@@ -221,7 +226,7 @@ namespace CameraCaptureApp.Forms
                 }
                 finally
                 {
-                    CloseSaveProgressForm(progressForm);
+                    CompleteQueuedSnapshotSave();
                     rollingSnapshot.Dispose();
                 }
 
@@ -238,9 +243,11 @@ namespace CameraCaptureApp.Forms
 
                 try
                 {
-                    progressForm = ShowSaveProgressForm();
+                    var progressForm = EnsureSaveProgressForm();
                     progressForm.Report(15, "Saving image...");
-                    var savedPath = await Task.Run(() => SaveManualSnapshotBitmap(snapshot, _settings.RollingCaptureEnabled));
+                    var savedPath = await RunQueuedSnapshotSaveAsync(
+                        progressForm,
+                        () => SaveManualSnapshotBitmap(snapshot, _settings.RollingCaptureEnabled));
                     progressForm.Report(100, "Image saved.");
                     labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
                 }
@@ -250,29 +257,72 @@ namespace CameraCaptureApp.Forms
                 }
                 finally
                 {
-                    CloseSaveProgressForm(progressForm);
+                    CompleteQueuedSnapshotSave();
                 }
             }
         }
 
-        private SaveProgressForm ShowSaveProgressForm()
+        private async Task<string> RunQueuedSnapshotSaveAsync(SaveProgressForm progressForm, Func<string> saveAction)
         {
-            var form = new SaveProgressForm();
-            form.Show(this);
-            form.Report(0, "Preparing image...");
-            return form;
+            progressForm.Report(0, "Waiting for previous saves. Queue: " + Interlocked.CompareExchange(ref _snapshotSaveQueueCount, 0, 0) + ".");
+            await _snapshotSaveGate.WaitAsync();
+            try
+            {
+                return await Task.Run(saveAction);
+            }
+            finally
+            {
+                _snapshotSaveGate.Release();
+            }
         }
 
-        private static void CloseSaveProgressForm(SaveProgressForm form)
+        private SaveProgressForm EnsureSaveProgressForm()
         {
-            if (form == null || form.IsDisposed)
+            Interlocked.Increment(ref _snapshotSaveQueueCount);
+            lock (_snapshotProgressLock)
+            {
+                if (_snapshotProgressForm == null || _snapshotProgressForm.IsDisposed)
+                {
+                    _snapshotProgressForm = new SaveProgressForm();
+                    _snapshotProgressForm.FormClosed += SnapshotProgressForm_FormClosed;
+                    _snapshotProgressForm.Show(this);
+                }
+
+                _snapshotProgressForm.Report(0, "Queued save jobs: " + _snapshotSaveQueueCount + ".");
+                return _snapshotProgressForm;
+            }
+        }
+
+        private void CompleteQueuedSnapshotSave()
+        {
+            var remaining = Interlocked.Decrement(ref _snapshotSaveQueueCount);
+            if (remaining > 0)
             {
                 return;
             }
 
-            form.Report(100, "Done.");
-            form.Close();
-            form.Dispose();
+            lock (_snapshotProgressLock)
+            {
+                if (_snapshotProgressForm == null || _snapshotProgressForm.IsDisposed)
+                {
+                    return;
+                }
+
+                _snapshotProgressForm.Report(100, "All save jobs completed.");
+                _snapshotProgressForm.Close();
+                _snapshotProgressForm = null;
+            }
+        }
+
+        private void SnapshotProgressForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            lock (_snapshotProgressLock)
+            {
+                if (ReferenceEquals(_snapshotProgressForm, sender))
+                {
+                    _snapshotProgressForm = null;
+                }
+            }
         }
 
         private async Task ShowRollingSnapshotForReviewAsync()
