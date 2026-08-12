@@ -25,7 +25,6 @@ namespace CameraCaptureApp.Forms
         private readonly Queue<Bitmap> _pendingRollingPreviewFrames = new Queue<Bitmap>();
         private bool _autoConnectAttempted;
         private int _pendingSnapshotSaveCount;
-        private int _manualSnapshotSaveInProgress;
         private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
 
@@ -192,27 +191,27 @@ namespace CameraCaptureApp.Forms
 
         private async void CameraDisplayControl_SaveSnapshotRequested(object sender, EventArgs e)
         {
-            if (Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 1) == 1)
-            {
-                labelFooterMessageValue.Text = "Snapshot save is already running.";
-                return;
-            }
-
             var status = _cameraService.Status;
             if (status == null || (status.IsPreviewing && !_settings.RollingCaptureEnabled))
             {
                 labelFooterMessageValue.Text = "Stop preview before saving a snapshot.";
-                Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 0);
                 return;
             }
 
             SaveProgressForm progressForm = null;
             if (_settings.RollingCaptureEnabled)
             {
+                var rollingSnapshot = _frameRecorder.SnapshotRollingFrames();
+                if (rollingSnapshot == null)
+                {
+                    labelFooterMessageValue.Text = "No rolling image is available to save.";
+                    return;
+                }
+
                 try
                 {
                     progressForm = ShowSaveProgressForm();
-                    var savedPath = await Task.Run(() => SaveManualRollingSnapshot(progressForm.Report));
+                    var savedPath = await Task.Run(() => SaveManualRollingSnapshot(rollingSnapshot, progressForm.Report));
                     labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
                 }
                 catch (Exception ex)
@@ -222,7 +221,7 @@ namespace CameraCaptureApp.Forms
                 finally
                 {
                     CloseSaveProgressForm(progressForm);
-                    Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 0);
+                    rollingSnapshot.Dispose();
                 }
 
                 return;
@@ -233,7 +232,6 @@ namespace CameraCaptureApp.Forms
                 if (snapshot == null)
                 {
                     labelFooterMessageValue.Text = "No recorded image is available to save.";
-                    Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 0);
                     return;
                 }
 
@@ -252,7 +250,6 @@ namespace CameraCaptureApp.Forms
                 finally
                 {
                     CloseSaveProgressForm(progressForm);
-                    Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 0);
                 }
             }
         }
@@ -664,17 +661,14 @@ namespace CameraCaptureApp.Forms
             return filePath;
         }
 
-        private string SaveManualRollingSnapshot(Action<int, string> reportProgress)
+        private string SaveManualRollingSnapshot(FrameRecorder.RollingFrameSnapshot rollingSnapshot, Action<int, string> reportProgress)
         {
             var outputFolder = Path.Combine(Application.StartupPath, "snapshot");
             Directory.CreateDirectory(outputFolder);
 
-            var baseName = "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
+            var baseName = "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff");
             var filePath = BuildManualSnapshotPath(outputFolder, baseName);
-            if (!_frameRecorder.SaveRollingPng(filePath, reportProgress))
-            {
-                throw new InvalidOperationException("No rolling image is available to save.");
-            }
+            rollingSnapshot.SavePng(filePath, reportProgress);
 
             if (!File.Exists(filePath))
             {
@@ -690,8 +684,8 @@ namespace CameraCaptureApp.Forms
             Directory.CreateDirectory(outputFolder);
 
             var baseName = rollingCaptureEnabled
-                ? "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss")
-                : DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
+                ? "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff")
+                : DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff");
             var filePath = BuildManualSnapshotPath(outputFolder, baseName);
             bitmap.Save(filePath, ImageFormat.Png);
             if (!File.Exists(filePath))

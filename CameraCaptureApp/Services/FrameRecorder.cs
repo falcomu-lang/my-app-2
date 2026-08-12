@@ -101,6 +101,25 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        public RollingFrameSnapshot SnapshotRollingFrames()
+        {
+            lock (_sync)
+            {
+                if (_rollingFrames.Count == 0)
+                {
+                    return null;
+                }
+
+                var frames = new List<Bitmap>(_rollingFrames.Count);
+                foreach (var frame in _rollingFrames)
+                {
+                    frames.Add((Bitmap)frame.Clone());
+                }
+
+                return new RollingFrameSnapshot(frames);
+            }
+        }
+
         public bool SaveRollingPng(string filePath)
         {
             return SaveRollingPng(filePath, null);
@@ -108,33 +127,16 @@ namespace CameraCaptureApp.Services
 
         public bool SaveRollingPng(string filePath, Action<int, string> reportProgress)
         {
-            List<Bitmap> frames;
-            lock (_sync)
+            using (var snapshot = SnapshotRollingFrames())
             {
-                if (_rollingFrames.Count == 0)
+                if (snapshot == null)
                 {
                     return false;
                 }
 
                 ReportProgress(reportProgress, 5, "Copying current rolling frames...");
-                frames = new List<Bitmap>(_rollingFrames.Count);
-                foreach (var frame in _rollingFrames)
-                {
-                    frames.Add((Bitmap)frame.Clone());
-                }
-            }
-
-            try
-            {
-                SaveVerticalPng(frames, filePath, reportProgress);
+                snapshot.SavePng(filePath, reportProgress);
                 return true;
-            }
-            finally
-            {
-                foreach (var frame in frames)
-                {
-                    frame.Dispose();
-                }
             }
         }
 
@@ -291,6 +293,41 @@ namespace CameraCaptureApp.Services
             if (reportProgress != null)
             {
                 reportProgress(percent, statusText);
+            }
+        }
+
+        public sealed class RollingFrameSnapshot : IDisposable
+        {
+            private List<Bitmap> _frames;
+
+            internal RollingFrameSnapshot(List<Bitmap> frames)
+            {
+                _frames = frames;
+            }
+
+            public void SavePng(string filePath, Action<int, string> reportProgress)
+            {
+                if (_frames == null || _frames.Count == 0)
+                {
+                    throw new InvalidOperationException("No rolling image is available to save.");
+                }
+
+                SaveVerticalPng(_frames, filePath, reportProgress);
+            }
+
+            public void Dispose()
+            {
+                if (_frames == null)
+                {
+                    return;
+                }
+
+                foreach (var frame in _frames)
+                {
+                    frame.Dispose();
+                }
+
+                _frames = null;
             }
         }
     }
