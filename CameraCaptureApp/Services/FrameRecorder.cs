@@ -227,7 +227,8 @@ namespace CameraCaptureApp.Services
                 CopyFrameFlippedIntoGrayBuffer(frame, pixels, stride, destinationY);
                 destinationY += frame.Height;
                 var percent = 10 + (int)Math.Round(((index + 1) / (double)frames.Count) * 75d);
-                ReportProgress(reportProgress, percent, "Composing image " + (index + 1) + " of " + frames.Count + "...");
+                var remainingCount = frames.Count - index - 1;
+                ReportProgress(reportProgress, percent, "Saving image " + (index + 1) + " of " + frames.Count + ". Remaining: " + remainingCount + ".");
             }
 
             ReportProgress(reportProgress, 90, "Encoding PNG...");

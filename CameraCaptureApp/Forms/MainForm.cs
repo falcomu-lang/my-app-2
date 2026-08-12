@@ -213,11 +213,6 @@ namespace CameraCaptureApp.Forms
                 {
                     progressForm = ShowSaveProgressForm();
                     var savedPath = await Task.Run(() => SaveManualRollingSnapshot(progressForm.Report));
-                    if (!status.IsPreviewing)
-                    {
-                        await LoadImageForReviewAsync(savedPath);
-                    }
-
                     labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
                 }
                 catch (Exception ex)

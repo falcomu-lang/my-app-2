@@ -369,7 +369,7 @@ namespace CameraCaptureApp.Forms
             // numericRollingCaptureFrameCount
             // 
             this.numericRollingCaptureFrameCount.Location = new System.Drawing.Point(132, 66);
-            this.numericRollingCaptureFrameCount.Maximum = new decimal(new int[] { 200, 0, 0, 0 });
+            this.numericRollingCaptureFrameCount.Maximum = new decimal(new int[] { 30, 0, 0, 0 });
             this.numericRollingCaptureFrameCount.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             this.numericRollingCaptureFrameCount.Name = "numericRollingCaptureFrameCount";
             this.numericRollingCaptureFrameCount.Size = new System.Drawing.Size(120, 23);
