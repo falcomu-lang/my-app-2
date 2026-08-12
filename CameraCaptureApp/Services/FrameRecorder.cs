@@ -143,7 +143,8 @@ namespace CameraCaptureApp.Services
                 var y = 0;
                 foreach (var frame in frames)
                 {
-                    graphics.DrawImageUnscaled(frame, 0, y);
+                    var destination = new Rectangle(0, y + frame.Height, frame.Width, -frame.Height);
+                    graphics.DrawImage(frame, destination);
                     y += frame.Height;
                 }
             }

@@ -111,6 +111,7 @@ namespace CameraCaptureApp.Controls
             frame.Dispose();
             if (rollingPreviewEnabled)
             {
+                previewFrame.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 await ApplyRollingBitmapAsync(previewFrame, version, sourceWidth, sourceHeight, rollingFrameCount, cancellationToken);
                 return;
             }

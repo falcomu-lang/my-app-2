@@ -121,10 +121,14 @@ namespace CameraCaptureApp.Forms
             UpdateStatus();
         }
 
-        private void buttonStop_Click(object sender, EventArgs e)
+        private async void buttonStop_Click(object sender, EventArgs e)
         {
             _cameraService.StopPreview();
             UpdateStatus();
+            if (_settings.RollingCaptureEnabled)
+            {
+                await ShowRollingSnapshotForReviewAsync();
+            }
         }
 
         private void buttonCapture_Click(object sender, EventArgs e)
@@ -200,6 +204,50 @@ namespace CameraCaptureApp.Forms
                 {
                     labelFooterMessageValue.Text = "Snapshot save failed: " + ex.Message;
                 }
+            }
+        }
+
+        private async Task ShowRollingSnapshotForReviewAsync()
+        {
+            labelFooterMessageValue.Text = "Preparing rolling image for review...";
+            try
+            {
+                var filePath = Path.Combine(
+                    Path.GetTempPath(),
+                    "CameraCaptureApp_rolling_review_" + DateTime.Now.ToString("yyyyMMdd_HHmmssfff") + ".png");
+
+                await Task.Run(
+                    () =>
+                    {
+                        using (var snapshot = _frameRecorder.SnapshotRolling())
+                        {
+                            if (snapshot == null)
+                            {
+                                return;
+                            }
+
+                            snapshot.Save(filePath, ImageFormat.Png);
+                        }
+                    });
+
+                if (!File.Exists(filePath))
+                {
+                    labelFooterMessageValue.Text = "No rolling image is available for review.";
+                    return;
+                }
+
+                CancelPendingImageLoad();
+                _imageLoadTokenSource = new CancellationTokenSource();
+                await _cameraDisplayControl.LoadImageFromFileAsync(filePath, _imageLoadTokenSource.Token);
+                labelFooterMessageValue.Text = "Rolling image ready for review.";
+            }
+            catch (OperationCanceledException)
+            {
+                labelFooterMessageValue.Text = "Rolling image review cancelled.";
+            }
+            catch (Exception ex)
+            {
+                labelFooterMessageValue.Text = "Rolling image review failed: " + ex.Message;
             }
         }
 
