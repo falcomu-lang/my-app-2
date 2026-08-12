@@ -203,6 +203,11 @@ namespace CameraCaptureApp.Forms
                 try
                 {
                     var savedPath = await Task.Run(() => SaveManualRollingSnapshot());
+                    if (!status.IsPreviewing)
+                    {
+                        await LoadImageForReviewAsync(savedPath);
+                    }
+
                     labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
                 }
                 catch (Exception ex)
@@ -254,9 +259,7 @@ namespace CameraCaptureApp.Forms
                     return;
                 }
 
-                CancelPendingImageLoad();
-                _imageLoadTokenSource = new CancellationTokenSource();
-                await _cameraDisplayControl.LoadImageFromFileAsync(filePath, _imageLoadTokenSource.Token);
+                await LoadImageForReviewAsync(filePath);
                 labelFooterMessageValue.Text = "Rolling image ready for review.";
             }
             catch (OperationCanceledException)
@@ -267,6 +270,13 @@ namespace CameraCaptureApp.Forms
             {
                 labelFooterMessageValue.Text = "Rolling image review failed: " + ex.Message;
             }
+        }
+
+        private async Task LoadImageForReviewAsync(string filePath)
+        {
+            CancelPendingImageLoad();
+            _imageLoadTokenSource = new CancellationTokenSource();
+            await _cameraDisplayControl.LoadImageFromFileAsync(filePath, _imageLoadTokenSource.Token);
         }
 
         private async void buttonLoadImage_Click(object sender, EventArgs e)
@@ -627,6 +637,11 @@ namespace CameraCaptureApp.Forms
                 throw new InvalidOperationException("No rolling image is available to save.");
             }
 
+            if (!File.Exists(filePath))
+            {
+                throw new IOException("Snapshot file was not created: " + filePath);
+            }
+
             return filePath;
         }
 
@@ -640,6 +655,11 @@ namespace CameraCaptureApp.Forms
                 : DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
             var filePath = BuildManualSnapshotPath(outputFolder, baseName);
             bitmap.Save(filePath, ImageFormat.Png);
+            if (!File.Exists(filePath))
+            {
+                throw new IOException("Snapshot file was not created: " + filePath);
+            }
+
             return filePath;
         }
 
