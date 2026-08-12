@@ -30,6 +30,10 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelLength;
         private System.Windows.Forms.Label labelInternalLineRate;
         private System.Windows.Forms.Label labelImageNote;
+        private System.Windows.Forms.GroupBox groupBoxRollingCapture;
+        private System.Windows.Forms.CheckBox checkBoxRollingCaptureEnabled;
+        private System.Windows.Forms.Label labelRollingCaptureFrameCount;
+        private System.Windows.Forms.NumericUpDown numericRollingCaptureFrameCount;
         private System.Windows.Forms.Label labelTriggerMode;
         private System.Windows.Forms.Label labelTriggerNote;
         private System.Windows.Forms.Label labelSaveFolder;
@@ -78,6 +82,10 @@ namespace CameraCaptureApp.Forms
             this.labelServerIndex = new System.Windows.Forms.Label();
             this.labelResourceIndex = new System.Windows.Forms.Label();
             this.tabPageImage = new System.Windows.Forms.TabPage();
+            this.groupBoxRollingCapture = new System.Windows.Forms.GroupBox();
+            this.checkBoxRollingCaptureEnabled = new System.Windows.Forms.CheckBox();
+            this.labelRollingCaptureFrameCount = new System.Windows.Forms.Label();
+            this.numericRollingCaptureFrameCount = new System.Windows.Forms.NumericUpDown();
             this.labelExposure = new System.Windows.Forms.Label();
             this.labelGain = new System.Windows.Forms.Label();
             this.labelLength = new System.Windows.Forms.Label();
@@ -103,6 +111,8 @@ namespace CameraCaptureApp.Forms
             this.tabControlSettings.SuspendLayout();
             this.tabPageConnection.SuspendLayout();
             this.tabPageImage.SuspendLayout();
+            this.groupBoxRollingCapture.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericRollingCaptureFrameCount)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericInternalLineRate)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericLength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericGain)).BeginInit();
@@ -307,6 +317,7 @@ namespace CameraCaptureApp.Forms
             // 
             // tabPageImage
             // 
+            this.tabPageImage.Controls.Add(this.groupBoxRollingCapture);
             this.tabPageImage.Controls.Add(this.labelExposure);
             this.tabPageImage.Controls.Add(this.numericExposure);
             this.tabPageImage.Controls.Add(this.labelGain);
@@ -323,6 +334,47 @@ namespace CameraCaptureApp.Forms
             this.tabPageImage.TabIndex = 1;
             this.tabPageImage.Text = "Image";
             this.tabPageImage.UseVisualStyleBackColor = true;
+            // 
+            // groupBoxRollingCapture
+            // 
+            this.groupBoxRollingCapture.Controls.Add(this.numericRollingCaptureFrameCount);
+            this.groupBoxRollingCapture.Controls.Add(this.labelRollingCaptureFrameCount);
+            this.groupBoxRollingCapture.Controls.Add(this.checkBoxRollingCaptureEnabled);
+            this.groupBoxRollingCapture.Location = new System.Drawing.Point(35, 143);
+            this.groupBoxRollingCapture.Name = "groupBoxRollingCapture";
+            this.groupBoxRollingCapture.Size = new System.Drawing.Size(680, 105);
+            this.groupBoxRollingCapture.TabIndex = 10;
+            this.groupBoxRollingCapture.TabStop = false;
+            this.groupBoxRollingCapture.Text = "滾動式拍照";
+            // 
+            // checkBoxRollingCaptureEnabled
+            // 
+            this.checkBoxRollingCaptureEnabled.AutoSize = true;
+            this.checkBoxRollingCaptureEnabled.Location = new System.Drawing.Point(18, 31);
+            this.checkBoxRollingCaptureEnabled.Name = "checkBoxRollingCaptureEnabled";
+            this.checkBoxRollingCaptureEnabled.Size = new System.Drawing.Size(91, 20);
+            this.checkBoxRollingCaptureEnabled.TabIndex = 0;
+            this.checkBoxRollingCaptureEnabled.Text = "啟用";
+            this.checkBoxRollingCaptureEnabled.UseVisualStyleBackColor = true;
+            // 
+            // labelRollingCaptureFrameCount
+            // 
+            this.labelRollingCaptureFrameCount.AutoSize = true;
+            this.labelRollingCaptureFrameCount.Location = new System.Drawing.Point(18, 68);
+            this.labelRollingCaptureFrameCount.Name = "labelRollingCaptureFrameCount";
+            this.labelRollingCaptureFrameCount.Size = new System.Drawing.Size(104, 16);
+            this.labelRollingCaptureFrameCount.TabIndex = 1;
+            this.labelRollingCaptureFrameCount.Text = "持續張數";
+            // 
+            // numericRollingCaptureFrameCount
+            // 
+            this.numericRollingCaptureFrameCount.Location = new System.Drawing.Point(132, 66);
+            this.numericRollingCaptureFrameCount.Maximum = new decimal(new int[] { 200, 0, 0, 0 });
+            this.numericRollingCaptureFrameCount.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.numericRollingCaptureFrameCount.Name = "numericRollingCaptureFrameCount";
+            this.numericRollingCaptureFrameCount.Size = new System.Drawing.Size(120, 23);
+            this.numericRollingCaptureFrameCount.TabIndex = 2;
+            this.numericRollingCaptureFrameCount.Value = new decimal(new int[] { 12, 0, 0, 0 });
             // 
             // labelExposure
             // 
@@ -512,6 +564,9 @@ namespace CameraCaptureApp.Forms
             this.tabPageConnection.PerformLayout();
             this.tabPageImage.ResumeLayout(false);
             this.tabPageImage.PerformLayout();
+            this.groupBoxRollingCapture.ResumeLayout(false);
+            this.groupBoxRollingCapture.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericRollingCaptureFrameCount)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericInternalLineRate)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericLength)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericGain)).EndInit();

@@ -24,6 +24,10 @@ namespace CameraCaptureApp.Models
 
         public int Length { get; set; }
 
+        public bool RollingCaptureEnabled { get; set; }
+
+        public int RollingCaptureFrameCount { get; set; }
+
         public decimal ExposureTime { get; set; }
 
         public decimal Gain { get; set; }
@@ -59,6 +63,8 @@ namespace CameraCaptureApp.Models
                 Width = 1280,
                 Height = 720,
                 Length = 720,
+                RollingCaptureEnabled = false,
+                RollingCaptureFrameCount = 12,
                 ExposureTime = 1200,
                 Gain = 1,
                 InternalLineRate = 30,

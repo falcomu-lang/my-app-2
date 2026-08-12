@@ -39,6 +39,8 @@ namespace CameraCaptureApp.Services
             settings.Width = GetInt(values, "Width", settings.Width);
             settings.Height = GetInt(values, "Height", settings.Height);
             settings.Length = GetInt(values, "Length", settings.Length);
+            settings.RollingCaptureEnabled = GetBool(values, "RollingCaptureEnabled", settings.RollingCaptureEnabled);
+            settings.RollingCaptureFrameCount = GetInt(values, "RollingCaptureFrameCount", settings.RollingCaptureFrameCount);
             settings.ExposureTime = GetDecimal(values, "ExposureTime", settings.ExposureTime);
             settings.Gain = GetDecimal(values, "Gain", settings.Gain);
             settings.InternalLineRate = GetDecimal(values, "InternalLineRate", settings.InternalLineRate);
@@ -70,6 +72,8 @@ namespace CameraCaptureApp.Services
                 "Width=" + settings.Width.ToString(CultureInfo.InvariantCulture),
                 "Height=" + settings.Height.ToString(CultureInfo.InvariantCulture),
                 "Length=" + settings.Length.ToString(CultureInfo.InvariantCulture),
+                "RollingCaptureEnabled=" + settings.RollingCaptureEnabled.ToString(),
+                "RollingCaptureFrameCount=" + settings.RollingCaptureFrameCount.ToString(CultureInfo.InvariantCulture),
                 "ExposureTime=" + settings.ExposureTime.ToString(CultureInfo.InvariantCulture),
                 "Gain=" + settings.Gain.ToString(CultureInfo.InvariantCulture),
                 "InternalLineRate=" + settings.InternalLineRate.ToString(CultureInfo.InvariantCulture),

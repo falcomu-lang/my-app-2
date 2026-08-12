@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -18,6 +19,7 @@ namespace CameraCaptureApp.Controls
 
         private readonly object _imageLock = new object();
         private readonly System.Windows.Forms.Timer _tileRefreshTimer;
+        private readonly List<Bitmap> _rollingPreviewFrames = new List<Bitmap>();
         private Bitmap _sourceBitmap;
         private LargeImageSource _largeImageSource;
         private bool _isPanning;
@@ -86,7 +88,12 @@ namespace CameraCaptureApp.Controls
             await ApplyLargeImageAsync(largeImageSource, version, cancellationToken);
         }
 
-        public async Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken)
+        public Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken)
+        {
+            return ShowFrameAsync(frame, cancellationToken, false, 1);
+        }
+
+        public async Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken, bool rollingPreviewEnabled, int rollingFrameCount)
         {
             var version = Interlocked.Increment(ref _imageVersion);
             var sourceWidth = frame.Width;
@@ -99,6 +106,12 @@ namespace CameraCaptureApp.Controls
                 },
                 cancellationToken);
             frame.Dispose();
+            if (rollingPreviewEnabled)
+            {
+                await ApplyRollingBitmapAsync(previewFrame, version, sourceWidth, sourceHeight, rollingFrameCount, cancellationToken);
+                return;
+            }
+
             await ApplyBitmapAsync(previewFrame, version, sourceWidth, sourceHeight, cancellationToken);
         }
 
@@ -119,6 +132,7 @@ namespace CameraCaptureApp.Controls
             lock (_imageLock)
             {
                 DisposeCurrentImage();
+                DisposeRollingPreviewFrames();
                 _largeImageSource = source;
             }
 
@@ -147,12 +161,59 @@ namespace CameraCaptureApp.Controls
             lock (_imageLock)
             {
                 DisposeCurrentImage();
+                DisposeRollingPreviewFrames();
                 _sourceBitmap = bitmap;
             }
 
             _lastDisplayUpdateUtc = DateTime.UtcNow;
             OverlayText = "Live frame view";
             ResolutionText = sourceWidth + " x " + sourceHeight;
+            FitImageToView();
+            UpdateStatusLabel();
+            viewerPanel.Invalidate();
+        }
+
+        private async Task ApplyRollingBitmapAsync(Bitmap bitmap, int version, int sourceWidth, int sourceHeight, int frameCount, CancellationToken cancellationToken)
+        {
+            var elapsed = DateTime.UtcNow - _lastDisplayUpdateUtc;
+            if (elapsed.TotalMilliseconds < 200)
+            {
+                await Task.Delay(200 - (int)elapsed.TotalMilliseconds, cancellationToken);
+            }
+
+            if (cancellationToken.IsCancellationRequested || version != _imageVersion)
+            {
+                bitmap.Dispose();
+                return;
+            }
+
+            frameCount = Math.Max(1, frameCount);
+            lock (_imageLock)
+            {
+                if (_sourceBitmap != null)
+                {
+                    _sourceBitmap.Dispose();
+                    _sourceBitmap = null;
+                }
+
+                if (_largeImageSource != null)
+                {
+                    _largeImageSource.Dispose();
+                    _largeImageSource = null;
+                }
+
+                _rollingPreviewFrames.Insert(0, bitmap);
+                while (_rollingPreviewFrames.Count > frameCount)
+                {
+                    var lastIndex = _rollingPreviewFrames.Count - 1;
+                    _rollingPreviewFrames[lastIndex].Dispose();
+                    _rollingPreviewFrames.RemoveAt(lastIndex);
+                }
+            }
+
+            _lastDisplayUpdateUtc = DateTime.UtcNow;
+            OverlayText = "Rolling live frame view";
+            ResolutionText = sourceWidth + " x " + (sourceHeight * frameCount);
             FitImageToView();
             UpdateStatusLabel();
             viewerPanel.Invalidate();
@@ -188,6 +249,21 @@ namespace CameraCaptureApp.Controls
                 var drawHeight = bitmap.Height * zoom;
                 e.Graphics.InterpolationMode = InterpolationMode.Low;
                 e.Graphics.DrawImage(bitmap, offset.X, offset.Y, drawWidth, drawHeight);
+                return;
+            }
+
+            if (_rollingPreviewFrames.Count > 0)
+            {
+                e.Graphics.InterpolationMode = InterpolationMode.Low;
+                var y = offset.Y;
+                foreach (var rollingFrame in _rollingPreviewFrames)
+                {
+                    var drawWidth = rollingFrame.Width * zoom;
+                    var drawHeight = rollingFrame.Height * zoom;
+                    e.Graphics.DrawImage(rollingFrame, offset.X, y, drawWidth, drawHeight);
+                    y += drawHeight;
+                }
+
                 return;
             }
 
@@ -529,6 +605,11 @@ namespace CameraCaptureApp.Controls
                 return _sourceBitmap.Width;
             }
 
+            if (_rollingPreviewFrames.Count > 0)
+            {
+                return _rollingPreviewFrames[0].Width;
+            }
+
             return _largeImageSource != null ? _largeImageSource.Width : 0;
         }
 
@@ -537,6 +618,17 @@ namespace CameraCaptureApp.Controls
             if (_sourceBitmap != null)
             {
                 return _sourceBitmap.Height;
+            }
+
+            if (_rollingPreviewFrames.Count > 0)
+            {
+                var height = 0;
+                foreach (var frame in _rollingPreviewFrames)
+                {
+                    height += frame.Height;
+                }
+
+                return height;
             }
 
             return _largeImageSource != null ? _largeImageSource.Height : 0;
@@ -555,6 +647,16 @@ namespace CameraCaptureApp.Controls
                 _largeImageSource.Dispose();
                 _largeImageSource = null;
             }
+        }
+
+        private void DisposeRollingPreviewFrames()
+        {
+            foreach (var frame in _rollingPreviewFrames)
+            {
+                frame.Dispose();
+            }
+
+            _rollingPreviewFrames.Clear();
         }
 
         private static Bitmap CreateLivePreviewBitmap(Bitmap source)

@@ -310,7 +310,11 @@ namespace CameraCaptureApp.Forms
 
             try
             {
-                await _cameraDisplayControl.ShowFrameAsync(frame, token);
+                await _cameraDisplayControl.ShowFrameAsync(
+                    frame,
+                    token,
+                    _settings.RollingCaptureEnabled,
+                    _settings.RollingCaptureFrameCount);
                 displayOwnsFrame = true;
             }
             catch (OperationCanceledException)

@@ -90,8 +90,8 @@ namespace CameraCaptureApp.Controls
             // bottomPanel
             // 
             this.bottomPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(22)))), ((int)(((byte)(34)))));
-            this.bottomPanel.Controls.Add(this.buttonFitToWindow);
             this.bottomPanel.Controls.Add(this.buttonSaveSnapshot);
+            this.bottomPanel.Controls.Add(this.buttonFitToWindow);
             this.bottomPanel.Controls.Add(this.statusLabel);
             this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.bottomPanel.Location = new System.Drawing.Point(0, 520);

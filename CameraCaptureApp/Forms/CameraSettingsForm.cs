@@ -52,6 +52,8 @@ namespace CameraCaptureApp.Forms
             numericExposure.Value = Settings.ExposureTime;
             numericGain.Value = Settings.Gain;
             numericLength.Value = Settings.Length > 0 ? Settings.Length : 1;
+            checkBoxRollingCaptureEnabled.Checked = Settings.RollingCaptureEnabled;
+            numericRollingCaptureFrameCount.Value = Settings.RollingCaptureFrameCount > 0 ? Settings.RollingCaptureFrameCount : 1;
             numericInternalLineRate.Value = Settings.InternalLineRate > 0 ? Settings.InternalLineRate : 1;
             var triggerIndex = (int)Settings.TriggerMode;
             comboBoxTriggerMode.SelectedIndex = triggerIndex >= 0 && triggerIndex < comboBoxTriggerMode.Items.Count ? triggerIndex : 0;
@@ -248,6 +250,8 @@ namespace CameraCaptureApp.Forms
             Settings.ExposureTime = numericExposure.Value;
             Settings.Gain = numericGain.Value;
             Settings.Length = decimal.ToInt32(numericLength.Value);
+            Settings.RollingCaptureEnabled = checkBoxRollingCaptureEnabled.Checked;
+            Settings.RollingCaptureFrameCount = decimal.ToInt32(numericRollingCaptureFrameCount.Value);
             Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
