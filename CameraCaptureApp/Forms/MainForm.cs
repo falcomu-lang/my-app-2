@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -20,6 +21,8 @@ namespace CameraCaptureApp.Forms
         private CameraSettings _settings;
         private CancellationTokenSource _imageLoadTokenSource;
         private CancellationTokenSource _previewFrameTokenSource;
+        private readonly object _pendingPreviewFramesLock = new object();
+        private readonly Queue<Bitmap> _pendingRollingPreviewFrames = new Queue<Bitmap>();
         private bool _autoConnectAttempted;
         private int _pendingSnapshotSaveCount;
         private Bitmap _pendingPreviewFrame;
@@ -172,13 +175,15 @@ namespace CameraCaptureApp.Forms
         private async void CameraDisplayControl_SaveSnapshotRequested(object sender, EventArgs e)
         {
             var status = _cameraService.Status;
-            if (status == null || status.IsPreviewing)
+            if (status == null || (status.IsPreviewing && !_settings.RollingCaptureEnabled))
             {
                 labelFooterMessageValue.Text = "Stop preview before saving a snapshot.";
                 return;
             }
 
-            using (var snapshot = _frameRecorder.SnapshotLatest())
+            using (var snapshot = _settings.RollingCaptureEnabled
+                ? _frameRecorder.SnapshotRolling()
+                : _frameRecorder.SnapshotLatest())
             {
                 if (snapshot == null)
                 {
@@ -240,6 +245,7 @@ namespace CameraCaptureApp.Forms
             CancelPendingImageLoad();
             CancelPendingPreviewFrame();
             _frameRecorder.Dispose();
+            ClearPendingRollingPreviewFrames();
             var pendingFrame = Interlocked.Exchange(ref _pendingPreviewFrame, null);
             if (pendingFrame != null)
             {
@@ -268,10 +274,21 @@ namespace CameraCaptureApp.Forms
                 _frameRecorder.ClearRolling();
             }
             SaveLatestRecordedFrameIfRequestedAsync();
-            var previousFrame = Interlocked.Exchange(ref _pendingPreviewFrame, e.Frame);
-            if (previousFrame != null)
+            if (_settings.RollingCaptureEnabled)
             {
-                previousFrame.Dispose();
+                lock (_pendingPreviewFramesLock)
+                {
+                    _pendingRollingPreviewFrames.Enqueue(e.Frame);
+                }
+            }
+            else
+            {
+                ClearPendingRollingPreviewFrames();
+                var previousFrame = Interlocked.Exchange(ref _pendingPreviewFrame, e.Frame);
+                if (previousFrame != null)
+                {
+                    previousFrame.Dispose();
+                }
             }
 
             if (Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 1) == 0)
@@ -286,6 +303,11 @@ namespace CameraCaptureApp.Forms
             try
             {
                 frame = Interlocked.Exchange(ref _pendingPreviewFrame, null);
+                if (frame == null)
+                {
+                    frame = DequeuePendingRollingPreviewFrame();
+                }
+
                 if (frame == null || IsDisposed)
                 {
                     return;
@@ -302,12 +324,39 @@ namespace CameraCaptureApp.Forms
                 }
 
                 Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 0);
-                if (Interlocked.CompareExchange(ref _pendingPreviewFrame, null, null) != null &&
+                if ((Interlocked.CompareExchange(ref _pendingPreviewFrame, null, null) != null || HasPendingRollingPreviewFrames()) &&
                     Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 1) == 0 &&
                     !IsDisposed &&
                     IsHandleCreated)
                 {
                     BeginInvoke(new Action(ProcessPendingPreviewFrameAsync));
+                }
+            }
+        }
+
+        private Bitmap DequeuePendingRollingPreviewFrame()
+        {
+            lock (_pendingPreviewFramesLock)
+            {
+                return _pendingRollingPreviewFrames.Count > 0 ? _pendingRollingPreviewFrames.Dequeue() : null;
+            }
+        }
+
+        private bool HasPendingRollingPreviewFrames()
+        {
+            lock (_pendingPreviewFramesLock)
+            {
+                return _pendingRollingPreviewFrames.Count > 0;
+            }
+        }
+
+        private void ClearPendingRollingPreviewFrames()
+        {
+            lock (_pendingPreviewFramesLock)
+            {
+                while (_pendingRollingPreviewFrames.Count > 0)
+                {
+                    _pendingRollingPreviewFrames.Dequeue().Dispose();
                 }
             }
         }
@@ -389,7 +438,7 @@ namespace CameraCaptureApp.Forms
             buttonStop.Enabled = isConnected && isPreviewing;
             buttonCapture.Enabled = isConnected && !isPreviewing;
             buttonLoadImage.Enabled = !isPreviewing;
-            _cameraDisplayControl.SaveSnapshotButtonEnabled = isConnected && !isPreviewing;
+            _cameraDisplayControl.SaveSnapshotButtonEnabled = isConnected && (!isPreviewing || _settings.RollingCaptureEnabled);
         }
 
         private void CancelPendingImageLoad()

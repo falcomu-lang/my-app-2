@@ -22,6 +22,9 @@ namespace CameraCaptureApp.Controls
         private readonly List<Bitmap> _rollingPreviewFrames = new List<Bitmap>();
         private Bitmap _sourceBitmap;
         private LargeImageSource _largeImageSource;
+        private int _rollingPreviewFrameWidth;
+        private int _rollingPreviewFrameHeight;
+        private int _rollingPreviewFrameCount;
         private bool _isPanning;
         private Point _lastMousePoint;
         private int _imageVersion;
@@ -188,8 +191,14 @@ namespace CameraCaptureApp.Controls
             }
 
             frameCount = Math.Max(1, frameCount);
+            bool shouldFitToView;
             lock (_imageLock)
             {
+                shouldFitToView = _rollingPreviewFrames.Count == 0 ||
+                    _rollingPreviewFrameWidth != bitmap.Width ||
+                    _rollingPreviewFrameHeight != bitmap.Height ||
+                    _rollingPreviewFrameCount != frameCount;
+
                 if (_sourceBitmap != null)
                 {
                     _sourceBitmap.Dispose();
@@ -202,6 +211,9 @@ namespace CameraCaptureApp.Controls
                     _largeImageSource = null;
                 }
 
+                _rollingPreviewFrameWidth = bitmap.Width;
+                _rollingPreviewFrameHeight = bitmap.Height;
+                _rollingPreviewFrameCount = frameCount;
                 _rollingPreviewFrames.Insert(0, bitmap);
                 while (_rollingPreviewFrames.Count > frameCount)
                 {
@@ -214,7 +226,11 @@ namespace CameraCaptureApp.Controls
             _lastDisplayUpdateUtc = DateTime.UtcNow;
             OverlayText = "Rolling live frame view";
             ResolutionText = sourceWidth + " x " + (sourceHeight * frameCount);
-            FitImageToView();
+            if (shouldFitToView)
+            {
+                FitImageToView();
+            }
+
             UpdateStatusLabel();
             viewerPanel.Invalidate();
         }
@@ -255,13 +271,24 @@ namespace CameraCaptureApp.Controls
             if (_rollingPreviewFrames.Count > 0)
             {
                 e.Graphics.InterpolationMode = InterpolationMode.Low;
-                var y = offset.Y;
-                foreach (var rollingFrame in _rollingPreviewFrames)
+                for (var index = 0; index < _rollingPreviewFrames.Count; index++)
                 {
-                    var drawWidth = rollingFrame.Width * zoom;
-                    var drawHeight = rollingFrame.Height * zoom;
-                    e.Graphics.DrawImage(rollingFrame, offset.X, y, drawWidth, drawHeight);
-                    y += drawHeight;
+                    var rollingFrame = _rollingPreviewFrames[index];
+                    var drawLeft = (float)Math.Round(offset.X);
+                    var drawTop = (float)Math.Round(offset.Y + (_rollingPreviewFrameHeight * index * zoom));
+                    var drawRight = (float)Math.Round(offset.X + (_rollingPreviewFrameWidth * zoom));
+                    var drawBottom = (float)Math.Round(offset.Y + (_rollingPreviewFrameHeight * (index + 1) * zoom));
+                    if (drawRight <= drawLeft)
+                    {
+                        drawRight = drawLeft + 1f;
+                    }
+
+                    if (drawBottom <= drawTop)
+                    {
+                        drawBottom = drawTop + 1f;
+                    }
+
+                    e.Graphics.DrawImage(rollingFrame, RectangleF.FromLTRB(drawLeft, drawTop, drawRight, drawBottom));
                 }
 
                 return;
@@ -454,7 +481,8 @@ namespace CameraCaptureApp.Controls
         {
             lock (_imageLock)
             {
-                if (e.Button != MouseButtons.Left || (_sourceBitmap == null && _largeImageSource == null))
+                if (e.Button != MouseButtons.Left ||
+                    (_sourceBitmap == null && _largeImageSource == null && _rollingPreviewFrames.Count == 0))
                 {
                     return;
                 }
@@ -607,7 +635,7 @@ namespace CameraCaptureApp.Controls
 
             if (_rollingPreviewFrames.Count > 0)
             {
-                return _rollingPreviewFrames[0].Width;
+                return _rollingPreviewFrameWidth;
             }
 
             return _largeImageSource != null ? _largeImageSource.Width : 0;
@@ -622,13 +650,7 @@ namespace CameraCaptureApp.Controls
 
             if (_rollingPreviewFrames.Count > 0)
             {
-                var height = 0;
-                foreach (var frame in _rollingPreviewFrames)
-                {
-                    height += frame.Height;
-                }
-
-                return height;
+                return _rollingPreviewFrameHeight * _rollingPreviewFrameCount;
             }
 
             return _largeImageSource != null ? _largeImageSource.Height : 0;
@@ -657,6 +679,9 @@ namespace CameraCaptureApp.Controls
             }
 
             _rollingPreviewFrames.Clear();
+            _rollingPreviewFrameWidth = 0;
+            _rollingPreviewFrameHeight = 0;
+            _rollingPreviewFrameCount = 0;
         }
 
         private static Bitmap CreateLivePreviewBitmap(Bitmap source)
