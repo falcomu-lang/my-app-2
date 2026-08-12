@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -699,7 +698,7 @@ namespace CameraCaptureApp.Forms
             Directory.CreateDirectory(outputFolder);
 
             var filePath = BuildSnapshotPath(outputFolder, settings);
-            bitmap.Save(filePath, GetImageFormat(settings.ImageSaveFormat));
+            FrameRecorder.SaveBitmapImage(bitmap, filePath, settings.ImageSaveFormat, null);
             return filePath;
         }
 
@@ -745,7 +744,7 @@ namespace CameraCaptureApp.Forms
 
             var baseName = DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff");
             var filePath = BuildManualSnapshotPath(outputFolder, baseName, saveFormat);
-            bitmap.Save(filePath, GetImageFormat(saveFormat));
+            FrameRecorder.SaveBitmapImage(bitmap, filePath, saveFormat, null);
             if (!File.Exists(filePath))
             {
                 throw new IOException("Snapshot file was not created: " + filePath);
@@ -850,25 +849,10 @@ namespace CameraCaptureApp.Forms
             return result;
         }
 
-        private static ImageFormat GetImageFormat(ImageSaveFormat saveFormat)
-        {
-            switch (saveFormat)
-            {
-                case ImageSaveFormat.Bmp:
-                    return ImageFormat.Bmp;
-                case ImageSaveFormat.Tif:
-                    return ImageFormat.Tiff;
-                default:
-                    return ImageFormat.Png;
-            }
-        }
-
         private static string GetImageExtension(ImageSaveFormat saveFormat)
         {
             switch (saveFormat)
             {
-                case ImageSaveFormat.Bmp:
-                    return ".bmp";
                 case ImageSaveFormat.Tif:
                     return ".tif";
                 default:

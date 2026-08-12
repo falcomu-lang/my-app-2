@@ -156,6 +156,33 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        public static void SaveBitmapImage(Bitmap bitmap, string filePath, ImageSaveFormat saveFormat, Action<int, string> reportProgress)
+        {
+            if (bitmap == null)
+            {
+                throw new ArgumentNullException("bitmap");
+            }
+
+            ReportProgress(reportProgress, 10, "Preparing image buffer...");
+            var width = bitmap.Width;
+            var height = bitmap.Height;
+            if (width <= 0 || height <= 0)
+            {
+                throw new InvalidOperationException("Image size is invalid.");
+            }
+
+            var stride = width;
+            var totalBytes = (long)stride * height;
+            if (totalBytes > int.MaxValue)
+            {
+                throw new InvalidOperationException("Image is too large to save as a single file.");
+            }
+
+            var pixels = new byte[(int)totalBytes];
+            CopyFrameIntoGrayBuffer(bitmap, pixels, stride, 0, false);
+            SaveGrayBuffer(filePath, saveFormat, width, height, stride, pixels, reportProgress);
+        }
+
         public void Dispose()
         {
             lock (_sync)
@@ -211,9 +238,9 @@ namespace CameraCaptureApp.Services
             return combined;
         }
 
-        private static void SaveVerticalPng(IList<Bitmap> frames, string filePath, RollingCaptureDirection direction, Action<int, string> reportProgress, Action<int> reportRemaining)
+        private static void SaveVerticalImage(IList<Bitmap> frames, string filePath, ImageSaveFormat saveFormat, RollingCaptureDirection direction, Action<int, string> reportProgress, Action<int> reportRemaining)
         {
-            ReportProgress(reportProgress, 10, "Preparing PNG buffer...");
+            ReportProgress(reportProgress, 10, "Preparing image buffer...");
             var width = 0;
             var height = 0;
             foreach (var frame in frames)
@@ -234,7 +261,7 @@ namespace CameraCaptureApp.Services
             var totalBytes = (long)stride * height;
             if (totalBytes > int.MaxValue)
             {
-                throw new InvalidOperationException("Rolling image is too large to save as a single PNG.");
+                throw new InvalidOperationException("Rolling image is too large to save as a single file.");
             }
 
             var pixels = new byte[(int)totalBytes];
@@ -262,7 +289,12 @@ namespace CameraCaptureApp.Services
                 ReportProgress(reportProgress, percent, "Saving image " + (index + 1) + " of " + frames.Count + ". Remaining: " + remainingCount + ".");
             }
 
-            ReportProgress(reportProgress, 90, "Encoding PNG...");
+            SaveGrayBuffer(filePath, saveFormat, width, height, stride, pixels, reportProgress);
+        }
+
+        private static void SaveGrayBuffer(string filePath, ImageSaveFormat saveFormat, int width, int height, int stride, byte[] pixels, Action<int, string> reportProgress)
+        {
+            ReportProgress(reportProgress, 90, "Encoding image...");
             var bitmapSource = SWMI.BitmapSource.Create(
                 width,
                 height,
@@ -272,14 +304,26 @@ namespace CameraCaptureApp.Services
                 null,
                 pixels,
                 stride);
-            var encoder = CreateBitmapEncoderFromExtension(filePath);
+            var encoder = CreateBitmapEncoder(saveFormat);
             encoder.Frames.Add(SWMI.BitmapFrame.Create(bitmapSource));
 
-            using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            var tempPath = filePath + ".tmp";
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+
+            using (var stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024))
             {
                 encoder.Save(stream);
             }
 
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+
+            File.Move(tempPath, filePath);
             ReportProgress(reportProgress, 100, "Image saved.");
         }
 
@@ -324,16 +368,9 @@ namespace CameraCaptureApp.Services
             }
         }
 
-        private static SWMI.BitmapEncoder CreateBitmapEncoderFromExtension(string filePath)
+        private static SWMI.BitmapEncoder CreateBitmapEncoder(ImageSaveFormat saveFormat)
         {
-            var extension = Path.GetExtension(filePath);
-            if (extension.Equals(".bmp", StringComparison.OrdinalIgnoreCase))
-            {
-                return new SWMI.BmpBitmapEncoder();
-            }
-
-            if (extension.Equals(".tif", StringComparison.OrdinalIgnoreCase) ||
-                extension.Equals(".tiff", StringComparison.OrdinalIgnoreCase))
+            if (saveFormat == ImageSaveFormat.Tif)
             {
                 return new SWMI.TiffBitmapEncoder();
             }
@@ -397,7 +434,7 @@ namespace CameraCaptureApp.Services
                     throw new InvalidOperationException("No rolling image is available to save.");
                 }
 
-                SaveVerticalPng(_frames, filePath, direction, reportProgress, reportRemaining);
+                SaveVerticalImage(_frames, filePath, saveFormat, direction, reportProgress, reportRemaining);
             }
 
             public void Dispose()

@@ -52,7 +52,6 @@ namespace CameraCaptureApp.Forms
             comboBoxImageSaveFormat.Items.Clear();
             comboBoxImageSaveFormat.Items.AddRange(new object[]
             {
-                "BMP",
                 "PNG",
                 "TIF"
             });
@@ -77,10 +76,7 @@ namespace CameraCaptureApp.Forms
             var triggerIndex = (int)Settings.TriggerMode;
             comboBoxTriggerMode.SelectedIndex = triggerIndex >= 0 && triggerIndex < comboBoxTriggerMode.Items.Count ? triggerIndex : 0;
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
-            comboBoxImageSaveFormat.SelectedIndex = (int)Settings.ImageSaveFormat >= 0 &&
-                (int)Settings.ImageSaveFormat < comboBoxImageSaveFormat.Items.Count
-                    ? (int)Settings.ImageSaveFormat
-                    : (int)ImageSaveFormat.Png;
+            comboBoxImageSaveFormat.SelectedIndex = Settings.ImageSaveFormat == ImageSaveFormat.Tif ? 1 : 0;
             labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
         }
 
@@ -276,7 +272,7 @@ namespace CameraCaptureApp.Forms
             Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
-            Settings.ImageSaveFormat = (ImageSaveFormat)Math.Max(0, comboBoxImageSaveFormat.SelectedIndex);
+            Settings.ImageSaveFormat = comboBoxImageSaveFormat.SelectedIndex == 1 ? ImageSaveFormat.Tif : ImageSaveFormat.Png;
         }
 
         private static Dictionary<string, string> LoadCcfValues(string filePath)
