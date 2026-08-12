@@ -370,6 +370,14 @@ namespace CameraCaptureApp.Services
 
         private static SWMI.BitmapEncoder CreateBitmapEncoder(ImageSaveFormat saveFormat)
         {
+            if (saveFormat == ImageSaveFormat.UncompressedTif)
+            {
+                return new SWMI.TiffBitmapEncoder
+                {
+                    Compression = SWMI.TiffCompressOption.None
+                };
+            }
+
             if (saveFormat == ImageSaveFormat.Tif)
             {
                 return new SWMI.TiffBitmapEncoder();

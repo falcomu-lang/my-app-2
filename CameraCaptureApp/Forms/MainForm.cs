@@ -907,6 +907,7 @@ namespace CameraCaptureApp.Forms
             switch (saveFormat)
             {
                 case ImageSaveFormat.Tif:
+                case ImageSaveFormat.UncompressedTif:
                     return ".tif";
                 default:
                     return ".png";

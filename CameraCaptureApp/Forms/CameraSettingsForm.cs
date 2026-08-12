@@ -53,7 +53,8 @@ namespace CameraCaptureApp.Forms
             comboBoxImageSaveFormat.Items.AddRange(new object[]
             {
                 "PNG",
-                "TIF"
+                "TIF",
+                "TIF (未壓縮)"
             });
 
             textBoxCameraName.Text = Settings.CameraName;
@@ -76,7 +77,7 @@ namespace CameraCaptureApp.Forms
             var triggerIndex = (int)Settings.TriggerMode;
             comboBoxTriggerMode.SelectedIndex = triggerIndex >= 0 && triggerIndex < comboBoxTriggerMode.Items.Count ? triggerIndex : 0;
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
-            comboBoxImageSaveFormat.SelectedIndex = Settings.ImageSaveFormat == ImageSaveFormat.Tif ? 1 : 0;
+            comboBoxImageSaveFormat.SelectedIndex = GetImageSaveFormatIndex(Settings.ImageSaveFormat);
             labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
         }
 
@@ -272,7 +273,33 @@ namespace CameraCaptureApp.Forms
             Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
-            Settings.ImageSaveFormat = comboBoxImageSaveFormat.SelectedIndex == 1 ? ImageSaveFormat.Tif : ImageSaveFormat.Png;
+            Settings.ImageSaveFormat = GetImageSaveFormatFromIndex(comboBoxImageSaveFormat.SelectedIndex);
+        }
+
+        private static int GetImageSaveFormatIndex(ImageSaveFormat saveFormat)
+        {
+            switch (saveFormat)
+            {
+                case ImageSaveFormat.Tif:
+                    return 1;
+                case ImageSaveFormat.UncompressedTif:
+                    return 2;
+                default:
+                    return 0;
+            }
+        }
+
+        private static ImageSaveFormat GetImageSaveFormatFromIndex(int selectedIndex)
+        {
+            switch (selectedIndex)
+            {
+                case 1:
+                    return ImageSaveFormat.Tif;
+                case 2:
+                    return ImageSaveFormat.UncompressedTif;
+                default:
+                    return ImageSaveFormat.Png;
+            }
         }
 
         private static Dictionary<string, string> LoadCcfValues(string filePath)
