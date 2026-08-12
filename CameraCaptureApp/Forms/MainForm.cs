@@ -155,9 +155,22 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            using (var snapshot = _settings.RollingCaptureEnabled
-                ? _frameRecorder.SnapshotRolling()
-                : _frameRecorder.SnapshotLatest())
+            if (_settings.RollingCaptureEnabled)
+            {
+                try
+                {
+                    var savedPath = await Task.Run(() => SaveRollingCaptureSnapshot(_settings));
+                    SetFooterMessage("Captured image saved: " + Path.GetFileName(savedPath));
+                }
+                catch (Exception ex)
+                {
+                    SetFooterMessage("Captured image save failed: " + ex.Message);
+                }
+
+                return;
+            }
+
+            using (var snapshot = _frameRecorder.SnapshotLatest())
             {
                 if (snapshot == null)
                 {
@@ -185,9 +198,22 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            using (var snapshot = _settings.RollingCaptureEnabled
-                ? _frameRecorder.SnapshotRolling()
-                : _frameRecorder.SnapshotLatest())
+            if (_settings.RollingCaptureEnabled)
+            {
+                try
+                {
+                    var savedPath = await Task.Run(() => SaveManualRollingSnapshot());
+                    labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
+                }
+                catch (Exception ex)
+                {
+                    labelFooterMessageValue.Text = "Snapshot save failed: " + ex.Message;
+                }
+
+                return;
+            }
+
+            using (var snapshot = _frameRecorder.SnapshotLatest())
             {
                 if (snapshot == null)
                 {
@@ -219,15 +245,7 @@ namespace CameraCaptureApp.Forms
                 await Task.Run(
                     () =>
                     {
-                        using (var snapshot = _frameRecorder.SnapshotRolling())
-                        {
-                            if (snapshot == null)
-                            {
-                                return;
-                            }
-
-                            snapshot.Save(filePath, ImageFormat.Png);
-                        }
+                        _frameRecorder.SaveRollingPng(filePath);
                     });
 
                 if (!File.Exists(filePath))
@@ -579,7 +597,36 @@ namespace CameraCaptureApp.Forms
             Directory.CreateDirectory(outputFolder);
 
             var filePath = BuildSnapshotPath(outputFolder, settings);
-            bitmap.Save(filePath, ImageFormat.Bmp);
+            bitmap.Save(filePath, ImageFormat.Png);
+            return filePath;
+        }
+
+        private string SaveRollingCaptureSnapshot(CameraSettings settings)
+        {
+            var outputFolder = ResolveSnapshotFolder(settings);
+            Directory.CreateDirectory(outputFolder);
+
+            var filePath = BuildSnapshotPath(outputFolder, settings);
+            if (!_frameRecorder.SaveRollingPng(filePath))
+            {
+                throw new InvalidOperationException("No rolling image is available to save.");
+            }
+
+            return filePath;
+        }
+
+        private string SaveManualRollingSnapshot()
+        {
+            var outputFolder = Path.Combine(Application.StartupPath, "snapshot");
+            Directory.CreateDirectory(outputFolder);
+
+            var baseName = "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
+            var filePath = BuildManualSnapshotPath(outputFolder, baseName);
+            if (!_frameRecorder.SaveRollingPng(filePath))
+            {
+                throw new InvalidOperationException("No rolling image is available to save.");
+            }
+
             return filePath;
         }
 
@@ -636,7 +683,7 @@ namespace CameraCaptureApp.Forms
             }
 
             baseName = SanitizeFileName(baseName);
-            var candidatePath = Path.Combine(outputFolder, baseName + ".bmp");
+            var candidatePath = Path.Combine(outputFolder, baseName + ".png");
             if (!File.Exists(candidatePath))
             {
                 return candidatePath;
@@ -645,7 +692,7 @@ namespace CameraCaptureApp.Forms
             var suffix = 1;
             while (true)
             {
-                var nextPath = Path.Combine(outputFolder, baseName + "_" + suffix.ToString("000") + ".bmp");
+                var nextPath = Path.Combine(outputFolder, baseName + "_" + suffix.ToString("000") + ".png");
                 if (!File.Exists(nextPath))
                 {
                     return nextPath;
