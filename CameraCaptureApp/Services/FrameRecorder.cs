@@ -205,12 +205,18 @@ namespace CameraCaptureApp.Services
                 return;
             }
 
-            var stride = checked(width * 4);
-            var pixels = new byte[checked(stride * height)];
+            var stride = width;
+            var totalBytes = (long)stride * height;
+            if (totalBytes > int.MaxValue)
+            {
+                throw new InvalidOperationException("Rolling image is too large to save as a single PNG.");
+            }
+
+            var pixels = new byte[(int)totalBytes];
             var destinationY = 0;
             foreach (var frame in frames)
             {
-                CopyFrameFlippedIntoBuffer(frame, pixels, stride, destinationY);
+                CopyFrameFlippedIntoGrayBuffer(frame, pixels, stride, destinationY);
                 destinationY += frame.Height;
             }
 
@@ -219,7 +225,7 @@ namespace CameraCaptureApp.Services
                 height,
                 96,
                 96,
-                SWM.PixelFormats.Bgr32,
+                SWM.PixelFormats.Gray8,
                 null,
                 pixels,
                 stride);
@@ -232,7 +238,7 @@ namespace CameraCaptureApp.Services
             }
         }
 
-        private static void CopyFrameFlippedIntoBuffer(Bitmap frame, byte[] destinationPixels, int destinationStride, int destinationY)
+        private static void CopyFrameFlippedIntoGrayBuffer(Bitmap frame, byte[] destinationPixels, int destinationStride, int destinationY)
         {
             using (var converted = new Bitmap(frame.Width, frame.Height, PixelFormat.Format32bppArgb))
             {
@@ -247,10 +253,16 @@ namespace CameraCaptureApp.Services
                 {
                     var sourceStride = Math.Abs(data.Stride);
                     var sourceRow = new byte[sourceStride];
+                    var destinationRowOffset = destinationY * destinationStride;
                     for (var y = 0; y < converted.Height; y++)
                     {
                         Marshal.Copy(data.Scan0 + ((converted.Height - 1 - y) * data.Stride), sourceRow, 0, sourceStride);
-                        Buffer.BlockCopy(sourceRow, 0, destinationPixels, ((destinationY + y) * destinationStride), Math.Min(sourceStride, destinationStride));
+                        var targetIndex = destinationRowOffset + (y * destinationStride);
+                        for (var x = 0; x < converted.Width; x++)
+                        {
+                            var sourceIndex = x * 4;
+                            destinationPixels[targetIndex + x] = sourceRow[sourceIndex];
+                        }
                     }
                 }
                 finally
