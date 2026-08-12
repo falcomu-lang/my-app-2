@@ -103,6 +103,11 @@ namespace CameraCaptureApp.Services
 
         public bool SaveRollingPng(string filePath)
         {
+            return SaveRollingPng(filePath, null);
+        }
+
+        public bool SaveRollingPng(string filePath, Action<int, string> reportProgress)
+        {
             List<Bitmap> frames;
             lock (_sync)
             {
@@ -111,6 +116,7 @@ namespace CameraCaptureApp.Services
                     return false;
                 }
 
+                ReportProgress(reportProgress, 5, "Copying current rolling frames...");
                 frames = new List<Bitmap>(_rollingFrames.Count);
                 foreach (var frame in _rollingFrames)
                 {
@@ -120,7 +126,7 @@ namespace CameraCaptureApp.Services
 
             try
             {
-                SaveVerticalPng(frames, filePath);
+                SaveVerticalPng(frames, filePath, reportProgress);
                 return true;
             }
             finally
@@ -187,8 +193,9 @@ namespace CameraCaptureApp.Services
             return combined;
         }
 
-        private static void SaveVerticalPng(IList<Bitmap> frames, string filePath)
+        private static void SaveVerticalPng(IList<Bitmap> frames, string filePath, Action<int, string> reportProgress)
         {
+            ReportProgress(reportProgress, 10, "Preparing PNG buffer...");
             var width = 0;
             var height = 0;
             foreach (var frame in frames)
@@ -214,12 +221,16 @@ namespace CameraCaptureApp.Services
 
             var pixels = new byte[(int)totalBytes];
             var destinationY = 0;
-            foreach (var frame in frames)
+            for (var index = 0; index < frames.Count; index++)
             {
+                var frame = frames[index];
                 CopyFrameFlippedIntoGrayBuffer(frame, pixels, stride, destinationY);
                 destinationY += frame.Height;
+                var percent = 10 + (int)Math.Round(((index + 1) / (double)frames.Count) * 75d);
+                ReportProgress(reportProgress, percent, "Composing image " + (index + 1) + " of " + frames.Count + "...");
             }
 
+            ReportProgress(reportProgress, 90, "Encoding PNG...");
             var bitmapSource = SWMI.BitmapSource.Create(
                 width,
                 height,
@@ -236,6 +247,8 @@ namespace CameraCaptureApp.Services
             {
                 encoder.Save(stream);
             }
+
+            ReportProgress(reportProgress, 100, "Image saved.");
         }
 
         private static void CopyFrameFlippedIntoGrayBuffer(Bitmap frame, byte[] destinationPixels, int destinationStride, int destinationY)
@@ -269,6 +282,14 @@ namespace CameraCaptureApp.Services
                 {
                     converted.UnlockBits(data);
                 }
+            }
+        }
+
+        private static void ReportProgress(Action<int, string> reportProgress, int percent, string statusText)
+        {
+            if (reportProgress != null)
+            {
+                reportProgress(percent, statusText);
             }
         }
     }

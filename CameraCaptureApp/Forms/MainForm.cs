@@ -25,6 +25,7 @@ namespace CameraCaptureApp.Forms
         private readonly Queue<Bitmap> _pendingRollingPreviewFrames = new Queue<Bitmap>();
         private bool _autoConnectAttempted;
         private int _pendingSnapshotSaveCount;
+        private int _manualSnapshotSaveInProgress;
         private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
 
@@ -191,18 +192,27 @@ namespace CameraCaptureApp.Forms
 
         private async void CameraDisplayControl_SaveSnapshotRequested(object sender, EventArgs e)
         {
+            if (Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 1) == 1)
+            {
+                labelFooterMessageValue.Text = "Snapshot save is already running.";
+                return;
+            }
+
             var status = _cameraService.Status;
             if (status == null || (status.IsPreviewing && !_settings.RollingCaptureEnabled))
             {
                 labelFooterMessageValue.Text = "Stop preview before saving a snapshot.";
+                Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 0);
                 return;
             }
 
+            SaveProgressForm progressForm = null;
             if (_settings.RollingCaptureEnabled)
             {
                 try
                 {
-                    var savedPath = await Task.Run(() => SaveManualRollingSnapshot());
+                    progressForm = ShowSaveProgressForm();
+                    var savedPath = await Task.Run(() => SaveManualRollingSnapshot(progressForm.Report));
                     if (!status.IsPreviewing)
                     {
                         await LoadImageForReviewAsync(savedPath);
@@ -214,6 +224,11 @@ namespace CameraCaptureApp.Forms
                 {
                     labelFooterMessageValue.Text = "Snapshot save failed: " + ex.Message;
                 }
+                finally
+                {
+                    CloseSaveProgressForm(progressForm);
+                    Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 0);
+                }
 
                 return;
             }
@@ -223,19 +238,48 @@ namespace CameraCaptureApp.Forms
                 if (snapshot == null)
                 {
                     labelFooterMessageValue.Text = "No recorded image is available to save.";
+                    Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 0);
                     return;
                 }
 
                 try
                 {
+                    progressForm = ShowSaveProgressForm();
+                    progressForm.Report(15, "Saving image...");
                     var savedPath = await Task.Run(() => SaveManualSnapshotBitmap(snapshot, _settings.RollingCaptureEnabled));
+                    progressForm.Report(100, "Image saved.");
                     labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
                 }
                 catch (Exception ex)
                 {
                     labelFooterMessageValue.Text = "Snapshot save failed: " + ex.Message;
                 }
+                finally
+                {
+                    CloseSaveProgressForm(progressForm);
+                    Interlocked.Exchange(ref _manualSnapshotSaveInProgress, 0);
+                }
             }
+        }
+
+        private SaveProgressForm ShowSaveProgressForm()
+        {
+            var form = new SaveProgressForm();
+            form.Show(this);
+            form.Report(0, "Preparing image...");
+            return form;
+        }
+
+        private static void CloseSaveProgressForm(SaveProgressForm form)
+        {
+            if (form == null || form.IsDisposed)
+            {
+                return;
+            }
+
+            form.Report(100, "Done.");
+            form.Close();
+            form.Dispose();
         }
 
         private async Task ShowRollingSnapshotForReviewAsync()
@@ -625,14 +669,14 @@ namespace CameraCaptureApp.Forms
             return filePath;
         }
 
-        private string SaveManualRollingSnapshot()
+        private string SaveManualRollingSnapshot(Action<int, string> reportProgress)
         {
             var outputFolder = Path.Combine(Application.StartupPath, "snapshot");
             Directory.CreateDirectory(outputFolder);
 
             var baseName = "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
             var filePath = BuildManualSnapshotPath(outputFolder, baseName);
-            if (!_frameRecorder.SaveRollingPng(filePath))
+            if (!_frameRecorder.SaveRollingPng(filePath, reportProgress))
             {
                 throw new InvalidOperationException("No rolling image is available to save.");
             }
