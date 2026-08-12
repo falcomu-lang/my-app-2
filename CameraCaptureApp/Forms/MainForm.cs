@@ -167,11 +167,11 @@ namespace CameraCaptureApp.Forms
                 try
                 {
                     var savedPath = await Task.Run(() => SaveSnapshotBitmap(snapshot, _settings));
-                    labelFooterMessageValue.Text = "Captured image saved: " + Path.GetFileName(savedPath);
+                    SetFooterMessage("Captured image saved: " + Path.GetFileName(savedPath));
                 }
                 catch (Exception ex)
                 {
-                    labelFooterMessageValue.Text = "Captured image save failed: " + ex.Message;
+                    SetFooterMessage("Captured image save failed: " + ex.Message);
                 }
             }
         }
@@ -472,6 +472,32 @@ namespace CameraCaptureApp.Forms
             }
 
             UpdateCommandStates(status);
+        }
+
+        private void SetFooterMessage(string message)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                try
+                {
+                    BeginInvoke(new Action<string>(SetFooterMessage), message);
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                return;
+            }
+
+            labelFooterMessageValue.Text = message;
         }
 
         private void UpdateCommandStates(CameraStatus status)
