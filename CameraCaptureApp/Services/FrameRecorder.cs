@@ -123,20 +123,25 @@ namespace CameraCaptureApp.Services
 
         public bool SaveRollingPng(string filePath)
         {
-            return SaveRollingPng(filePath, RollingCaptureDirection.TopToBottom, null, null);
+            return SaveRollingImage(filePath, ImageSaveFormat.Png, RollingCaptureDirection.TopToBottom, null, null);
         }
 
         public bool SaveRollingPng(string filePath, RollingCaptureDirection direction)
         {
-            return SaveRollingPng(filePath, direction, null, null);
+            return SaveRollingImage(filePath, ImageSaveFormat.Png, direction, null, null);
         }
 
         public bool SaveRollingPng(string filePath, RollingCaptureDirection direction, Action<int, string> reportProgress)
         {
-            return SaveRollingPng(filePath, direction, reportProgress, null);
+            return SaveRollingImage(filePath, ImageSaveFormat.Png, direction, reportProgress, null);
         }
 
         public bool SaveRollingPng(string filePath, RollingCaptureDirection direction, Action<int, string> reportProgress, Action<int> reportRemaining)
+        {
+            return SaveRollingImage(filePath, ImageSaveFormat.Png, direction, reportProgress, reportRemaining);
+        }
+
+        public bool SaveRollingImage(string filePath, ImageSaveFormat saveFormat, RollingCaptureDirection direction, Action<int, string> reportProgress, Action<int> reportRemaining)
         {
             using (var snapshot = SnapshotRollingFrames())
             {
@@ -146,7 +151,7 @@ namespace CameraCaptureApp.Services
                 }
 
                 ReportProgress(reportProgress, 5, "Copying current rolling frames...");
-                snapshot.SavePng(filePath, direction, reportProgress, reportRemaining);
+                snapshot.SaveImage(filePath, saveFormat, direction, reportProgress, reportRemaining);
                 return true;
             }
         }
@@ -209,7 +214,6 @@ namespace CameraCaptureApp.Services
         private static void SaveVerticalPng(IList<Bitmap> frames, string filePath, RollingCaptureDirection direction, Action<int, string> reportProgress, Action<int> reportRemaining)
         {
             ReportProgress(reportProgress, 10, "Preparing PNG buffer...");
-            ReportRemaining(reportRemaining, frames.Count);
             var width = 0;
             var height = 0;
             foreach (var frame in frames)
@@ -255,7 +259,6 @@ namespace CameraCaptureApp.Services
 
                 var percent = 10 + (int)Math.Round(((index + 1) / (double)frames.Count) * 75d);
                 var remainingCount = frames.Count - index - 1;
-                ReportRemaining(reportRemaining, remainingCount);
                 ReportProgress(reportProgress, percent, "Saving image " + (index + 1) + " of " + frames.Count + ". Remaining: " + remainingCount + ".");
             }
 
@@ -269,7 +272,7 @@ namespace CameraCaptureApp.Services
                 null,
                 pixels,
                 stride);
-            var encoder = new SWMI.PngBitmapEncoder();
+            var encoder = CreateBitmapEncoderFromExtension(filePath);
             encoder.Frames.Add(SWMI.BitmapFrame.Create(bitmapSource));
 
             using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -321,6 +324,23 @@ namespace CameraCaptureApp.Services
             }
         }
 
+        private static SWMI.BitmapEncoder CreateBitmapEncoderFromExtension(string filePath)
+        {
+            var extension = Path.GetExtension(filePath);
+            if (extension.Equals(".bmp", StringComparison.OrdinalIgnoreCase))
+            {
+                return new SWMI.BmpBitmapEncoder();
+            }
+
+            if (extension.Equals(".tif", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".tiff", StringComparison.OrdinalIgnoreCase))
+            {
+                return new SWMI.TiffBitmapEncoder();
+            }
+
+            return new SWMI.PngBitmapEncoder();
+        }
+
         private static void Copy8BppFrameIntoGrayBuffer(Bitmap frame, byte[] destinationPixels, int destinationStride, int destinationY, bool flipVertically)
         {
             var sourceRect = new Rectangle(0, 0, frame.Width, frame.Height);
@@ -351,14 +371,6 @@ namespace CameraCaptureApp.Services
             }
         }
 
-        private static void ReportRemaining(Action<int> reportRemaining, int remainingCount)
-        {
-            if (reportRemaining != null)
-            {
-                reportRemaining(remainingCount);
-            }
-        }
-
         public sealed class RollingFrameSnapshot : IDisposable
         {
             private List<Bitmap> _frames;
@@ -370,10 +382,15 @@ namespace CameraCaptureApp.Services
 
             public void SavePng(string filePath, RollingCaptureDirection direction, Action<int, string> reportProgress)
             {
-                SavePng(filePath, direction, reportProgress, null);
+                SaveImage(filePath, ImageSaveFormat.Png, direction, reportProgress, null);
             }
 
             public void SavePng(string filePath, RollingCaptureDirection direction, Action<int, string> reportProgress, Action<int> reportRemaining)
+            {
+                SaveImage(filePath, ImageSaveFormat.Png, direction, reportProgress, reportRemaining);
+            }
+
+            public void SaveImage(string filePath, ImageSaveFormat saveFormat, RollingCaptureDirection direction, Action<int, string> reportProgress, Action<int> reportRemaining)
             {
                 if (_frames == null || _frames.Count == 0)
                 {

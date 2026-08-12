@@ -43,7 +43,7 @@ namespace CameraCaptureApp.Forms
             labelRemaining.Top = 82;
             labelRemaining.Width = 370;
             labelRemaining.Height = 22;
-            labelRemaining.Text = "還剩下 0 張...";
+            labelRemaining.Text = "還有 0 張待處理...";
 
             Controls.Add(labelStatus);
             Controls.Add(progressBar);
@@ -94,7 +94,7 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            labelRemaining.Text = "還剩下 " + Math.Max(0, remainingCount) + " 張...";
+            labelRemaining.Text = "還有 " + Math.Max(0, remainingCount) + " 張待處理...";
         }
     }
 }

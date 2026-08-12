@@ -49,6 +49,13 @@ namespace CameraCaptureApp.Forms
                 "由上而下",
                 "由下而上"
             });
+            comboBoxImageSaveFormat.Items.Clear();
+            comboBoxImageSaveFormat.Items.AddRange(new object[]
+            {
+                "BMP",
+                "PNG",
+                "TIF"
+            });
 
             textBoxCameraName.Text = Settings.CameraName;
             textBoxConfigFile.Text = Settings.ConfigFilePath;
@@ -70,9 +77,10 @@ namespace CameraCaptureApp.Forms
             var triggerIndex = (int)Settings.TriggerMode;
             comboBoxTriggerMode.SelectedIndex = triggerIndex >= 0 && triggerIndex < comboBoxTriggerMode.Items.Count ? triggerIndex : 0;
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
-            checkBoxAutoSave.Checked = Settings.AutoSave;
-            textBoxSaveFolder.Text = Settings.SaveFolder ?? string.Empty;
-            textBoxFileNamePattern.Text = Settings.FileNamePattern ?? string.Empty;
+            comboBoxImageSaveFormat.SelectedIndex = (int)Settings.ImageSaveFormat >= 0 &&
+                (int)Settings.ImageSaveFormat < comboBoxImageSaveFormat.Items.Count
+                    ? (int)Settings.ImageSaveFormat
+                    : (int)ImageSaveFormat.Png;
             labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
         }
 
@@ -268,9 +276,7 @@ namespace CameraCaptureApp.Forms
             Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
-            Settings.AutoSave = checkBoxAutoSave.Checked;
-            Settings.SaveFolder = textBoxSaveFolder.Text.Trim();
-            Settings.FileNamePattern = textBoxFileNamePattern.Text.Trim();
+            Settings.ImageSaveFormat = (ImageSaveFormat)Math.Max(0, comboBoxImageSaveFormat.SelectedIndex);
         }
 
         private static Dictionary<string, string> LoadCcfValues(string filePath)

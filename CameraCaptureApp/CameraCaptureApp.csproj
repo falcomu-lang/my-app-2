@@ -82,6 +82,7 @@
     <Compile Include="Sapera\AcqConfigDlg.Designer.cs">
       <DependentUpon>AcqConfigDlg.cs</DependentUpon>
     </Compile>
+    <Compile Include="Models\ImageSaveFormat.cs" />
     <Compile Include="Models\CameraSettings.cs" />
     <Compile Include="Models\CameraStatus.cs" />
     <Compile Include="Models\RollingCaptureDirection.cs" />

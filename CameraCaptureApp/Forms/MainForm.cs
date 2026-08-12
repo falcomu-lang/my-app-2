@@ -215,9 +215,10 @@ namespace CameraCaptureApp.Forms
                 {
                     var progressForm = EnsureSaveProgressForm();
                     var direction = _settings.RollingCaptureDirection;
+                    var saveFormat = _settings.ImageSaveFormat;
                     var savedPath = await RunQueuedSnapshotSaveAsync(
                         progressForm,
-                        () => SaveManualRollingSnapshot(rollingSnapshot, direction, progressForm.Report));
+                        () => SaveManualRollingSnapshot(rollingSnapshot, saveFormat, direction, progressForm.Report));
                     labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
                 }
                 catch (Exception ex)
@@ -244,10 +245,11 @@ namespace CameraCaptureApp.Forms
                 try
                 {
                     var progressForm = EnsureSaveProgressForm();
+                    var saveFormat = _settings.ImageSaveFormat;
                     progressForm.Report(15, "Saving image...");
                     var savedPath = await RunQueuedSnapshotSaveAsync(
                         progressForm,
-                        () => SaveManualSnapshotBitmap(snapshot, _settings.RollingCaptureEnabled));
+                        () => SaveManualSnapshotBitmap(snapshot, saveFormat));
                     progressForm.Report(100, "Image saved.");
                     labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
                 }
@@ -268,6 +270,7 @@ namespace CameraCaptureApp.Forms
             await _snapshotSaveGate.WaitAsync();
             try
             {
+                progressForm.ReportRemaining(Math.Max(0, Interlocked.CompareExchange(ref _snapshotSaveQueueCount, 0, 0) - 1));
                 return await Task.Run(saveAction);
             }
             finally
@@ -289,6 +292,7 @@ namespace CameraCaptureApp.Forms
                 }
 
                 _snapshotProgressForm.Report(0, "Queued save jobs: " + _snapshotSaveQueueCount + ".");
+                _snapshotProgressForm.ReportRemaining(Math.Max(0, _snapshotSaveQueueCount - 1));
                 return _snapshotProgressForm;
             }
         }
@@ -337,7 +341,7 @@ namespace CameraCaptureApp.Forms
                 await Task.Run(
                     () =>
                     {
-                        _frameRecorder.SaveRollingPng(filePath, _settings.RollingCaptureDirection);
+                        _frameRecorder.SaveRollingPng(filePath, _settings.RollingCaptureDirection, null, null);
                     });
 
                 if (!File.Exists(filePath))
@@ -695,7 +699,7 @@ namespace CameraCaptureApp.Forms
             Directory.CreateDirectory(outputFolder);
 
             var filePath = BuildSnapshotPath(outputFolder, settings);
-            bitmap.Save(filePath, ImageFormat.Png);
+            bitmap.Save(filePath, GetImageFormat(settings.ImageSaveFormat));
             return filePath;
         }
 
@@ -705,7 +709,7 @@ namespace CameraCaptureApp.Forms
             Directory.CreateDirectory(outputFolder);
 
             var filePath = BuildSnapshotPath(outputFolder, settings);
-            if (!_frameRecorder.SaveRollingPng(filePath, settings.RollingCaptureDirection))
+            if (!_frameRecorder.SaveRollingImage(filePath, settings.ImageSaveFormat, settings.RollingCaptureDirection, null, null))
             {
                 throw new InvalidOperationException("No rolling image is available to save.");
             }
@@ -713,27 +717,18 @@ namespace CameraCaptureApp.Forms
             return filePath;
         }
 
-        private string SaveManualRollingSnapshot(FrameRecorder.RollingFrameSnapshot rollingSnapshot, RollingCaptureDirection direction, Action<int, string> reportProgress)
+        private string SaveManualRollingSnapshot(
+            FrameRecorder.RollingFrameSnapshot rollingSnapshot,
+            ImageSaveFormat saveFormat,
+            RollingCaptureDirection direction,
+            Action<int, string> reportProgress)
         {
             var outputFolder = Path.Combine(Application.StartupPath, "snapshot");
             Directory.CreateDirectory(outputFolder);
 
             var baseName = "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff");
-            var filePath = BuildManualSnapshotPath(outputFolder, baseName);
-            Action<int> reportRemaining = null;
-            if (reportProgress != null)
-            {
-                reportRemaining = remainingCount =>
-                {
-                    var progressForm = reportProgress.Target as SaveProgressForm;
-                    if (progressForm != null)
-                    {
-                        progressForm.ReportRemaining(remainingCount);
-                    }
-                };
-            }
-
-            rollingSnapshot.SavePng(filePath, direction, reportProgress, reportRemaining);
+            var filePath = BuildManualSnapshotPath(outputFolder, baseName, saveFormat);
+            rollingSnapshot.SaveImage(filePath, saveFormat, direction, reportProgress, null);
 
             if (!File.Exists(filePath))
             {
@@ -743,16 +738,14 @@ namespace CameraCaptureApp.Forms
             return filePath;
         }
 
-        private static string SaveManualSnapshotBitmap(Bitmap bitmap, bool rollingCaptureEnabled)
+        private static string SaveManualSnapshotBitmap(Bitmap bitmap, ImageSaveFormat saveFormat)
         {
             var outputFolder = Path.Combine(Application.StartupPath, "snapshot");
             Directory.CreateDirectory(outputFolder);
 
-            var baseName = rollingCaptureEnabled
-                ? "rolling_" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff")
-                : DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff");
-            var filePath = BuildManualSnapshotPath(outputFolder, baseName);
-            bitmap.Save(filePath, ImageFormat.Png);
+            var baseName = DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff");
+            var filePath = BuildManualSnapshotPath(outputFolder, baseName, saveFormat);
+            bitmap.Save(filePath, GetImageFormat(saveFormat));
             if (!File.Exists(filePath))
             {
                 throw new IOException("Snapshot file was not created: " + filePath);
@@ -761,9 +754,10 @@ namespace CameraCaptureApp.Forms
             return filePath;
         }
 
-        private static string BuildManualSnapshotPath(string outputFolder, string baseName)
+        private static string BuildManualSnapshotPath(string outputFolder, string baseName, ImageSaveFormat saveFormat)
         {
-            var candidatePath = Path.Combine(outputFolder, baseName + ".png");
+            var extension = GetImageExtension(saveFormat);
+            var candidatePath = Path.Combine(outputFolder, baseName + extension);
             if (!File.Exists(candidatePath))
             {
                 return candidatePath;
@@ -772,7 +766,7 @@ namespace CameraCaptureApp.Forms
             var suffix = 1;
             while (true)
             {
-                var nextPath = Path.Combine(outputFolder, baseName + "_" + suffix.ToString("000") + ".png");
+                var nextPath = Path.Combine(outputFolder, baseName + "_" + suffix.ToString("000") + extension);
                 if (!File.Exists(nextPath))
                 {
                     return nextPath;
@@ -801,7 +795,8 @@ namespace CameraCaptureApp.Forms
             }
 
             baseName = SanitizeFileName(baseName);
-            var candidatePath = Path.Combine(outputFolder, baseName + ".png");
+            var extension = GetImageExtension(settings.ImageSaveFormat);
+            var candidatePath = Path.Combine(outputFolder, baseName + extension);
             if (!File.Exists(candidatePath))
             {
                 return candidatePath;
@@ -810,7 +805,7 @@ namespace CameraCaptureApp.Forms
             var suffix = 1;
             while (true)
             {
-                var nextPath = Path.Combine(outputFolder, baseName + "_" + suffix.ToString("000") + ".png");
+                var nextPath = Path.Combine(outputFolder, baseName + "_" + suffix.ToString("000") + extension);
                 if (!File.Exists(nextPath))
                 {
                     return nextPath;
@@ -853,6 +848,32 @@ namespace CameraCaptureApp.Forms
             }
 
             return result;
+        }
+
+        private static ImageFormat GetImageFormat(ImageSaveFormat saveFormat)
+        {
+            switch (saveFormat)
+            {
+                case ImageSaveFormat.Bmp:
+                    return ImageFormat.Bmp;
+                case ImageSaveFormat.Tif:
+                    return ImageFormat.Tiff;
+                default:
+                    return ImageFormat.Png;
+            }
+        }
+
+        private static string GetImageExtension(ImageSaveFormat saveFormat)
+        {
+            switch (saveFormat)
+            {
+                case ImageSaveFormat.Bmp:
+                    return ".bmp";
+                case ImageSaveFormat.Tif:
+                    return ".tif";
+                default:
+                    return ".png";
+            }
         }
 
         private static string SanitizeFileName(string fileName)

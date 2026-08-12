@@ -52,6 +52,7 @@ namespace CameraCaptureApp.Services
             settings.AutoSave = GetBool(values, "AutoSave", settings.AutoSave);
             settings.SaveFolder = GetString(values, "SaveFolder", settings.SaveFolder);
             settings.FileNamePattern = GetString(values, "FileNamePattern", settings.FileNamePattern);
+            settings.ImageSaveFormat = GetEnum(values, "ImageSaveFormat", settings.ImageSaveFormat);
 
             return settings;
         }
@@ -85,7 +86,8 @@ namespace CameraCaptureApp.Services
                 "AutoConnect=" + settings.AutoConnect.ToString(),
                 "AutoSave=" + settings.AutoSave.ToString(),
                 "SaveFolder=" + settings.SaveFolder,
-                "FileNamePattern=" + settings.FileNamePattern
+                "FileNamePattern=" + settings.FileNamePattern,
+                "ImageSaveFormat=" + settings.ImageSaveFormat.ToString()
             };
 
             File.WriteAllLines(_settingsFilePath, lines, Encoding.UTF8);

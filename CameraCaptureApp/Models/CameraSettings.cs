@@ -50,6 +50,8 @@ namespace CameraCaptureApp.Models
 
         public string FileNamePattern { get; set; }
 
+        public ImageSaveFormat ImageSaveFormat { get; set; }
+
         public static CameraSettings CreateDefault()
         {
             return new CameraSettings
@@ -77,7 +79,8 @@ namespace CameraCaptureApp.Models
                 AutoConnect = false,
                 AutoSave = false,
                 SaveFolder = string.Empty,
-                FileNamePattern = "capture_{yyyyMMdd_HHmmss}"
+                FileNamePattern = "capture_{yyyyMMdd_HHmmss}",
+                ImageSaveFormat = ImageSaveFormat.Png
             };
         }
 

@@ -38,16 +38,13 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.ComboBox comboBoxRollingCaptureDirection;
         private System.Windows.Forms.Label labelTriggerMode;
         private System.Windows.Forms.Label labelTriggerNote;
-        private System.Windows.Forms.Label labelSaveFolder;
-        private System.Windows.Forms.Label labelFileNamePattern;
+        private System.Windows.Forms.Label labelImageSaveFormat;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
         private System.Windows.Forms.NumericUpDown numericLength;
         private System.Windows.Forms.NumericUpDown numericInternalLineRate;
         private System.Windows.Forms.ComboBox comboBoxTriggerMode;
-        private System.Windows.Forms.CheckBox checkBoxAutoSave;
-        private System.Windows.Forms.TextBox textBoxSaveFolder;
-        private System.Windows.Forms.TextBox textBoxFileNamePattern;
+        private System.Windows.Forms.ComboBox comboBoxImageSaveFormat;
         private System.Windows.Forms.Button buttonApply;
         private System.Windows.Forms.Button buttonOk;
         private System.Windows.Forms.Button buttonCancel;
@@ -104,11 +101,8 @@ namespace CameraCaptureApp.Forms
             this.labelTriggerNote = new System.Windows.Forms.Label();
             this.comboBoxTriggerMode = new System.Windows.Forms.ComboBox();
             this.tabPageSaving = new System.Windows.Forms.TabPage();
-            this.labelSaveFolder = new System.Windows.Forms.Label();
-            this.labelFileNamePattern = new System.Windows.Forms.Label();
-            this.textBoxFileNamePattern = new System.Windows.Forms.TextBox();
-            this.textBoxSaveFolder = new System.Windows.Forms.TextBox();
-            this.checkBoxAutoSave = new System.Windows.Forms.CheckBox();
+            this.labelImageSaveFormat = new System.Windows.Forms.Label();
+            this.comboBoxImageSaveFormat = new System.Windows.Forms.ComboBox();
             this.buttonApply = new System.Windows.Forms.Button();
             this.buttonOk = new System.Windows.Forms.Button();
             this.buttonCancel = new System.Windows.Forms.Button();
@@ -507,11 +501,8 @@ namespace CameraCaptureApp.Forms
             // 
             // tabPageSaving
             // 
-            this.tabPageSaving.Controls.Add(this.checkBoxAutoSave);
-            this.tabPageSaving.Controls.Add(this.labelSaveFolder);
-            this.tabPageSaving.Controls.Add(this.textBoxSaveFolder);
-            this.tabPageSaving.Controls.Add(this.labelFileNamePattern);
-            this.tabPageSaving.Controls.Add(this.textBoxFileNamePattern);
+            this.tabPageSaving.Controls.Add(this.labelImageSaveFormat);
+            this.tabPageSaving.Controls.Add(this.comboBoxImageSaveFormat);
             this.tabPageSaving.Location = new System.Drawing.Point(4, 26);
             this.tabPageSaving.Name = "tabPageSaving";
             this.tabPageSaving.Padding = new System.Windows.Forms.Padding(3);
@@ -520,35 +511,23 @@ namespace CameraCaptureApp.Forms
             this.tabPageSaving.Text = "Saving";
             this.tabPageSaving.UseVisualStyleBackColor = true;
             // 
-            // labelSaveFolder
+            // labelImageSaveFormat
             // 
-            this.labelSaveFolder.AutoSize = true;
-            this.labelSaveFolder.Location = new System.Drawing.Point(32, 75);
-            this.labelSaveFolder.Name = "labelSaveFolder";
-            this.labelSaveFolder.Size = new System.Drawing.Size(78, 16);
-            this.labelSaveFolder.TabIndex = 4;
-            this.labelSaveFolder.Text = "Save Folder";
+            this.labelImageSaveFormat.AutoSize = true;
+            this.labelImageSaveFormat.Location = new System.Drawing.Point(32, 35);
+            this.labelImageSaveFormat.Name = "labelImageSaveFormat";
+            this.labelImageSaveFormat.Size = new System.Drawing.Size(104, 16);
+            this.labelImageSaveFormat.TabIndex = 4;
+            this.labelImageSaveFormat.Text = "圖片保存格式";
             // 
-            // labelFileNamePattern
+            // comboBoxImageSaveFormat
             // 
-            this.labelFileNamePattern.AutoSize = true;
-            this.labelFileNamePattern.Location = new System.Drawing.Point(32, 179);
-            this.labelFileNamePattern.Name = "labelFileNamePattern";
-            this.labelFileNamePattern.Size = new System.Drawing.Size(118, 16);
-            this.labelFileNamePattern.TabIndex = 5;
-            this.labelFileNamePattern.Text = "File Name Pattern";
-            // 
-            // save controls
-            // 
-            this.checkBoxAutoSave.AutoSize = true;
-            this.checkBoxAutoSave.Location = new System.Drawing.Point(35, 31);
-            this.checkBoxAutoSave.Size = new System.Drawing.Size(82, 20);
-            this.checkBoxAutoSave.Text = "Auto Save";
-            this.textBoxSaveFolder.Location = new System.Drawing.Point(35, 97);
-            this.textBoxSaveFolder.Multiline = true;
-            this.textBoxSaveFolder.Size = new System.Drawing.Size(680, 57);
-            this.textBoxFileNamePattern.Location = new System.Drawing.Point(35, 201);
-            this.textBoxFileNamePattern.Size = new System.Drawing.Size(320, 23);
+            this.comboBoxImageSaveFormat.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxImageSaveFormat.FormattingEnabled = true;
+            this.comboBoxImageSaveFormat.Location = new System.Drawing.Point(35, 57);
+            this.comboBoxImageSaveFormat.Name = "comboBoxImageSaveFormat";
+            this.comboBoxImageSaveFormat.Size = new System.Drawing.Size(180, 24);
+            this.comboBoxImageSaveFormat.TabIndex = 5;
             // 
             // buttons
             // 
