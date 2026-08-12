@@ -36,6 +36,7 @@ namespace CameraCaptureApp.Forms
             _frameRecorder = new FrameRecorder();
             _cameraDisplayControl = new Controls.CameraDisplayControl();
             _cameraDisplayControl.Dock = DockStyle.Fill;
+            _cameraDisplayControl.SaveSnapshotRequested += CameraDisplayControl_SaveSnapshotRequested;
             panelViewerHost.Controls.Add(_cameraDisplayControl);
 
             _cameraService.FrameReady += CameraService_FrameReady;
@@ -165,6 +166,35 @@ namespace CameraCaptureApp.Forms
             }
         }
 
+        private async void CameraDisplayControl_SaveSnapshotRequested(object sender, EventArgs e)
+        {
+            var status = _cameraService.Status;
+            if (status == null || status.IsPreviewing)
+            {
+                labelFooterMessageValue.Text = "Stop preview before saving a snapshot.";
+                return;
+            }
+
+            using (var snapshot = _frameRecorder.SnapshotLatest())
+            {
+                if (snapshot == null)
+                {
+                    labelFooterMessageValue.Text = "No recorded image is available to save.";
+                    return;
+                }
+
+                try
+                {
+                    var savedPath = await Task.Run(() => SaveManualSnapshotBitmap(snapshot));
+                    labelFooterMessageValue.Text = "Snapshot saved: " + Path.GetFileName(savedPath);
+                }
+                catch (Exception ex)
+                {
+                    labelFooterMessageValue.Text = "Snapshot save failed: " + ex.Message;
+                }
+            }
+        }
+
         private async void buttonLoadImage_Click(object sender, EventArgs e)
         {
             using (var dialog = new OpenFileDialog())
@@ -201,6 +231,7 @@ namespace CameraCaptureApp.Forms
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             _cameraService.FrameReady -= CameraService_FrameReady;
+            _cameraDisplayControl.SaveSnapshotRequested -= CameraDisplayControl_SaveSnapshotRequested;
             _statusRefreshTimer.Stop();
             _statusRefreshTimer.Dispose();
             CancelPendingImageLoad();
@@ -343,6 +374,7 @@ namespace CameraCaptureApp.Forms
             buttonStop.Enabled = isConnected && isPreviewing;
             buttonCapture.Enabled = isConnected && !isPreviewing;
             buttonLoadImage.Enabled = !isPreviewing;
+            _cameraDisplayControl.SaveSnapshotButtonEnabled = isConnected && !isPreviewing;
         }
 
         private void CancelPendingImageLoad()
@@ -411,6 +443,38 @@ namespace CameraCaptureApp.Forms
             var filePath = BuildSnapshotPath(outputFolder, settings);
             bitmap.Save(filePath, ImageFormat.Bmp);
             return filePath;
+        }
+
+        private static string SaveManualSnapshotBitmap(Bitmap bitmap)
+        {
+            var outputFolder = Path.Combine(Application.StartupPath, "snapshot");
+            Directory.CreateDirectory(outputFolder);
+
+            var baseName = DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
+            var filePath = BuildManualSnapshotPath(outputFolder, baseName);
+            bitmap.Save(filePath, ImageFormat.Png);
+            return filePath;
+        }
+
+        private static string BuildManualSnapshotPath(string outputFolder, string baseName)
+        {
+            var candidatePath = Path.Combine(outputFolder, baseName + ".png");
+            if (!File.Exists(candidatePath))
+            {
+                return candidatePath;
+            }
+
+            var suffix = 1;
+            while (true)
+            {
+                var nextPath = Path.Combine(outputFolder, baseName + "_" + suffix.ToString("000") + ".png");
+                if (!File.Exists(nextPath))
+                {
+                    return nextPath;
+                }
+
+                suffix++;
+            }
         }
 
         private static string ResolveSnapshotFolder(CameraSettings settings)

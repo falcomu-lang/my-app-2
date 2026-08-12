@@ -28,6 +28,8 @@ namespace CameraCaptureApp.Controls
         private float _zoom = 1f;
         private PointF _imageOffset = PointF.Empty;
 
+        public event EventHandler SaveSnapshotRequested;
+
         public CameraDisplayControl()
         {
             InitializeComponent();
@@ -54,6 +56,12 @@ namespace CameraCaptureApp.Controls
         {
             get { return statusLabel.Text; }
             set { statusLabel.Text = value; }
+        }
+
+        public bool SaveSnapshotButtonEnabled
+        {
+            get { return buttonSaveSnapshot.Enabled; }
+            set { buttonSaveSnapshot.Enabled = value; }
         }
 
         public async Task LoadImageFromFileAsync(string filePath, CancellationToken cancellationToken)
@@ -417,6 +425,15 @@ namespace CameraCaptureApp.Controls
             FitImageToView();
             UpdateStatusLabel();
             viewerPanel.Invalidate();
+        }
+
+        private void buttonSaveSnapshot_Click(object sender, EventArgs e)
+        {
+            var handler = SaveSnapshotRequested;
+            if (handler != null)
+            {
+                handler(this, EventArgs.Empty);
+            }
         }
 
         private void CameraDisplayControl_SizeChanged(object sender, EventArgs e)

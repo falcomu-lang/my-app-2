@@ -9,6 +9,7 @@ namespace CameraCaptureApp.Controls
         private CameraCaptureApp.Controls.BufferedRenderPanel viewerPanel;
         private System.Windows.Forms.Panel bottomPanel;
         private System.Windows.Forms.Label statusLabel;
+        private System.Windows.Forms.Button buttonSaveSnapshot;
         private System.Windows.Forms.Button buttonFitToWindow;
 
         protected override void Dispose(bool disposing)
@@ -28,6 +29,7 @@ namespace CameraCaptureApp.Controls
             this.overlayLabel = new System.Windows.Forms.Label();
             this.viewerPanel = new CameraCaptureApp.Controls.BufferedRenderPanel();
             this.bottomPanel = new System.Windows.Forms.Panel();
+            this.buttonSaveSnapshot = new System.Windows.Forms.Button();
             this.buttonFitToWindow = new System.Windows.Forms.Button();
             this.statusLabel = new System.Windows.Forms.Label();
             this.topPanel.SuspendLayout();
@@ -89,6 +91,7 @@ namespace CameraCaptureApp.Controls
             // 
             this.bottomPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(22)))), ((int)(((byte)(34)))));
             this.bottomPanel.Controls.Add(this.buttonFitToWindow);
+            this.bottomPanel.Controls.Add(this.buttonSaveSnapshot);
             this.bottomPanel.Controls.Add(this.statusLabel);
             this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.bottomPanel.Location = new System.Drawing.Point(0, 520);
@@ -96,6 +99,19 @@ namespace CameraCaptureApp.Controls
             this.bottomPanel.Padding = new System.Windows.Forms.Padding(12, 10, 12, 10);
             this.bottomPanel.Size = new System.Drawing.Size(900, 50);
             this.bottomPanel.TabIndex = 2;
+            // 
+            // buttonSaveSnapshot
+            // 
+            this.buttonSaveSnapshot.Dock = System.Windows.Forms.DockStyle.Right;
+            this.buttonSaveSnapshot.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonSaveSnapshot.ForeColor = System.Drawing.Color.White;
+            this.buttonSaveSnapshot.Location = new System.Drawing.Point(664, 10);
+            this.buttonSaveSnapshot.Name = "buttonSaveSnapshot";
+            this.buttonSaveSnapshot.Size = new System.Drawing.Size(112, 30);
+            this.buttonSaveSnapshot.TabIndex = 2;
+            this.buttonSaveSnapshot.Text = "保留影像";
+            this.buttonSaveSnapshot.UseVisualStyleBackColor = true;
+            this.buttonSaveSnapshot.Click += new System.EventHandler(this.buttonSaveSnapshot_Click);
             // 
             // buttonFitToWindow
             // 
