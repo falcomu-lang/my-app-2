@@ -6,6 +6,7 @@ using System.Drawing.Imaging;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CameraCaptureApp.Models;
 
 namespace CameraCaptureApp.Controls
 {
@@ -25,6 +26,7 @@ namespace CameraCaptureApp.Controls
         private int _rollingPreviewFrameWidth;
         private int _rollingPreviewFrameHeight;
         private int _rollingPreviewFrameCount;
+        private RollingCaptureDirection _rollingPreviewDirection;
         private bool _isPanning;
         private Point _lastMousePoint;
         private int _imageVersion;
@@ -93,10 +95,10 @@ namespace CameraCaptureApp.Controls
 
         public Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken)
         {
-            return ShowFrameAsync(frame, cancellationToken, false, 1);
+            return ShowFrameAsync(frame, cancellationToken, false, 1, RollingCaptureDirection.TopToBottom);
         }
 
-        public async Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken, bool rollingPreviewEnabled, int rollingFrameCount)
+        public async Task ShowFrameAsync(Bitmap frame, CancellationToken cancellationToken, bool rollingPreviewEnabled, int rollingFrameCount, RollingCaptureDirection rollingDirection)
         {
             var version = Interlocked.Increment(ref _imageVersion);
             var sourceWidth = frame.Width;
@@ -111,8 +113,12 @@ namespace CameraCaptureApp.Controls
             frame.Dispose();
             if (rollingPreviewEnabled)
             {
-                previewFrame.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                await ApplyRollingBitmapAsync(previewFrame, version, sourceWidth, sourceHeight, rollingFrameCount, cancellationToken);
+                if (rollingDirection == RollingCaptureDirection.TopToBottom)
+                {
+                    previewFrame.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                }
+
+                await ApplyRollingBitmapAsync(previewFrame, version, sourceWidth, sourceHeight, rollingFrameCount, rollingDirection, cancellationToken);
                 return;
             }
 
@@ -177,7 +183,7 @@ namespace CameraCaptureApp.Controls
             viewerPanel.Invalidate();
         }
 
-        private async Task ApplyRollingBitmapAsync(Bitmap bitmap, int version, int sourceWidth, int sourceHeight, int frameCount, CancellationToken cancellationToken)
+        private async Task ApplyRollingBitmapAsync(Bitmap bitmap, int version, int sourceWidth, int sourceHeight, int frameCount, RollingCaptureDirection direction, CancellationToken cancellationToken)
         {
             var elapsed = DateTime.UtcNow - _lastDisplayUpdateUtc;
             if (elapsed.TotalMilliseconds < 200)
@@ -198,7 +204,8 @@ namespace CameraCaptureApp.Controls
                 shouldFitToView = _rollingPreviewFrames.Count == 0 ||
                     _rollingPreviewFrameWidth != bitmap.Width ||
                     _rollingPreviewFrameHeight != bitmap.Height ||
-                    _rollingPreviewFrameCount != frameCount;
+                    _rollingPreviewFrameCount != frameCount ||
+                    _rollingPreviewDirection != direction;
 
                 if (_sourceBitmap != null)
                 {
@@ -215,6 +222,7 @@ namespace CameraCaptureApp.Controls
                 _rollingPreviewFrameWidth = bitmap.Width;
                 _rollingPreviewFrameHeight = bitmap.Height;
                 _rollingPreviewFrameCount = frameCount;
+                _rollingPreviewDirection = direction;
                 _rollingPreviewFrames.Insert(0, bitmap);
                 while (_rollingPreviewFrames.Count > frameCount)
                 {
@@ -275,10 +283,13 @@ namespace CameraCaptureApp.Controls
                 for (var index = 0; index < _rollingPreviewFrames.Count; index++)
                 {
                     var rollingFrame = _rollingPreviewFrames[index];
+                    var frameSlot = _rollingPreviewDirection == RollingCaptureDirection.BottomToTop
+                        ? _rollingPreviewFrameCount - index - 1
+                        : index;
                     var drawLeft = (float)Math.Round(offset.X);
-                    var drawTop = (float)Math.Round(offset.Y + (_rollingPreviewFrameHeight * index * zoom));
+                    var drawTop = (float)Math.Round(offset.Y + (_rollingPreviewFrameHeight * frameSlot * zoom));
                     var drawRight = (float)Math.Round(offset.X + (_rollingPreviewFrameWidth * zoom));
-                    var drawBottom = (float)Math.Round(offset.Y + (_rollingPreviewFrameHeight * (index + 1) * zoom));
+                    var drawBottom = (float)Math.Round(offset.Y + (_rollingPreviewFrameHeight * (frameSlot + 1) * zoom));
                     if (drawRight <= drawLeft)
                     {
                         drawRight = drawLeft + 1f;
@@ -683,6 +694,7 @@ namespace CameraCaptureApp.Controls
             _rollingPreviewFrameWidth = 0;
             _rollingPreviewFrameHeight = 0;
             _rollingPreviewFrameCount = 0;
+            _rollingPreviewDirection = RollingCaptureDirection.TopToBottom;
         }
 
         private static Bitmap CreateLivePreviewBitmap(Bitmap source)

@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using CameraCaptureApp.Models;
 using SWM = System.Windows.Media;
 using SWMI = System.Windows.Media.Imaging;
 
@@ -122,10 +123,15 @@ namespace CameraCaptureApp.Services
 
         public bool SaveRollingPng(string filePath)
         {
-            return SaveRollingPng(filePath, null);
+            return SaveRollingPng(filePath, RollingCaptureDirection.TopToBottom, null);
         }
 
-        public bool SaveRollingPng(string filePath, Action<int, string> reportProgress)
+        public bool SaveRollingPng(string filePath, RollingCaptureDirection direction)
+        {
+            return SaveRollingPng(filePath, direction, null);
+        }
+
+        public bool SaveRollingPng(string filePath, RollingCaptureDirection direction, Action<int, string> reportProgress)
         {
             using (var snapshot = SnapshotRollingFrames())
             {
@@ -135,7 +141,7 @@ namespace CameraCaptureApp.Services
                 }
 
                 ReportProgress(reportProgress, 5, "Copying current rolling frames...");
-                snapshot.SavePng(filePath, reportProgress);
+                snapshot.SavePng(filePath, direction, reportProgress);
                 return true;
             }
         }
@@ -195,7 +201,7 @@ namespace CameraCaptureApp.Services
             return combined;
         }
 
-        private static void SaveVerticalPng(IList<Bitmap> frames, string filePath, Action<int, string> reportProgress)
+        private static void SaveVerticalPng(IList<Bitmap> frames, string filePath, RollingCaptureDirection direction, Action<int, string> reportProgress)
         {
             ReportProgress(reportProgress, 10, "Preparing PNG buffer...");
             var width = 0;
@@ -222,12 +228,25 @@ namespace CameraCaptureApp.Services
             }
 
             var pixels = new byte[(int)totalBytes];
-            var destinationY = 0;
+            var topToBottomY = 0;
+            var bottomToTopY = height;
             for (var index = 0; index < frames.Count; index++)
             {
                 var frame = frames[index];
-                CopyFrameFlippedIntoGrayBuffer(frame, pixels, stride, destinationY);
-                destinationY += frame.Height;
+                int destinationY;
+                if (direction == RollingCaptureDirection.BottomToTop)
+                {
+                    bottomToTopY -= frame.Height;
+                    destinationY = bottomToTopY;
+                    CopyFrameIntoGrayBuffer(frame, pixels, stride, destinationY, false);
+                }
+                else
+                {
+                    destinationY = topToBottomY;
+                    topToBottomY += frame.Height;
+                    CopyFrameIntoGrayBuffer(frame, pixels, stride, destinationY, true);
+                }
+
                 var percent = 10 + (int)Math.Round(((index + 1) / (double)frames.Count) * 75d);
                 var remainingCount = frames.Count - index - 1;
                 ReportProgress(reportProgress, percent, "Saving image " + (index + 1) + " of " + frames.Count + ". Remaining: " + remainingCount + ".");
@@ -254,7 +273,7 @@ namespace CameraCaptureApp.Services
             ReportProgress(reportProgress, 100, "Image saved.");
         }
 
-        private static void CopyFrameFlippedIntoGrayBuffer(Bitmap frame, byte[] destinationPixels, int destinationStride, int destinationY)
+        private static void CopyFrameIntoGrayBuffer(Bitmap frame, byte[] destinationPixels, int destinationStride, int destinationY, bool flipVertically)
         {
             using (var converted = new Bitmap(frame.Width, frame.Height, PixelFormat.Format32bppArgb))
             {
@@ -272,7 +291,8 @@ namespace CameraCaptureApp.Services
                     var destinationRowOffset = destinationY * destinationStride;
                     for (var y = 0; y < converted.Height; y++)
                     {
-                        Marshal.Copy(data.Scan0 + ((converted.Height - 1 - y) * data.Stride), sourceRow, 0, sourceStride);
+                        var sourceY = flipVertically ? converted.Height - 1 - y : y;
+                        Marshal.Copy(data.Scan0 + (sourceY * data.Stride), sourceRow, 0, sourceStride);
                         var targetIndex = destinationRowOffset + (y * destinationStride);
                         for (var x = 0; x < converted.Width; x++)
                         {
@@ -305,14 +325,14 @@ namespace CameraCaptureApp.Services
                 _frames = frames;
             }
 
-            public void SavePng(string filePath, Action<int, string> reportProgress)
+            public void SavePng(string filePath, RollingCaptureDirection direction, Action<int, string> reportProgress)
             {
                 if (_frames == null || _frames.Count == 0)
                 {
                     throw new InvalidOperationException("No rolling image is available to save.");
                 }
 
-                SaveVerticalPng(_frames, filePath, reportProgress);
+                SaveVerticalPng(_frames, filePath, direction, reportProgress);
             }
 
             public void Dispose()

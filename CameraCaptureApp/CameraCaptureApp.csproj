@@ -84,6 +84,7 @@
     </Compile>
     <Compile Include="Models\CameraSettings.cs" />
     <Compile Include="Models\CameraStatus.cs" />
+    <Compile Include="Models\RollingCaptureDirection.cs" />
     <Compile Include="Models\TriggerMode.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

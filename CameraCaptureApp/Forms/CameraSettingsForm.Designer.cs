@@ -34,6 +34,8 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.CheckBox checkBoxRollingCaptureEnabled;
         private System.Windows.Forms.Label labelRollingCaptureFrameCount;
         private System.Windows.Forms.NumericUpDown numericRollingCaptureFrameCount;
+        private System.Windows.Forms.Label labelRollingCaptureDirection;
+        private System.Windows.Forms.ComboBox comboBoxRollingCaptureDirection;
         private System.Windows.Forms.Label labelTriggerMode;
         private System.Windows.Forms.Label labelTriggerNote;
         private System.Windows.Forms.Label labelSaveFolder;
@@ -86,6 +88,8 @@ namespace CameraCaptureApp.Forms
             this.checkBoxRollingCaptureEnabled = new System.Windows.Forms.CheckBox();
             this.labelRollingCaptureFrameCount = new System.Windows.Forms.Label();
             this.numericRollingCaptureFrameCount = new System.Windows.Forms.NumericUpDown();
+            this.labelRollingCaptureDirection = new System.Windows.Forms.Label();
+            this.comboBoxRollingCaptureDirection = new System.Windows.Forms.ComboBox();
             this.labelExposure = new System.Windows.Forms.Label();
             this.labelGain = new System.Windows.Forms.Label();
             this.labelLength = new System.Windows.Forms.Label();
@@ -340,9 +344,11 @@ namespace CameraCaptureApp.Forms
             this.groupBoxRollingCapture.Controls.Add(this.numericRollingCaptureFrameCount);
             this.groupBoxRollingCapture.Controls.Add(this.labelRollingCaptureFrameCount);
             this.groupBoxRollingCapture.Controls.Add(this.checkBoxRollingCaptureEnabled);
+            this.groupBoxRollingCapture.Controls.Add(this.labelRollingCaptureDirection);
+            this.groupBoxRollingCapture.Controls.Add(this.comboBoxRollingCaptureDirection);
             this.groupBoxRollingCapture.Location = new System.Drawing.Point(35, 143);
             this.groupBoxRollingCapture.Name = "groupBoxRollingCapture";
-            this.groupBoxRollingCapture.Size = new System.Drawing.Size(680, 105);
+            this.groupBoxRollingCapture.Size = new System.Drawing.Size(680, 150);
             this.groupBoxRollingCapture.TabIndex = 10;
             this.groupBoxRollingCapture.TabStop = false;
             this.groupBoxRollingCapture.Text = "滾動式拍照";
@@ -375,6 +381,24 @@ namespace CameraCaptureApp.Forms
             this.numericRollingCaptureFrameCount.Size = new System.Drawing.Size(120, 23);
             this.numericRollingCaptureFrameCount.TabIndex = 2;
             this.numericRollingCaptureFrameCount.Value = new decimal(new int[] { 12, 0, 0, 0 });
+            // 
+            // labelRollingCaptureDirection
+            // 
+            this.labelRollingCaptureDirection.AutoSize = true;
+            this.labelRollingCaptureDirection.Location = new System.Drawing.Point(18, 105);
+            this.labelRollingCaptureDirection.Name = "labelRollingCaptureDirection";
+            this.labelRollingCaptureDirection.Size = new System.Drawing.Size(104, 16);
+            this.labelRollingCaptureDirection.TabIndex = 3;
+            this.labelRollingCaptureDirection.Text = "取像方向";
+            // 
+            // comboBoxRollingCaptureDirection
+            // 
+            this.comboBoxRollingCaptureDirection.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxRollingCaptureDirection.FormattingEnabled = true;
+            this.comboBoxRollingCaptureDirection.Location = new System.Drawing.Point(132, 102);
+            this.comboBoxRollingCaptureDirection.Name = "comboBoxRollingCaptureDirection";
+            this.comboBoxRollingCaptureDirection.Size = new System.Drawing.Size(160, 24);
+            this.comboBoxRollingCaptureDirection.TabIndex = 4;
             // 
             // labelExposure
             // 

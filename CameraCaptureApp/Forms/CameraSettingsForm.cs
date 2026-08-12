@@ -43,6 +43,12 @@ namespace CameraCaptureApp.Forms
                 "Software Trigger",
                 "External Trigger"
             });
+            comboBoxRollingCaptureDirection.Items.Clear();
+            comboBoxRollingCaptureDirection.Items.AddRange(new object[]
+            {
+                "由上而下",
+                "由下而上"
+            });
 
             textBoxCameraName.Text = Settings.CameraName;
             textBoxConfigFile.Text = Settings.ConfigFilePath;
@@ -56,6 +62,10 @@ namespace CameraCaptureApp.Forms
             numericRollingCaptureFrameCount.Value = ClampToNumericRange(
                 numericRollingCaptureFrameCount,
                 Settings.RollingCaptureFrameCount > 0 ? Settings.RollingCaptureFrameCount : 1);
+            comboBoxRollingCaptureDirection.SelectedIndex = (int)Settings.RollingCaptureDirection >= 0 &&
+                (int)Settings.RollingCaptureDirection < comboBoxRollingCaptureDirection.Items.Count
+                    ? (int)Settings.RollingCaptureDirection
+                    : 0;
             numericInternalLineRate.Value = Settings.InternalLineRate > 0 ? Settings.InternalLineRate : 1;
             var triggerIndex = (int)Settings.TriggerMode;
             comboBoxTriggerMode.SelectedIndex = triggerIndex >= 0 && triggerIndex < comboBoxTriggerMode.Items.Count ? triggerIndex : 0;
@@ -254,6 +264,7 @@ namespace CameraCaptureApp.Forms
             Settings.Length = decimal.ToInt32(numericLength.Value);
             Settings.RollingCaptureEnabled = checkBoxRollingCaptureEnabled.Checked;
             Settings.RollingCaptureFrameCount = decimal.ToInt32(numericRollingCaptureFrameCount.Value);
+            Settings.RollingCaptureDirection = (RollingCaptureDirection)Math.Max(0, comboBoxRollingCaptureDirection.SelectedIndex);
             Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
             Settings.AutoConnect = checkBoxAutoConnect.Checked;

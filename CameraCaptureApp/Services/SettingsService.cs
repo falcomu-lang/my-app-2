@@ -41,6 +41,7 @@ namespace CameraCaptureApp.Services
             settings.Length = GetInt(values, "Length", settings.Length);
             settings.RollingCaptureEnabled = GetBool(values, "RollingCaptureEnabled", settings.RollingCaptureEnabled);
             settings.RollingCaptureFrameCount = GetInt(values, "RollingCaptureFrameCount", settings.RollingCaptureFrameCount);
+            settings.RollingCaptureDirection = GetEnum(values, "RollingCaptureDirection", settings.RollingCaptureDirection);
             settings.ExposureTime = GetDecimal(values, "ExposureTime", settings.ExposureTime);
             settings.Gain = GetDecimal(values, "Gain", settings.Gain);
             settings.InternalLineRate = GetDecimal(values, "InternalLineRate", settings.InternalLineRate);
@@ -74,6 +75,7 @@ namespace CameraCaptureApp.Services
                 "Length=" + settings.Length.ToString(CultureInfo.InvariantCulture),
                 "RollingCaptureEnabled=" + settings.RollingCaptureEnabled.ToString(),
                 "RollingCaptureFrameCount=" + settings.RollingCaptureFrameCount.ToString(CultureInfo.InvariantCulture),
+                "RollingCaptureDirection=" + settings.RollingCaptureDirection.ToString(),
                 "ExposureTime=" + settings.ExposureTime.ToString(CultureInfo.InvariantCulture),
                 "Gain=" + settings.Gain.ToString(CultureInfo.InvariantCulture),
                 "InternalLineRate=" + settings.InternalLineRate.ToString(CultureInfo.InvariantCulture),
@@ -149,8 +151,14 @@ namespace CameraCaptureApp.Services
 
         private static TriggerMode GetTriggerMode(Dictionary<string, string> values, string key, TriggerMode fallback)
         {
+            return GetEnum(values, key, fallback);
+        }
+
+        private static TEnum GetEnum<TEnum>(Dictionary<string, string> values, string key, TEnum fallback)
+            where TEnum : struct
+        {
             string value;
-            TriggerMode parsed;
+            TEnum parsed;
             return values.TryGetValue(key, out value) && Enum.TryParse(value, true, out parsed)
                 ? parsed
                 : fallback;

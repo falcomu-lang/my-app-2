@@ -28,6 +28,8 @@ namespace CameraCaptureApp.Models
 
         public int RollingCaptureFrameCount { get; set; }
 
+        public RollingCaptureDirection RollingCaptureDirection { get; set; }
+
         public decimal ExposureTime { get; set; }
 
         public decimal Gain { get; set; }
@@ -65,6 +67,7 @@ namespace CameraCaptureApp.Models
                 Length = 720,
                 RollingCaptureEnabled = false,
                 RollingCaptureFrameCount = 12,
+                RollingCaptureDirection = RollingCaptureDirection.TopToBottom,
                 ExposureTime = 1200,
                 Gain = 1,
                 InternalLineRate = 30,
