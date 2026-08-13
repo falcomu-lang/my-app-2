@@ -16,6 +16,7 @@ namespace CameraCaptureApp.Forms
 
         private readonly ICameraService _cameraService;
         private readonly ISettingsService _settingsService;
+        private readonly ILsi8181Service _lsi8181Service;
         private readonly Controls.CameraDisplayControl _cameraDisplayControl;
         private readonly FrameRecorder _frameRecorder;
         private readonly System.Windows.Forms.Timer _statusRefreshTimer;
@@ -36,10 +37,11 @@ namespace CameraCaptureApp.Forms
         private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
 
-        public MainForm(ICameraService cameraService, ISettingsService settingsService)
+        public MainForm(ICameraService cameraService, ISettingsService settingsService, ILsi8181Service lsi8181Service)
         {
             _cameraService = cameraService;
             _settingsService = settingsService;
+            _lsi8181Service = lsi8181Service;
             _settings = _settingsService.Load() ?? CameraSettings.CreateDefault();
 
             InitializeComponent();
@@ -94,6 +96,34 @@ namespace CameraCaptureApp.Forms
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
                 labelFooterMessageValue.Text = "Camera Settings open failed: " + ex.Message;
+            }
+            finally
+            {
+                if (form != null)
+                {
+                    form.Dispose();
+                }
+            }
+        }
+
+        private void buttonMeterWheelControl_Click(object sender, EventArgs e)
+        {
+            MeterWheelSettingsForm form = null;
+            try
+            {
+                form = new MeterWheelSettingsForm(_lsi8181Service);
+                form.ShowDialog(this);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Meter wheel control dialog open failed.", ex);
+                MessageBox.Show(
+                    this,
+                    "Meter wheel control could not be opened.\r\n" + ex.Message + "\r\n\r\nLog: " + AppLogger.GetLogPath(),
+                    "Meter Wheel Control Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                labelFooterMessageValue.Text = "Meter wheel control open failed: " + ex.Message;
             }
             finally
             {
@@ -464,6 +494,7 @@ namespace CameraCaptureApp.Forms
             CancelPendingImageLoad();
             CancelPendingPreviewFrame();
             _frameRecorder.Dispose();
+            _lsi8181Service.Dispose();
             ClearPendingRollingPreviewFrames();
             var pendingFrame = Interlocked.Exchange(ref _pendingPreviewFrame, null);
             if (pendingFrame != null)
@@ -678,6 +709,7 @@ namespace CameraCaptureApp.Forms
             var isPreviewing = status != null && status.IsPreviewing;
 
             buttonCameraSettings.Enabled = true;
+            buttonMeterWheelControl.Enabled = true;
             buttonConnect.Enabled = !isConnected;
             buttonDisconnect.Enabled = isConnected;
             buttonStartPreview.Enabled = isConnected && !isPreviewing;
