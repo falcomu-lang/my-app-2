@@ -12,7 +12,10 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Button buttonClose;
         private System.Windows.Forms.Label labelCardId;
         private System.Windows.Forms.Label labelCounter;
+        private System.Windows.Forms.Label labelMultipleRate;
         private System.Windows.Forms.Label labelStatus;
+        private System.Windows.Forms.ComboBox comboBoxMultipleRate;
+        private System.Windows.Forms.Button buttonApplyMultipleRate;
         private System.Windows.Forms.Timer timerCounterRefresh;
 
         protected override void Dispose(bool disposing)
@@ -37,7 +40,10 @@ namespace CameraCaptureApp.Forms
             this.buttonClose = new System.Windows.Forms.Button();
             this.labelCardId = new System.Windows.Forms.Label();
             this.labelCounter = new System.Windows.Forms.Label();
+            this.labelMultipleRate = new System.Windows.Forms.Label();
             this.labelStatus = new System.Windows.Forms.Label();
+            this.comboBoxMultipleRate = new System.Windows.Forms.ComboBox();
+            this.buttonApplyMultipleRate = new System.Windows.Forms.Button();
             this.timerCounterRefresh = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
@@ -129,6 +135,15 @@ namespace CameraCaptureApp.Forms
             this.labelCounter.TabIndex = 2;
             this.labelCounter.Text = "Counter";
             // 
+            // labelMultipleRate
+            // 
+            this.labelMultipleRate.AutoSize = true;
+            this.labelMultipleRate.Location = new System.Drawing.Point(31, 200);
+            this.labelMultipleRate.Name = "labelMultipleRate";
+            this.labelMultipleRate.Size = new System.Drawing.Size(86, 16);
+            this.labelMultipleRate.TabIndex = 9;
+            this.labelMultipleRate.Text = "Multiple Rate";
+            // 
             // labelStatus
             // 
             this.labelStatus.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
@@ -137,6 +152,25 @@ namespace CameraCaptureApp.Forms
             this.labelStatus.Padding = new System.Windows.Forms.Padding(8, 5, 8, 5);
             this.labelStatus.Size = new System.Drawing.Size(368, 72);
             this.labelStatus.TabIndex = 7;
+            // 
+            // comboBoxMultipleRate
+            // 
+            this.comboBoxMultipleRate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxMultipleRate.FormattingEnabled = true;
+            this.comboBoxMultipleRate.Location = new System.Drawing.Point(34, 222);
+            this.comboBoxMultipleRate.Name = "comboBoxMultipleRate";
+            this.comboBoxMultipleRate.Size = new System.Drawing.Size(180, 24);
+            this.comboBoxMultipleRate.TabIndex = 10;
+            // 
+            // buttonApplyMultipleRate
+            // 
+            this.buttonApplyMultipleRate.Location = new System.Drawing.Point(229, 220);
+            this.buttonApplyMultipleRate.Name = "buttonApplyMultipleRate";
+            this.buttonApplyMultipleRate.Size = new System.Drawing.Size(173, 30);
+            this.buttonApplyMultipleRate.TabIndex = 11;
+            this.buttonApplyMultipleRate.Text = "Apply Multiple Rate";
+            this.buttonApplyMultipleRate.UseVisualStyleBackColor = true;
+            this.buttonApplyMultipleRate.Click += new System.EventHandler(this.buttonApplyMultipleRate_Click);
             // 
             // timerCounterRefresh
             // 
@@ -148,7 +182,10 @@ namespace CameraCaptureApp.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(584, 361);
+            this.Controls.Add(this.buttonApplyMultipleRate);
+            this.Controls.Add(this.comboBoxMultipleRate);
             this.Controls.Add(this.labelStatus);
+            this.Controls.Add(this.labelMultipleRate);
             this.Controls.Add(this.labelCounter);
             this.Controls.Add(this.labelCardId);
             this.Controls.Add(this.buttonClose);

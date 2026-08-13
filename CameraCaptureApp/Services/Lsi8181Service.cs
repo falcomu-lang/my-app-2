@@ -67,6 +67,43 @@ namespace CameraCaptureApp.Services
             EnsureSuccess("Clear LSI-8181 counter");
         }
 
+        public Lsi8181CounterInputMode ReadCounterInputMode(byte cardId)
+        {
+            ThrowIfDisposed();
+            EnsureInitialized();
+
+            byte inputMode = 0;
+            byte debounceTime = 0;
+            byte multipleRate = 0;
+            SetStatus(
+                SafeCall(() => Lsi8181Native.LSI8181_CI_mode_read(cardId, ref inputMode, ref debounceTime, ref multipleRate)),
+                "Counter input mode read.");
+            EnsureSuccess("Read LSI-8181 counter input mode");
+
+            return new Lsi8181CounterInputMode
+            {
+                InputMode = inputMode,
+                DebounceTime = debounceTime,
+                MultipleRate = multipleRate
+            };
+        }
+
+        public void SetMultipleRate(byte cardId, byte multipleRate)
+        {
+            ThrowIfDisposed();
+            EnsureInitialized();
+
+            var currentMode = ReadCounterInputMode(cardId);
+            SetStatus(
+                SafeCall(() => Lsi8181Native.LSI8181_CI_mode_set(
+                    cardId,
+                    currentMode.InputMode,
+                    currentMode.DebounceTime,
+                    multipleRate)),
+                "Multiple rate set.");
+            EnsureSuccess("Set LSI-8181 multiple rate");
+        }
+
         public void Close()
         {
             if (_disposed || !IsInitialized)

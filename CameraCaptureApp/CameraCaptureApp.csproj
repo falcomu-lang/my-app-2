@@ -103,6 +103,7 @@
     <Compile Include="Services\ILsi8181Service.cs" />
     <Compile Include="Services\ISettingsService.cs" />
     <Compile Include="Services\Lsi8181CardInfo.cs" />
+    <Compile Include="Services\Lsi8181CounterInputMode.cs" />
     <Compile Include="Services\Lsi8181Native.cs" />
     <Compile Include="Services\Lsi8181Service.cs" />
     <Compile Include="Services\SettingsService.cs" />

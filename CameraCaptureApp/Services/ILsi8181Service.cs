@@ -17,6 +17,10 @@ namespace CameraCaptureApp.Services
 
         void ClearCounter(byte cardId);
 
+        Lsi8181CounterInputMode ReadCounterInputMode(byte cardId);
+
+        void SetMultipleRate(byte cardId, byte multipleRate);
+
         void Close();
     }
 }

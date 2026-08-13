@@ -15,6 +15,7 @@ namespace CameraCaptureApp.Forms
         {
             _lsi8181Service = lsi8181Service;
             InitializeComponent();
+            BindMultipleRateOptions();
             labelStatus.Text = "Click Open / Scan to find LSI-8181 cards.";
         }
 
@@ -33,6 +34,7 @@ namespace CameraCaptureApp.Forms
                 {
                     comboBoxCardId.SelectedIndex = 0;
                     ReadCounterForSelectedCard();
+                    ReadMultipleRateForSelectedCard();
                     timerCounterRefresh.Start();
                 }
                 else
@@ -87,6 +89,26 @@ namespace CameraCaptureApp.Forms
             Close();
         }
 
+        private void buttonApplyMultipleRate_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var card = GetSelectedCard();
+                var option = comboBoxMultipleRate.SelectedItem as MultipleRateOption;
+                if (option == null)
+                {
+                    throw new InvalidOperationException("Please select a multiple rate first.");
+                }
+
+                _lsi8181Service.SetMultipleRate(card.CardId, option.Value);
+                labelStatus.Text = "Multiple rate set to " + option.Text + ".";
+            }
+            catch (Exception ex)
+            {
+                ShowError("Apply multiple rate failed", ex);
+            }
+        }
+
         private void timerCounterRefresh_Tick(object sender, EventArgs e)
         {
             if (_counterRefreshInProgress || comboBoxCardId.SelectedItem == null || !_lsi8181Service.IsInitialized)
@@ -129,6 +151,44 @@ namespace CameraCaptureApp.Forms
             }
         }
 
+        private void ReadMultipleRateForSelectedCard()
+        {
+            try
+            {
+                var card = GetSelectedCard();
+                var inputMode = _lsi8181Service.ReadCounterInputMode(card.CardId);
+                SelectMultipleRate(inputMode.MultipleRate);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Read multiple rate failed", ex);
+            }
+        }
+
+        private void BindMultipleRateOptions()
+        {
+            comboBoxMultipleRate.Items.Clear();
+            comboBoxMultipleRate.Items.Add(new MultipleRateOption("x4", 0));
+            comboBoxMultipleRate.Items.Add(new MultipleRateOption("x2", 1));
+            comboBoxMultipleRate.Items.Add(new MultipleRateOption("x1", 2));
+            comboBoxMultipleRate.SelectedIndex = 0;
+        }
+
+        private void SelectMultipleRate(byte multipleRate)
+        {
+            for (var index = 0; index < comboBoxMultipleRate.Items.Count; index++)
+            {
+                var option = comboBoxMultipleRate.Items[index] as MultipleRateOption;
+                if (option != null && option.Value == multipleRate)
+                {
+                    comboBoxMultipleRate.SelectedIndex = index;
+                    return;
+                }
+            }
+
+            comboBoxMultipleRate.SelectedIndex = 0;
+        }
+
         private Lsi8181CardInfo GetSelectedCard()
         {
             var card = comboBoxCardId.SelectedItem as Lsi8181CardInfo;
@@ -145,6 +205,24 @@ namespace CameraCaptureApp.Forms
             AppLogger.Log(title, ex);
             labelStatus.Text = title + ": " + ex.Message;
             MessageBox.Show(this, ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private sealed class MultipleRateOption
+        {
+            public MultipleRateOption(string text, byte value)
+            {
+                Text = text;
+                Value = value;
+            }
+
+            public string Text { get; private set; }
+
+            public byte Value { get; private set; }
+
+            public override string ToString()
+            {
+                return Text;
+            }
         }
     }
 }
