@@ -28,5 +28,17 @@ namespace CameraCaptureApp.Services
 
         [DllImport("LSI8181_64.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern int LSI8181_CI_mode_set(byte cardId, byte inputMode, byte debounceTime, byte multipleRate);
+
+        [DllImport("LSI8181_64.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int LSI8181_compare_increment_read(byte cardId, ref int incrementValue);
+
+        [DllImport("LSI8181_64.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int LSI8181_compare_increment_set(byte cardId, int incrementValue);
+
+        [DllImport("LSI8181_64.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int LSI8181_compare_mode_set(byte cardId, byte compareMode);
+
+        [DllImport("LSI8181_64.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int LSI8181_counter_start(byte cardId, byte mode);
     }
 }

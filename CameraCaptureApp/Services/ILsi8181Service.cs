@@ -21,6 +21,10 @@ namespace CameraCaptureApp.Services
 
         void SetMultipleRate(byte cardId, byte multipleRate);
 
+        int ReadAutoIncrement(byte cardId);
+
+        void ApplyAutoIncrementMode(byte cardId, int incrementValue);
+
         void Close();
     }
 }

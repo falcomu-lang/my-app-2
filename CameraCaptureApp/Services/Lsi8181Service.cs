@@ -104,6 +104,40 @@ namespace CameraCaptureApp.Services
             EnsureSuccess("Set LSI-8181 multiple rate");
         }
 
+        public int ReadAutoIncrement(byte cardId)
+        {
+            ThrowIfDisposed();
+            EnsureInitialized();
+
+            var value = 0;
+            SetStatus(
+                SafeCall(() => Lsi8181Native.LSI8181_compare_increment_read(cardId, ref value)),
+                "Auto increment read.");
+            EnsureSuccess("Read LSI-8181 auto increment");
+            return value;
+        }
+
+        public void ApplyAutoIncrementMode(byte cardId, int incrementValue)
+        {
+            ThrowIfDisposed();
+            EnsureInitialized();
+
+            SetStatus(
+                SafeCall(() => Lsi8181Native.LSI8181_compare_increment_set(cardId, incrementValue)),
+                "Auto increment value set.");
+            EnsureSuccess("Set LSI-8181 auto increment value");
+
+            SetStatus(
+                SafeCall(() => Lsi8181Native.LSI8181_compare_mode_set(cardId, 2)),
+                "Compare mode set to auto increment.");
+            EnsureSuccess("Set LSI-8181 compare mode to auto increment");
+
+            SetStatus(
+                SafeCall(() => Lsi8181Native.LSI8181_counter_start(cardId, 2)),
+                "Auto increment compare mode enabled.");
+            EnsureSuccess("Enable LSI-8181 auto increment compare mode");
+        }
+
         public void Close()
         {
             if (_disposed || !IsInitialized)

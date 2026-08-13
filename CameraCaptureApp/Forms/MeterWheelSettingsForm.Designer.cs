@@ -13,9 +13,12 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelCardId;
         private System.Windows.Forms.Label labelCounter;
         private System.Windows.Forms.Label labelMultipleRate;
+        private System.Windows.Forms.Label labelAutoIncrement;
         private System.Windows.Forms.Label labelStatus;
         private System.Windows.Forms.ComboBox comboBoxMultipleRate;
         private System.Windows.Forms.Button buttonApplyMultipleRate;
+        private System.Windows.Forms.NumericUpDown numericAutoIncrement;
+        private System.Windows.Forms.Button buttonApplyAutoIncrement;
         private System.Windows.Forms.Timer timerCounterRefresh;
 
         protected override void Dispose(bool disposing)
@@ -41,10 +44,14 @@ namespace CameraCaptureApp.Forms
             this.labelCardId = new System.Windows.Forms.Label();
             this.labelCounter = new System.Windows.Forms.Label();
             this.labelMultipleRate = new System.Windows.Forms.Label();
+            this.labelAutoIncrement = new System.Windows.Forms.Label();
             this.labelStatus = new System.Windows.Forms.Label();
             this.comboBoxMultipleRate = new System.Windows.Forms.ComboBox();
             this.buttonApplyMultipleRate = new System.Windows.Forms.Button();
+            this.numericAutoIncrement = new System.Windows.Forms.NumericUpDown();
+            this.buttonApplyAutoIncrement = new System.Windows.Forms.Button();
             this.timerCounterRefresh = new System.Windows.Forms.Timer(this.components);
+            ((System.ComponentModel.ISupportInitialize)(this.numericAutoIncrement)).BeginInit();
             this.SuspendLayout();
             // 
             // comboBoxCardId
@@ -144,10 +151,19 @@ namespace CameraCaptureApp.Forms
             this.labelMultipleRate.TabIndex = 9;
             this.labelMultipleRate.Text = "Multiple Rate";
             // 
+            // labelAutoIncrement
+            // 
+            this.labelAutoIncrement.AutoSize = true;
+            this.labelAutoIncrement.Location = new System.Drawing.Point(31, 265);
+            this.labelAutoIncrement.Name = "labelAutoIncrement";
+            this.labelAutoIncrement.Size = new System.Drawing.Size(103, 16);
+            this.labelAutoIncrement.TabIndex = 12;
+            this.labelAutoIncrement.Text = "Auto Increment";
+            // 
             // labelStatus
             // 
             this.labelStatus.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.labelStatus.Location = new System.Drawing.Point(34, 265);
+            this.labelStatus.Location = new System.Drawing.Point(34, 330);
             this.labelStatus.Name = "labelStatus";
             this.labelStatus.Padding = new System.Windows.Forms.Padding(8, 5, 8, 5);
             this.labelStatus.Size = new System.Drawing.Size(368, 72);
@@ -172,6 +188,25 @@ namespace CameraCaptureApp.Forms
             this.buttonApplyMultipleRate.UseVisualStyleBackColor = true;
             this.buttonApplyMultipleRate.Click += new System.EventHandler(this.buttonApplyMultipleRate_Click);
             // 
+            // numericAutoIncrement
+            // 
+            this.numericAutoIncrement.Location = new System.Drawing.Point(34, 287);
+            this.numericAutoIncrement.Maximum = new decimal(new int[] { 2147483647, 0, 0, 0 });
+            this.numericAutoIncrement.Minimum = new decimal(new int[] { -2147483648, 0, 0, -2147483648 });
+            this.numericAutoIncrement.Name = "numericAutoIncrement";
+            this.numericAutoIncrement.Size = new System.Drawing.Size(180, 23);
+            this.numericAutoIncrement.TabIndex = 13;
+            // 
+            // buttonApplyAutoIncrement
+            // 
+            this.buttonApplyAutoIncrement.Location = new System.Drawing.Point(229, 284);
+            this.buttonApplyAutoIncrement.Name = "buttonApplyAutoIncrement";
+            this.buttonApplyAutoIncrement.Size = new System.Drawing.Size(173, 30);
+            this.buttonApplyAutoIncrement.TabIndex = 14;
+            this.buttonApplyAutoIncrement.Text = "Apply Auto Increment";
+            this.buttonApplyAutoIncrement.UseVisualStyleBackColor = true;
+            this.buttonApplyAutoIncrement.Click += new System.EventHandler(this.buttonApplyAutoIncrement_Click);
+            // 
             // timerCounterRefresh
             // 
             this.timerCounterRefresh.Interval = 100;
@@ -181,7 +216,10 @@ namespace CameraCaptureApp.Forms
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(584, 361);
+            this.ClientSize = new System.Drawing.Size(584, 426);
+            this.Controls.Add(this.buttonApplyAutoIncrement);
+            this.Controls.Add(this.numericAutoIncrement);
+            this.Controls.Add(this.labelAutoIncrement);
             this.Controls.Add(this.buttonApplyMultipleRate);
             this.Controls.Add(this.comboBoxMultipleRate);
             this.Controls.Add(this.labelStatus);
@@ -201,6 +239,7 @@ namespace CameraCaptureApp.Forms
             this.Name = "MeterWheelSettingsForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "LSI-8181 Meter Wheel Control";
+            ((System.ComponentModel.ISupportInitialize)(this.numericAutoIncrement)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

@@ -35,6 +35,7 @@ namespace CameraCaptureApp.Forms
                     comboBoxCardId.SelectedIndex = 0;
                     ReadCounterForSelectedCard();
                     ReadMultipleRateForSelectedCard();
+                    ReadAutoIncrementForSelectedCard();
                     timerCounterRefresh.Start();
                 }
                 else
@@ -109,6 +110,21 @@ namespace CameraCaptureApp.Forms
             }
         }
 
+        private void buttonApplyAutoIncrement_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var card = GetSelectedCard();
+                var incrementValue = decimal.ToInt32(numericAutoIncrement.Value);
+                _lsi8181Service.ApplyAutoIncrementMode(card.CardId, incrementValue);
+                labelStatus.Text = "Auto increment compare mode enabled. Increment: " + incrementValue + ".";
+            }
+            catch (Exception ex)
+            {
+                ShowError("Apply auto increment failed", ex);
+            }
+        }
+
         private void timerCounterRefresh_Tick(object sender, EventArgs e)
         {
             if (_counterRefreshInProgress || comboBoxCardId.SelectedItem == null || !_lsi8181Service.IsInitialized)
@@ -163,6 +179,35 @@ namespace CameraCaptureApp.Forms
             {
                 ShowError("Read multiple rate failed", ex);
             }
+        }
+
+        private void ReadAutoIncrementForSelectedCard()
+        {
+            try
+            {
+                var card = GetSelectedCard();
+                var incrementValue = _lsi8181Service.ReadAutoIncrement(card.CardId);
+                numericAutoIncrement.Value = ClampToNumericRange(numericAutoIncrement, incrementValue);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Read auto increment failed", ex);
+            }
+        }
+
+        private static decimal ClampToNumericRange(NumericUpDown control, decimal value)
+        {
+            if (value < control.Minimum)
+            {
+                return control.Minimum;
+            }
+
+            if (value > control.Maximum)
+            {
+                return control.Maximum;
+            }
+
+            return value;
         }
 
         private void BindMultipleRateOptions()
