@@ -59,11 +59,6 @@ namespace CameraCaptureApp.Forms
             }
         }
 
-        private void buttonReadCounter_Click(object sender, EventArgs e)
-        {
-            ReadCounterForSelectedCard();
-        }
-
         private void buttonClearCounter_Click(object sender, EventArgs e)
         {
             try
@@ -79,17 +74,18 @@ namespace CameraCaptureApp.Forms
             }
         }
 
-        private void buttonCloseCard_Click(object sender, EventArgs e)
+        private void buttonClearCompareValue_Click(object sender, EventArgs e)
         {
             try
             {
-                _lsi8181Service.Close();
-                timerCounterRefresh.Stop();
-                labelStatus.Text = _lsi8181Service.LastMessage;
+                var card = GetSelectedCard();
+                _lsi8181Service.ClearCompareValue(card.CardId);
+                textBoxCompareValue.Text = _lsi8181Service.ReadCompareValue(card.CardId).ToString();
+                labelStatus.Text = "Compare value cleared.";
             }
             catch (Exception ex)
             {
-                ShowError("Close card failed", ex);
+                ShowError("Clear compare value failed", ex);
             }
         }
 

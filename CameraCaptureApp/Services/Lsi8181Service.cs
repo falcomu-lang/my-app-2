@@ -69,6 +69,15 @@ namespace CameraCaptureApp.Services
             return value;
         }
 
+        public void ClearCompareValue(byte cardId)
+        {
+            ThrowIfDisposed();
+            EnsureInitialized();
+
+            SetStatus(SafeCall(() => Lsi8181Native.LSI8181_compare_value_set(cardId, 0)), "Compare value cleared.");
+            EnsureSuccess("Clear LSI-8181 compare value");
+        }
+
         public void ClearCounter(byte cardId)
         {
             ThrowIfDisposed();

@@ -7,9 +7,8 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.TextBox textBoxCounter;
         private System.Windows.Forms.TextBox textBoxCompareValue;
         private System.Windows.Forms.Button buttonOpenScan;
-        private System.Windows.Forms.Button buttonReadCounter;
         private System.Windows.Forms.Button buttonClearCounter;
-        private System.Windows.Forms.Button buttonCloseCard;
+        private System.Windows.Forms.Button buttonClearCompareValue;
         private System.Windows.Forms.Button buttonClose;
         private System.Windows.Forms.Label labelCardId;
         private System.Windows.Forms.Label labelCounter;
@@ -40,9 +39,8 @@ namespace CameraCaptureApp.Forms
             this.textBoxCounter = new System.Windows.Forms.TextBox();
             this.textBoxCompareValue = new System.Windows.Forms.TextBox();
             this.buttonOpenScan = new System.Windows.Forms.Button();
-            this.buttonReadCounter = new System.Windows.Forms.Button();
             this.buttonClearCounter = new System.Windows.Forms.Button();
-            this.buttonCloseCard = new System.Windows.Forms.Button();
+            this.buttonClearCompareValue = new System.Windows.Forms.Button();
             this.buttonClose = new System.Windows.Forms.Button();
             this.labelCardId = new System.Windows.Forms.Label();
             this.labelCounter = new System.Windows.Forms.Label();
@@ -99,19 +97,9 @@ namespace CameraCaptureApp.Forms
             this.buttonOpenScan.UseVisualStyleBackColor = true;
             this.buttonOpenScan.Click += new System.EventHandler(this.buttonOpenScan_Click);
             // 
-            // buttonReadCounter
-            // 
-            this.buttonReadCounter.Location = new System.Drawing.Point(421, 142);
-            this.buttonReadCounter.Name = "buttonReadCounter";
-            this.buttonReadCounter.Size = new System.Drawing.Size(128, 30);
-            this.buttonReadCounter.TabIndex = 4;
-            this.buttonReadCounter.Text = "Read Counter";
-            this.buttonReadCounter.UseVisualStyleBackColor = true;
-            this.buttonReadCounter.Click += new System.EventHandler(this.buttonReadCounter_Click);
-            // 
             // buttonClearCounter
             // 
-            this.buttonClearCounter.Location = new System.Drawing.Point(421, 178);
+            this.buttonClearCounter.Location = new System.Drawing.Point(421, 142);
             this.buttonClearCounter.Name = "buttonClearCounter";
             this.buttonClearCounter.Size = new System.Drawing.Size(128, 30);
             this.buttonClearCounter.TabIndex = 5;
@@ -119,15 +107,15 @@ namespace CameraCaptureApp.Forms
             this.buttonClearCounter.UseVisualStyleBackColor = true;
             this.buttonClearCounter.Click += new System.EventHandler(this.buttonClearCounter_Click);
             // 
-            // buttonCloseCard
+            // buttonClearCompareValue
             // 
-            this.buttonCloseCard.Location = new System.Drawing.Point(421, 214);
-            this.buttonCloseCard.Name = "buttonCloseCard";
-            this.buttonCloseCard.Size = new System.Drawing.Size(128, 30);
-            this.buttonCloseCard.TabIndex = 6;
-            this.buttonCloseCard.Text = "Close Card";
-            this.buttonCloseCard.UseVisualStyleBackColor = true;
-            this.buttonCloseCard.Click += new System.EventHandler(this.buttonCloseCard_Click);
+            this.buttonClearCompareValue.Location = new System.Drawing.Point(421, 216);
+            this.buttonClearCompareValue.Name = "buttonClearCompareValue";
+            this.buttonClearCompareValue.Size = new System.Drawing.Size(128, 30);
+            this.buttonClearCompareValue.TabIndex = 6;
+            this.buttonClearCompareValue.Text = "Clear Compare";
+            this.buttonClearCompareValue.UseVisualStyleBackColor = true;
+            this.buttonClearCompareValue.Click += new System.EventHandler(this.buttonClearCompareValue_Click);
             // 
             // buttonClose
             // 
@@ -253,9 +241,8 @@ namespace CameraCaptureApp.Forms
             this.Controls.Add(this.labelCounter);
             this.Controls.Add(this.labelCardId);
             this.Controls.Add(this.buttonClose);
-            this.Controls.Add(this.buttonCloseCard);
+            this.Controls.Add(this.buttonClearCompareValue);
             this.Controls.Add(this.buttonClearCounter);
-            this.Controls.Add(this.buttonReadCounter);
             this.Controls.Add(this.buttonOpenScan);
             this.Controls.Add(this.textBoxCounter);
             this.Controls.Add(this.comboBoxCardId);
