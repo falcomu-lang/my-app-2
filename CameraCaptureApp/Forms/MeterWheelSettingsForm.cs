@@ -9,6 +9,7 @@ namespace CameraCaptureApp.Forms
     {
         private readonly ILsi8181Service _lsi8181Service;
         private IReadOnlyList<Lsi8181CardInfo> _cards;
+        private bool _counterRefreshInProgress;
 
         public MeterWheelSettingsForm(ILsi8181Service lsi8181Service)
         {
@@ -32,6 +33,11 @@ namespace CameraCaptureApp.Forms
                 {
                     comboBoxCardId.SelectedIndex = 0;
                     ReadCounterForSelectedCard();
+                    timerCounterRefresh.Start();
+                }
+                else
+                {
+                    timerCounterRefresh.Stop();
                 }
 
                 labelStatus.Text = _lsi8181Service.LastMessage;
@@ -67,6 +73,7 @@ namespace CameraCaptureApp.Forms
             try
             {
                 _lsi8181Service.Close();
+                timerCounterRefresh.Stop();
                 labelStatus.Text = _lsi8181Service.LastMessage;
             }
             catch (Exception ex)
@@ -78,6 +85,34 @@ namespace CameraCaptureApp.Forms
         private void buttonClose_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void timerCounterRefresh_Tick(object sender, EventArgs e)
+        {
+            if (_counterRefreshInProgress || comboBoxCardId.SelectedItem == null || !_lsi8181Service.IsInitialized)
+            {
+                return;
+            }
+
+            _counterRefreshInProgress = true;
+            try
+            {
+                var card = GetSelectedCard();
+                var counter = _lsi8181Service.ReadCounter(card.CardId).ToString();
+                if (!string.Equals(textBoxCounter.Text, counter, StringComparison.Ordinal))
+                {
+                    textBoxCounter.Text = counter;
+                }
+            }
+            catch (Exception ex)
+            {
+                timerCounterRefresh.Stop();
+                ShowError("Auto counter refresh failed", ex);
+            }
+            finally
+            {
+                _counterRefreshInProgress = false;
+            }
         }
 
         private void ReadCounterForSelectedCard()

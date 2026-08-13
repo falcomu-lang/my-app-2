@@ -13,6 +13,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelCardId;
         private System.Windows.Forms.Label labelCounter;
         private System.Windows.Forms.Label labelStatus;
+        private System.Windows.Forms.Timer timerCounterRefresh;
 
         protected override void Dispose(bool disposing)
         {
@@ -26,6 +27,7 @@ namespace CameraCaptureApp.Forms
 
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.comboBoxCardId = new System.Windows.Forms.ComboBox();
             this.textBoxCounter = new System.Windows.Forms.TextBox();
             this.buttonOpenScan = new System.Windows.Forms.Button();
@@ -36,6 +38,7 @@ namespace CameraCaptureApp.Forms
             this.labelCardId = new System.Windows.Forms.Label();
             this.labelCounter = new System.Windows.Forms.Label();
             this.labelStatus = new System.Windows.Forms.Label();
+            this.timerCounterRefresh = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // comboBoxCardId
@@ -134,6 +137,11 @@ namespace CameraCaptureApp.Forms
             this.labelStatus.Padding = new System.Windows.Forms.Padding(8, 5, 8, 5);
             this.labelStatus.Size = new System.Drawing.Size(368, 72);
             this.labelStatus.TabIndex = 7;
+            // 
+            // timerCounterRefresh
+            // 
+            this.timerCounterRefresh.Interval = 100;
+            this.timerCounterRefresh.Tick += new System.EventHandler(this.timerCounterRefresh_Tick);
             // 
             // MeterWheelSettingsForm
             // 
