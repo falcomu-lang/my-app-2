@@ -111,7 +111,7 @@ namespace CameraCaptureApp.Forms
             MeterWheelSettingsForm form = null;
             try
             {
-                form = new MeterWheelSettingsForm(_lsi8181Service);
+                form = new MeterWheelSettingsForm(_lsi8181Service, _settingsService);
                 form.ShowDialog(this);
             }
             catch (Exception ex)

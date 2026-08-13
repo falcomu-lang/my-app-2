@@ -5,6 +5,7 @@ namespace CameraCaptureApp.Forms
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.ComboBox comboBoxCardId;
         private System.Windows.Forms.TextBox textBoxCounter;
+        private System.Windows.Forms.TextBox textBoxCompareValue;
         private System.Windows.Forms.Button buttonOpenScan;
         private System.Windows.Forms.Button buttonReadCounter;
         private System.Windows.Forms.Button buttonClearCounter;
@@ -12,6 +13,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Button buttonClose;
         private System.Windows.Forms.Label labelCardId;
         private System.Windows.Forms.Label labelCounter;
+        private System.Windows.Forms.Label labelCompareValue;
         private System.Windows.Forms.Label labelMultipleRate;
         private System.Windows.Forms.Label labelAutoIncrement;
         private System.Windows.Forms.Label labelStatus;
@@ -36,6 +38,7 @@ namespace CameraCaptureApp.Forms
             this.components = new System.ComponentModel.Container();
             this.comboBoxCardId = new System.Windows.Forms.ComboBox();
             this.textBoxCounter = new System.Windows.Forms.TextBox();
+            this.textBoxCompareValue = new System.Windows.Forms.TextBox();
             this.buttonOpenScan = new System.Windows.Forms.Button();
             this.buttonReadCounter = new System.Windows.Forms.Button();
             this.buttonClearCounter = new System.Windows.Forms.Button();
@@ -43,6 +46,7 @@ namespace CameraCaptureApp.Forms
             this.buttonClose = new System.Windows.Forms.Button();
             this.labelCardId = new System.Windows.Forms.Label();
             this.labelCounter = new System.Windows.Forms.Label();
+            this.labelCompareValue = new System.Windows.Forms.Label();
             this.labelMultipleRate = new System.Windows.Forms.Label();
             this.labelAutoIncrement = new System.Windows.Forms.Label();
             this.labelStatus = new System.Windows.Forms.Label();
@@ -73,6 +77,17 @@ namespace CameraCaptureApp.Forms
             this.textBoxCounter.TabIndex = 3;
             this.textBoxCounter.Text = "0";
             this.textBoxCounter.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // textBoxCompareValue
+            // 
+            this.textBoxCompareValue.Font = new System.Drawing.Font("Microsoft JhengHei UI", 16F, System.Drawing.FontStyle.Bold);
+            this.textBoxCompareValue.Location = new System.Drawing.Point(34, 216);
+            this.textBoxCompareValue.Name = "textBoxCompareValue";
+            this.textBoxCompareValue.ReadOnly = true;
+            this.textBoxCompareValue.Size = new System.Drawing.Size(368, 41);
+            this.textBoxCompareValue.TabIndex = 12;
+            this.textBoxCompareValue.Text = "0";
+            this.textBoxCompareValue.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // buttonOpenScan
             // 
@@ -116,7 +131,7 @@ namespace CameraCaptureApp.Forms
             // 
             // buttonClose
             // 
-            this.buttonClose.Location = new System.Drawing.Point(421, 303);
+            this.buttonClose.Location = new System.Drawing.Point(421, 444);
             this.buttonClose.Name = "buttonClose";
             this.buttonClose.Size = new System.Drawing.Size(128, 34);
             this.buttonClose.TabIndex = 8;
@@ -142,10 +157,19 @@ namespace CameraCaptureApp.Forms
             this.labelCounter.TabIndex = 2;
             this.labelCounter.Text = "Counter";
             // 
+            // labelCompareValue
+            // 
+            this.labelCompareValue.AutoSize = true;
+            this.labelCompareValue.Location = new System.Drawing.Point(31, 191);
+            this.labelCompareValue.Name = "labelCompareValue";
+            this.labelCompareValue.Size = new System.Drawing.Size(99, 16);
+            this.labelCompareValue.TabIndex = 11;
+            this.labelCompareValue.Text = "Compare Value";
+            // 
             // labelMultipleRate
             // 
             this.labelMultipleRate.AutoSize = true;
-            this.labelMultipleRate.Location = new System.Drawing.Point(31, 200);
+            this.labelMultipleRate.Location = new System.Drawing.Point(31, 276);
             this.labelMultipleRate.Name = "labelMultipleRate";
             this.labelMultipleRate.Size = new System.Drawing.Size(86, 16);
             this.labelMultipleRate.TabIndex = 9;
@@ -154,7 +178,7 @@ namespace CameraCaptureApp.Forms
             // labelAutoIncrement
             // 
             this.labelAutoIncrement.AutoSize = true;
-            this.labelAutoIncrement.Location = new System.Drawing.Point(31, 265);
+            this.labelAutoIncrement.Location = new System.Drawing.Point(31, 341);
             this.labelAutoIncrement.Name = "labelAutoIncrement";
             this.labelAutoIncrement.Size = new System.Drawing.Size(103, 16);
             this.labelAutoIncrement.TabIndex = 12;
@@ -163,7 +187,7 @@ namespace CameraCaptureApp.Forms
             // labelStatus
             // 
             this.labelStatus.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.labelStatus.Location = new System.Drawing.Point(34, 330);
+            this.labelStatus.Location = new System.Drawing.Point(34, 406);
             this.labelStatus.Name = "labelStatus";
             this.labelStatus.Padding = new System.Windows.Forms.Padding(8, 5, 8, 5);
             this.labelStatus.Size = new System.Drawing.Size(368, 72);
@@ -173,14 +197,14 @@ namespace CameraCaptureApp.Forms
             // 
             this.comboBoxMultipleRate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxMultipleRate.FormattingEnabled = true;
-            this.comboBoxMultipleRate.Location = new System.Drawing.Point(34, 222);
+            this.comboBoxMultipleRate.Location = new System.Drawing.Point(34, 298);
             this.comboBoxMultipleRate.Name = "comboBoxMultipleRate";
             this.comboBoxMultipleRate.Size = new System.Drawing.Size(180, 24);
             this.comboBoxMultipleRate.TabIndex = 10;
             // 
             // buttonApplyMultipleRate
             // 
-            this.buttonApplyMultipleRate.Location = new System.Drawing.Point(229, 220);
+            this.buttonApplyMultipleRate.Location = new System.Drawing.Point(229, 296);
             this.buttonApplyMultipleRate.Name = "buttonApplyMultipleRate";
             this.buttonApplyMultipleRate.Size = new System.Drawing.Size(173, 30);
             this.buttonApplyMultipleRate.TabIndex = 11;
@@ -190,7 +214,7 @@ namespace CameraCaptureApp.Forms
             // 
             // numericAutoIncrement
             // 
-            this.numericAutoIncrement.Location = new System.Drawing.Point(34, 287);
+            this.numericAutoIncrement.Location = new System.Drawing.Point(34, 363);
             this.numericAutoIncrement.Maximum = new decimal(new int[] { 2147483647, 0, 0, 0 });
             this.numericAutoIncrement.Minimum = new decimal(new int[] { -2147483648, 0, 0, -2147483648 });
             this.numericAutoIncrement.Name = "numericAutoIncrement";
@@ -199,7 +223,7 @@ namespace CameraCaptureApp.Forms
             // 
             // buttonApplyAutoIncrement
             // 
-            this.buttonApplyAutoIncrement.Location = new System.Drawing.Point(229, 284);
+            this.buttonApplyAutoIncrement.Location = new System.Drawing.Point(229, 360);
             this.buttonApplyAutoIncrement.Name = "buttonApplyAutoIncrement";
             this.buttonApplyAutoIncrement.Size = new System.Drawing.Size(173, 30);
             this.buttonApplyAutoIncrement.TabIndex = 14;
@@ -216,7 +240,7 @@ namespace CameraCaptureApp.Forms
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(584, 426);
+            this.ClientSize = new System.Drawing.Size(584, 502);
             this.Controls.Add(this.buttonApplyAutoIncrement);
             this.Controls.Add(this.numericAutoIncrement);
             this.Controls.Add(this.labelAutoIncrement);
@@ -224,6 +248,8 @@ namespace CameraCaptureApp.Forms
             this.Controls.Add(this.comboBoxMultipleRate);
             this.Controls.Add(this.labelStatus);
             this.Controls.Add(this.labelMultipleRate);
+            this.Controls.Add(this.textBoxCompareValue);
+            this.Controls.Add(this.labelCompareValue);
             this.Controls.Add(this.labelCounter);
             this.Controls.Add(this.labelCardId);
             this.Controls.Add(this.buttonClose);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using CameraCaptureApp.Models;
 using CameraCaptureApp.Services;
 
 namespace CameraCaptureApp.Forms
@@ -8,14 +9,20 @@ namespace CameraCaptureApp.Forms
     public partial class MeterWheelSettingsForm : Form
     {
         private readonly ILsi8181Service _lsi8181Service;
+        private readonly ISettingsService _settingsService;
+        private CameraSettings _settings;
         private IReadOnlyList<Lsi8181CardInfo> _cards;
         private bool _counterRefreshInProgress;
 
-        public MeterWheelSettingsForm(ILsi8181Service lsi8181Service)
+        public MeterWheelSettingsForm(ILsi8181Service lsi8181Service, ISettingsService settingsService)
         {
             _lsi8181Service = lsi8181Service;
+            _settingsService = settingsService;
+            _settings = _settingsService.Load() ?? CameraSettings.CreateDefault();
             InitializeComponent();
             BindMultipleRateOptions();
+            SelectMultipleRate((byte)Clamp(_settings.Lsi8181MultipleRate, 0, 2));
+            numericAutoIncrement.Value = ClampToNumericRange(numericAutoIncrement, _settings.Lsi8181AutoIncrement);
             labelStatus.Text = "Click Open / Scan to find LSI-8181 cards.";
         }
 
@@ -32,8 +39,9 @@ namespace CameraCaptureApp.Forms
 
                 if (comboBoxCardId.Items.Count > 0)
                 {
-                    comboBoxCardId.SelectedIndex = 0;
+                    comboBoxCardId.SelectedIndex = FindCardIndex(_settings.Lsi8181CardId);
                     ReadCounterForSelectedCard();
+                    ReadCompareValueForSelectedCard();
                     ReadMultipleRateForSelectedCard();
                     ReadAutoIncrementForSelectedCard();
                     timerCounterRefresh.Start();
@@ -102,6 +110,7 @@ namespace CameraCaptureApp.Forms
                 }
 
                 _lsi8181Service.SetMultipleRate(card.CardId, option.Value);
+                SaveMeterWheelSettings(card.CardId, option.Value, decimal.ToInt32(numericAutoIncrement.Value));
                 labelStatus.Text = "Multiple rate set to " + option.Text + ".";
             }
             catch (Exception ex)
@@ -117,6 +126,8 @@ namespace CameraCaptureApp.Forms
                 var card = GetSelectedCard();
                 var incrementValue = decimal.ToInt32(numericAutoIncrement.Value);
                 _lsi8181Service.ApplyAutoIncrementMode(card.CardId, incrementValue);
+                var option = comboBoxMultipleRate.SelectedItem as MultipleRateOption;
+                SaveMeterWheelSettings(card.CardId, option != null ? option.Value : _settings.Lsi8181MultipleRate, incrementValue);
                 labelStatus.Text = "Auto increment compare mode enabled. Increment: " + incrementValue + ".";
             }
             catch (Exception ex)
@@ -141,6 +152,12 @@ namespace CameraCaptureApp.Forms
                 {
                     textBoxCounter.Text = counter;
                 }
+
+                var compareValue = _lsi8181Service.ReadCompareValue(card.CardId).ToString();
+                if (!string.Equals(textBoxCompareValue.Text, compareValue, StringComparison.Ordinal))
+                {
+                    textBoxCompareValue.Text = compareValue;
+                }
             }
             catch (Exception ex)
             {
@@ -164,6 +181,19 @@ namespace CameraCaptureApp.Forms
             catch (Exception ex)
             {
                 ShowError("Read counter failed", ex);
+            }
+        }
+
+        private void ReadCompareValueForSelectedCard()
+        {
+            try
+            {
+                var card = GetSelectedCard();
+                textBoxCompareValue.Text = _lsi8181Service.ReadCompareValue(card.CardId).ToString();
+            }
+            catch (Exception ex)
+            {
+                ShowError("Read compare value failed", ex);
             }
         }
 
@@ -205,6 +235,43 @@ namespace CameraCaptureApp.Forms
             if (value > control.Maximum)
             {
                 return control.Maximum;
+            }
+
+            return value;
+        }
+
+        private int FindCardIndex(int savedCardId)
+        {
+            for (var index = 0; index < comboBoxCardId.Items.Count; index++)
+            {
+                var card = comboBoxCardId.Items[index] as Lsi8181CardInfo;
+                if (card != null && card.CardId == savedCardId)
+                {
+                    return index;
+                }
+            }
+
+            return 0;
+        }
+
+        private void SaveMeterWheelSettings(byte cardId, int multipleRate, int autoIncrement)
+        {
+            _settings.Lsi8181CardId = cardId;
+            _settings.Lsi8181MultipleRate = multipleRate;
+            _settings.Lsi8181AutoIncrement = autoIncrement;
+            _settingsService.Save(_settings);
+        }
+
+        private static int Clamp(int value, int minimum, int maximum)
+        {
+            if (value < minimum)
+            {
+                return minimum;
+            }
+
+            if (value > maximum)
+            {
+                return maximum;
             }
 
             return value;

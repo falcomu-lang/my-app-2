@@ -58,6 +58,17 @@ namespace CameraCaptureApp.Services
             return value;
         }
 
+        public int ReadCompareValue(byte cardId)
+        {
+            ThrowIfDisposed();
+            EnsureInitialized();
+
+            var value = 0;
+            SetStatus(SafeCall(() => Lsi8181Native.LSI8181_compare_value_read(cardId, ref value)), "Compare value read.");
+            EnsureSuccess("Read LSI-8181 compare value");
+            return value;
+        }
+
         public void ClearCounter(byte cardId)
         {
             ThrowIfDisposed();

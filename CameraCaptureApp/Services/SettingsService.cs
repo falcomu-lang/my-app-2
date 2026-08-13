@@ -53,6 +53,9 @@ namespace CameraCaptureApp.Services
             settings.SaveFolder = GetString(values, "SaveFolder", settings.SaveFolder);
             settings.FileNamePattern = GetString(values, "FileNamePattern", settings.FileNamePattern);
             settings.ImageSaveFormat = GetEnum(values, "ImageSaveFormat", settings.ImageSaveFormat);
+            settings.Lsi8181CardId = GetInt(values, "Lsi8181CardId", settings.Lsi8181CardId);
+            settings.Lsi8181MultipleRate = GetInt(values, "Lsi8181MultipleRate", settings.Lsi8181MultipleRate);
+            settings.Lsi8181AutoIncrement = GetInt(values, "Lsi8181AutoIncrement", settings.Lsi8181AutoIncrement);
 
             return settings;
         }
@@ -87,7 +90,12 @@ namespace CameraCaptureApp.Services
                 "AutoSave=" + settings.AutoSave.ToString(),
                 "SaveFolder=" + settings.SaveFolder,
                 "FileNamePattern=" + settings.FileNamePattern,
-                "ImageSaveFormat=" + settings.ImageSaveFormat.ToString()
+                "ImageSaveFormat=" + settings.ImageSaveFormat.ToString(),
+                "",
+                "[LSI8181]",
+                "Lsi8181CardId=" + settings.Lsi8181CardId.ToString(CultureInfo.InvariantCulture),
+                "Lsi8181MultipleRate=" + settings.Lsi8181MultipleRate.ToString(CultureInfo.InvariantCulture),
+                "Lsi8181AutoIncrement=" + settings.Lsi8181AutoIncrement.ToString(CultureInfo.InvariantCulture)
             };
 
             File.WriteAllLines(_settingsFilePath, lines, Encoding.UTF8);
