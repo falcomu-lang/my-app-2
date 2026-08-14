@@ -58,6 +58,8 @@ namespace CameraCaptureApp.Models
 
         public int Lsi8181AutoIncrement { get; set; }
 
+        public int Lsi8181CmpOutWidth { get; set; }
+
         public static CameraSettings CreateDefault()
         {
             return new CameraSettings
@@ -89,7 +91,8 @@ namespace CameraCaptureApp.Models
                 ImageSaveFormat = ImageSaveFormat.Png,
                 Lsi8181CardId = 0,
                 Lsi8181MultipleRate = 0,
-                Lsi8181AutoIncrement = 0
+                Lsi8181AutoIncrement = 0,
+                Lsi8181CmpOutWidth = 0
             };
         }
 

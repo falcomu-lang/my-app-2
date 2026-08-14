@@ -56,6 +56,7 @@ namespace CameraCaptureApp.Services
             settings.Lsi8181CardId = GetInt(values, "Lsi8181CardId", settings.Lsi8181CardId);
             settings.Lsi8181MultipleRate = GetInt(values, "Lsi8181MultipleRate", settings.Lsi8181MultipleRate);
             settings.Lsi8181AutoIncrement = GetInt(values, "Lsi8181AutoIncrement", settings.Lsi8181AutoIncrement);
+            settings.Lsi8181CmpOutWidth = GetInt(values, "Lsi8181CmpOutWidth", settings.Lsi8181CmpOutWidth);
 
             return settings;
         }
@@ -95,7 +96,8 @@ namespace CameraCaptureApp.Services
                 "[LSI8181]",
                 "Lsi8181CardId=" + settings.Lsi8181CardId.ToString(CultureInfo.InvariantCulture),
                 "Lsi8181MultipleRate=" + settings.Lsi8181MultipleRate.ToString(CultureInfo.InvariantCulture),
-                "Lsi8181AutoIncrement=" + settings.Lsi8181AutoIncrement.ToString(CultureInfo.InvariantCulture)
+                "Lsi8181AutoIncrement=" + settings.Lsi8181AutoIncrement.ToString(CultureInfo.InvariantCulture),
+                "Lsi8181CmpOutWidth=" + settings.Lsi8181CmpOutWidth.ToString(CultureInfo.InvariantCulture)
             };
 
             File.WriteAllLines(_settingsFilePath, lines, Encoding.UTF8);

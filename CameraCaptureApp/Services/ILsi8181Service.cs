@@ -27,7 +27,7 @@ namespace CameraCaptureApp.Services
 
         int ReadAutoIncrement(byte cardId);
 
-        void ApplyAutoIncrementMode(byte cardId, int incrementValue);
+        void ApplyAutoIncrementMode(byte cardId, int incrementValue, ushort cmpOutWidth);
 
         void Close();
     }

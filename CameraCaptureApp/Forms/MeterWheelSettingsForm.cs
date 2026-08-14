@@ -23,6 +23,7 @@ namespace CameraCaptureApp.Forms
             BindMultipleRateOptions();
             SelectMultipleRate((byte)Clamp(_settings.Lsi8181MultipleRate, 0, 2));
             numericAutoIncrement.Value = ClampToNumericRange(numericAutoIncrement, _settings.Lsi8181AutoIncrement);
+            numericCmpOutWidth.Value = ClampToNumericRange(numericCmpOutWidth, _settings.Lsi8181CmpOutWidth);
             labelStatus.Text = "Click Open / Scan to find LSI-8181 cards.";
         }
 
@@ -106,7 +107,11 @@ namespace CameraCaptureApp.Forms
                 }
 
                 _lsi8181Service.SetMultipleRate(card.CardId, option.Value);
-                SaveMeterWheelSettings(card.CardId, option.Value, decimal.ToInt32(numericAutoIncrement.Value));
+                SaveMeterWheelSettings(
+                    card.CardId,
+                    option.Value,
+                    decimal.ToInt32(numericAutoIncrement.Value),
+                    decimal.ToInt32(numericCmpOutWidth.Value));
                 labelStatus.Text = "Multiple rate set to " + option.Text + ".";
             }
             catch (Exception ex)
@@ -121,10 +126,15 @@ namespace CameraCaptureApp.Forms
             {
                 var card = GetSelectedCard();
                 var incrementValue = decimal.ToInt32(numericAutoIncrement.Value);
-                _lsi8181Service.ApplyAutoIncrementMode(card.CardId, incrementValue);
+                var cmpOutWidth = decimal.ToUInt16(numericCmpOutWidth.Value);
+                _lsi8181Service.ApplyAutoIncrementMode(card.CardId, incrementValue, cmpOutWidth);
                 var option = comboBoxMultipleRate.SelectedItem as MultipleRateOption;
-                SaveMeterWheelSettings(card.CardId, option != null ? option.Value : _settings.Lsi8181MultipleRate, incrementValue);
-                labelStatus.Text = "Auto increment compare mode enabled. Increment: " + incrementValue + ".";
+                SaveMeterWheelSettings(
+                    card.CardId,
+                    option != null ? option.Value : _settings.Lsi8181MultipleRate,
+                    incrementValue,
+                    cmpOutWidth);
+                labelStatus.Text = "Auto increment compare mode enabled. Increment: " + incrementValue + ", CMP OUT width: " + cmpOutWidth + ".";
             }
             catch (Exception ex)
             {
@@ -250,11 +260,12 @@ namespace CameraCaptureApp.Forms
             return 0;
         }
 
-        private void SaveMeterWheelSettings(byte cardId, int multipleRate, int autoIncrement)
+        private void SaveMeterWheelSettings(byte cardId, int multipleRate, int autoIncrement, int cmpOutWidth)
         {
             _settings.Lsi8181CardId = cardId;
             _settings.Lsi8181MultipleRate = multipleRate;
             _settings.Lsi8181AutoIncrement = autoIncrement;
+            _settings.Lsi8181CmpOutWidth = cmpOutWidth;
             _settingsService.Save(_settings);
         }
 

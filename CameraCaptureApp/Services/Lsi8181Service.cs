@@ -137,7 +137,7 @@ namespace CameraCaptureApp.Services
             return value;
         }
 
-        public void ApplyAutoIncrementMode(byte cardId, int incrementValue)
+        public void ApplyAutoIncrementMode(byte cardId, int incrementValue, ushort cmpOutWidth)
         {
             ThrowIfDisposed();
             EnsureInitialized();
@@ -146,6 +146,11 @@ namespace CameraCaptureApp.Services
                 SafeCall(() => Lsi8181Native.LSI8181_compare_increment_set(cardId, incrementValue)),
                 "Auto increment value set.");
             EnsureSuccess("Set LSI-8181 auto increment value");
+
+            SetStatus(
+                SafeCall(() => Lsi8181Native.LSI8181_compare_CMP_OUT_set(cardId, 0, 1, cmpOutWidth)),
+                "CMP OUT pulse output enabled.");
+            EnsureSuccess("Enable LSI-8181 CMP OUT pulse output");
 
             SetStatus(
                 SafeCall(() => Lsi8181Native.LSI8181_compare_mode_set(cardId, 2)),
