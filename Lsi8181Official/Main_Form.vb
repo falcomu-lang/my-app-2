@@ -92,11 +92,23 @@ Public Class Main_Form
     End Sub
 
     Private Sub SaveSettings_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles SaveSettings_Button.Click
-        SaveOfficialSettings()
-        MsgBox("LSI8181 settings saved.")
+        Try
+            SaveOfficialSettings()
+            ApplyOfficialSettingsToCard()
+
+            If System.IO.File.Exists(OfficialSettingsStore.FilePath) Then
+                Dim fileInfo As New System.IO.FileInfo(OfficialSettingsStore.FilePath)
+                MsgBox("LSI8181 settings saved and applied." & vbCrLf & OfficialSettingsStore.FilePath & vbCrLf & "Size: " & fileInfo.Length.ToString() & " bytes")
+            Else
+                MsgBox("LSI8181 settings save failed. File was not created:" & vbCrLf & OfficialSettingsStore.FilePath)
+            End If
+        Catch ex As Exception
+            MsgBox("LSI8181 settings save failed: " & ex.Message & vbCrLf & OfficialSettingsStore.FilePath)
+        End Try
     End Sub
 
     Private Sub SaveOfficialSettings()
+        OfficialSettingsStore.SetValue("Compare.CompareOutChecked", Compare_Form.CompareOut_CheckBox.Checked.ToString())
         OfficialSettingsStore.Save(Me)
         OfficialSettingsStore.Save(Compare_Form)
         OfficialSettingsStore.Save(IO_Form)

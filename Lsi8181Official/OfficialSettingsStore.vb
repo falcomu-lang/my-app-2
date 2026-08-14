@@ -15,6 +15,12 @@ Friend NotInheritable Class OfficialSettingsStore
         End Get
     End Property
 
+    Public Shared ReadOnly Property FilePath As String
+        Get
+            Return SettingsPath
+        End Get
+    End Property
+
     Private Sub New()
     End Sub
 
@@ -264,6 +270,11 @@ Friend NotInheritable Class OfficialSettingsStore
         For Each key As String In keys
             lines.Add(key & "=" & Values(key))
         Next
+
+        Dim directory = Path.GetDirectoryName(SettingsPath)
+        If Not String.IsNullOrEmpty(directory) Then
+            Directory.CreateDirectory(directory)
+        End If
 
         File.WriteAllLines(SettingsPath, lines.ToArray(), Encoding.UTF8)
     End Sub
