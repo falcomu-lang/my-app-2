@@ -67,6 +67,11 @@ namespace CameraCaptureApp.Forms
             SetCompareValue((int)numericCompare.Value);
         }
 
+        private void buttonApplyIncrement_Click(object sender, EventArgs e)
+        {
+            SetCompareIncrement((int)numericIncrement.Value);
+        }
+
         private void timerRefresh_Tick(object sender, EventArgs e)
         {
             RefreshValues();
@@ -128,6 +133,19 @@ namespace CameraCaptureApp.Forms
             buttonSetEncoder.Enabled = isConnected;
             buttonClearCompare.Enabled = isConnected;
             buttonSetCompare.Enabled = isConnected;
+            buttonApplyIncrement.Enabled = isConnected;
+        }
+
+        private void SetCompareIncrement(int value)
+        {
+            try
+            {
+                _meterWheelService.SetCompareIncrement(value);
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex);
+            }
         }
 
         private void ShowError(Exception ex)

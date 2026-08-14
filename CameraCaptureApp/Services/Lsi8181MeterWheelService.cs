@@ -38,6 +38,9 @@ namespace CameraCaptureApp.Services
                 Lsi8181Native.Multiple4);
             EnsureSuccess(status, "Set encoder input mode");
 
+            status = Lsi8181Native.LSI8181_compare_mode_set(cardId, Lsi8181Native.CompareAutoIncrement);
+            EnsureSuccess(status, "Set compare mode to auto increment");
+
             status = Lsi8181Native.LSI8181_counter_start(cardId, Lsi8181Native.CounterRun);
             EnsureSuccess(status, "Start encoder counter");
         }
@@ -72,6 +75,13 @@ namespace CameraCaptureApp.Services
             EnsureOpen();
             var status = Lsi8181Native.LSI8181_compare_value_set(_cardId, value);
             EnsureSuccess(status, "Set compare value");
+        }
+
+        public void SetCompareIncrement(int value)
+        {
+            EnsureOpen();
+            var status = Lsi8181Native.LSI8181_compare_increment_set(_cardId, value);
+            EnsureSuccess(status, "Set compare auto increment value");
         }
 
         public void Close()

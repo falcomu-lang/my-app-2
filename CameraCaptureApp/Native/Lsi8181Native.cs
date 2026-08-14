@@ -10,6 +10,7 @@ namespace CameraCaptureApp.Native
         public const byte QuadratureMode = 0;
         public const byte DebounceTime1Us = 1;
         public const byte Multiple4 = 0;
+        public const byte CompareAutoIncrement = 2;
         public const byte CounterRun = 1;
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
@@ -35,6 +36,12 @@ namespace CameraCaptureApp.Native
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_compare_value_read(byte CardID, ref int compare_value);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_increment_set(byte CardID, int increment_value);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_mode_set(byte CardID, byte compare_mode);
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_counter_start(byte CardID, byte mode);

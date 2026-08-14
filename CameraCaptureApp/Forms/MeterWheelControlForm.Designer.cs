@@ -17,6 +17,9 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Button buttonClearCompare;
         private System.Windows.Forms.NumericUpDown numericCompare;
         private System.Windows.Forms.Button buttonSetCompare;
+        private System.Windows.Forms.Label labelIncrementTitle;
+        private System.Windows.Forms.NumericUpDown numericIncrement;
+        private System.Windows.Forms.Button buttonApplyIncrement;
         private System.Windows.Forms.Timer timerRefresh;
 
         protected override void Dispose(bool disposing)
@@ -46,9 +49,13 @@ namespace CameraCaptureApp.Forms
             this.buttonClearCompare = new System.Windows.Forms.Button();
             this.numericCompare = new System.Windows.Forms.NumericUpDown();
             this.buttonSetCompare = new System.Windows.Forms.Button();
+            this.labelIncrementTitle = new System.Windows.Forms.Label();
+            this.numericIncrement = new System.Windows.Forms.NumericUpDown();
+            this.buttonApplyIncrement = new System.Windows.Forms.Button();
             this.timerRefresh = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.numericEncoder)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericCompare)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericIncrement)).BeginInit();
             this.SuspendLayout();
             // 
             // comboCardId
@@ -243,6 +250,45 @@ namespace CameraCaptureApp.Forms
             this.buttonSetCompare.UseVisualStyleBackColor = false;
             this.buttonSetCompare.Click += new System.EventHandler(this.buttonSetCompare_Click);
             // 
+            // labelIncrementTitle
+            // 
+            this.labelIncrementTitle.AutoSize = true;
+            this.labelIncrementTitle.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelIncrementTitle.ForeColor = System.Drawing.Color.White;
+            this.labelIncrementTitle.Location = new System.Drawing.Point(16, 224);
+            this.labelIncrementTitle.Name = "labelIncrementTitle";
+            this.labelIncrementTitle.Size = new System.Drawing.Size(77, 19);
+            this.labelIncrementTitle.TabIndex = 14;
+            this.labelIncrementTitle.Text = "Increment";
+            // 
+            // numericIncrement
+            // 
+            this.numericIncrement.Location = new System.Drawing.Point(92, 220);
+            this.numericIncrement.Maximum = new decimal(new int[] {
+            2147483647,
+            0,
+            0,
+            0});
+            this.numericIncrement.Minimum = -2147483648M;
+            this.numericIncrement.Name = "numericIncrement";
+            this.numericIncrement.Size = new System.Drawing.Size(170, 25);
+            this.numericIncrement.TabIndex = 15;
+            this.numericIncrement.ThousandsSeparator = true;
+            // 
+            // buttonApplyIncrement
+            // 
+            this.buttonApplyIncrement.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonApplyIncrement.Enabled = false;
+            this.buttonApplyIncrement.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonApplyIncrement.ForeColor = System.Drawing.Color.White;
+            this.buttonApplyIncrement.Location = new System.Drawing.Point(272, 218);
+            this.buttonApplyIncrement.Name = "buttonApplyIncrement";
+            this.buttonApplyIncrement.Size = new System.Drawing.Size(64, 30);
+            this.buttonApplyIncrement.TabIndex = 16;
+            this.buttonApplyIncrement.Text = "Apply";
+            this.buttonApplyIncrement.UseVisualStyleBackColor = false;
+            this.buttonApplyIncrement.Click += new System.EventHandler(this.buttonApplyIncrement_Click);
+            // 
             // timerRefresh
             // 
             this.timerRefresh.Interval = 200;
@@ -253,7 +299,10 @@ namespace CameraCaptureApp.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(18, 23, 34);
-            this.ClientSize = new System.Drawing.Size(368, 232);
+            this.ClientSize = new System.Drawing.Size(368, 270);
+            this.Controls.Add(this.buttonApplyIncrement);
+            this.Controls.Add(this.numericIncrement);
+            this.Controls.Add(this.labelIncrementTitle);
             this.Controls.Add(this.buttonSetCompare);
             this.Controls.Add(this.numericCompare);
             this.Controls.Add(this.buttonClearCompare);
@@ -269,12 +318,13 @@ namespace CameraCaptureApp.Forms
             this.Controls.Add(this.labelCard);
             this.Controls.Add(this.comboCardId);
             this.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F);
-            this.MinimumSize = new System.Drawing.Size(386, 279);
+            this.MinimumSize = new System.Drawing.Size(386, 317);
             this.Name = "MeterWheelControlForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Meter Wheel Control";
             ((System.ComponentModel.ISupportInitialize)(this.numericEncoder)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericCompare)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericIncrement)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
