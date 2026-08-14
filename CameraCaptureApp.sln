@@ -4,6 +4,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraCaptureApp", "CameraCaptureApp\CameraCaptureApp.csproj", "{B0A1E4D0-02A2-4E8B-AFB7-69039457BB0F}"
 EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "LSI8181-64", "Lsi8181Official\LSI8181-64.vbproj", "{96764912-10DF-4402-B727-6D95C922872E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{B0A1E4D0-02A2-4E8B-AFB7-69039457BB0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0A1E4D0-02A2-4E8B-AFB7-69039457BB0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0A1E4D0-02A2-4E8B-AFB7-69039457BB0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96764912-10DF-4402-B727-6D95C922872E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96764912-10DF-4402-B727-6D95C922872E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96764912-10DF-4402-B727-6D95C922872E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96764912-10DF-4402-B727-6D95C922872E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

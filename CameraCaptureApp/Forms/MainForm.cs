@@ -13,10 +13,8 @@ namespace CameraCaptureApp.Forms
     public partial class MainForm : Form
     {
         private const int MaxConcurrentSnapshotSaves = 5;
-
         private readonly ICameraService _cameraService;
         private readonly ISettingsService _settingsService;
-        private readonly ILsi8181Service _lsi8181Service;
         private readonly Controls.CameraDisplayControl _cameraDisplayControl;
         private readonly FrameRecorder _frameRecorder;
         private readonly System.Windows.Forms.Timer _statusRefreshTimer;
@@ -28,7 +26,7 @@ namespace CameraCaptureApp.Forms
         private readonly SemaphoreSlim _snapshotSaveGate = new SemaphoreSlim(MaxConcurrentSnapshotSaves, MaxConcurrentSnapshotSaves);
         private readonly object _snapshotProgressLock = new object();
         private bool _autoConnectAttempted;
-        private bool _meterWheelConnectionWarningShown;
+        private LSI8181.Main_Form _meterWheelControlForm;
         private int _pendingSnapshotSaveCount;
         private int _snapshotSaveQueueCount;
         private int _snapshotSaveActiveCount;
@@ -38,11 +36,10 @@ namespace CameraCaptureApp.Forms
         private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
 
-        public MainForm(ICameraService cameraService, ISettingsService settingsService, ILsi8181Service lsi8181Service)
+        public MainForm(ICameraService cameraService, ISettingsService settingsService)
         {
             _cameraService = cameraService;
             _settingsService = settingsService;
-            _lsi8181Service = lsi8181Service;
             _settings = _settingsService.Load() ?? CameraSettings.CreateDefault();
 
             InitializeComponent();
@@ -109,29 +106,53 @@ namespace CameraCaptureApp.Forms
 
         private void buttonMeterWheelControl_Click(object sender, EventArgs e)
         {
-            MeterWheelSettingsForm form = null;
             try
             {
-                form = new MeterWheelSettingsForm(_lsi8181Service, _settingsService);
-                form.ShowDialog(this);
+                var form = EnsureMeterWheelControlForm();
+                form.Show(this);
+                form.Activate();
             }
             catch (Exception ex)
             {
-                AppLogger.Log("Meter wheel control dialog open failed.", ex);
+                AppLogger.Log("LSI-8181 official control open failed.", ex);
                 MessageBox.Show(
                     this,
-                    "Meter wheel control could not be opened.\r\n" + ex.Message + "\r\n\r\nLog: " + AppLogger.GetLogPath(),
+                    "LSI-8181 official control could not be opened.\r\n" + ex.Message + "\r\n\r\nLog: " + AppLogger.GetLogPath(),
                     "Meter Wheel Control Error",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-                labelFooterMessageValue.Text = "Meter wheel control open failed: " + ex.Message;
+                labelFooterMessageValue.Text = "LSI-8181 official control open failed: " + ex.Message;
             }
-            finally
+        }
+
+        private LSI8181.Main_Form EnsureMeterWheelControlForm()
+        {
+            if (_meterWheelControlForm == null || _meterWheelControlForm.IsDisposed)
             {
-                if (form != null)
-                {
-                    form.Dispose();
-                }
+                _meterWheelControlForm = new LSI8181.Main_Form();
+                _meterWheelControlForm.InitializeCardAndRestoreSettings();
+            }
+
+            return _meterWheelControlForm;
+        }
+
+        private void InitializeMeterWheelOnStart()
+        {
+            try
+            {
+                EnsureMeterWheelControlForm();
+                labelFooterMessageValue.Text = "LSI-8181 connected and settings restored.";
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("LSI-8181 startup initialization failed.", ex);
+                MessageBox.Show(
+                    this,
+                    "LSI-8181 could not be initialized at startup.\r\n" + ex.Message + "\r\n\r\nLog: " + AppLogger.GetLogPath(),
+                    "LSI-8181 Startup",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                labelFooterMessageValue.Text = "LSI-8181 startup initialization failed: " + ex.Message;
             }
         }
 
@@ -492,10 +513,16 @@ namespace CameraCaptureApp.Forms
             _cameraDisplayControl.SaveSnapshotRequested -= CameraDisplayControl_SaveSnapshotRequested;
             _statusRefreshTimer.Stop();
             _statusRefreshTimer.Dispose();
+            if (_meterWheelControlForm != null && !_meterWheelControlForm.IsDisposed)
+            {
+                _meterWheelControlForm.CloseCardAndAllowClose();
+                _meterWheelControlForm.Dispose();
+                _meterWheelControlForm = null;
+            }
+
             CancelPendingImageLoad();
             CancelPendingPreviewFrame();
             _frameRecorder.Dispose();
-            _lsi8181Service.Dispose();
             ClearPendingRollingPreviewFrames();
             var pendingFrame = Interlocked.Exchange(ref _pendingPreviewFrame, null);
             if (pendingFrame != null)
@@ -648,45 +675,8 @@ namespace CameraCaptureApp.Forms
 
         private void MainForm_Shown(object sender, EventArgs e)
         {
-            TryConnectMeterWheelOnStart();
+            InitializeMeterWheelOnStart();
             TryAutoConnectOnStart();
-        }
-
-        private void TryConnectMeterWheelOnStart()
-        {
-            try
-            {
-                var cards = _lsi8181Service.InitializeAndScanCards();
-                if (cards.Count == 0)
-                {
-                    ShowMeterWheelConnectionWarning("No LSI-8181 card was found.");
-                    return;
-                }
-
-                labelFooterMessageValue.Text = "LSI-8181 connected. Cards found: " + cards.Count + ".";
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Log("LSI-8181 startup connection failed.", ex);
-                ShowMeterWheelConnectionWarning("LSI-8181 card could not be connected.\r\n" + ex.Message);
-            }
-        }
-
-        private void ShowMeterWheelConnectionWarning(string message)
-        {
-            if (_meterWheelConnectionWarningShown)
-            {
-                return;
-            }
-
-            _meterWheelConnectionWarningShown = true;
-            labelFooterMessageValue.Text = message;
-            MessageBox.Show(
-                this,
-                message,
-                "LSI-8181 Connection",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Warning);
         }
 
         private void ApplySettingsToUi()

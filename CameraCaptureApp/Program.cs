@@ -17,9 +17,8 @@ namespace CameraCaptureApp
 
             ISettingsService settingsService = new SettingsService();
             ICameraService cameraService = new CameraService();
-            ILsi8181Service lsi8181Service = new Lsi8181Service();
 
-            Application.Run(new MainForm(cameraService, settingsService, lsi8181Service));
+            Application.Run(new MainForm(cameraService, settingsService));
         }
     }
 }

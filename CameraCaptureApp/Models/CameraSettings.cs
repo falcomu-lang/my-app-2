@@ -52,14 +52,6 @@ namespace CameraCaptureApp.Models
 
         public ImageSaveFormat ImageSaveFormat { get; set; }
 
-        public int Lsi8181CardId { get; set; }
-
-        public int Lsi8181MultipleRate { get; set; }
-
-        public int Lsi8181AutoIncrement { get; set; }
-
-        public int Lsi8181CmpOutWidth { get; set; }
-
         public static CameraSettings CreateDefault()
         {
             return new CameraSettings
@@ -88,11 +80,7 @@ namespace CameraCaptureApp.Models
                 AutoSave = false,
                 SaveFolder = string.Empty,
                 FileNamePattern = "capture_{yyyyMMdd_HHmmss}",
-                ImageSaveFormat = ImageSaveFormat.Png,
-                Lsi8181CardId = 0,
-                Lsi8181MultipleRate = 0,
-                Lsi8181AutoIncrement = 0,
-                Lsi8181CmpOutWidth = 0
+                ImageSaveFormat = ImageSaveFormat.Png
             };
         }
 
