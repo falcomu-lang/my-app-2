@@ -1,0 +1,283 @@
+namespace CameraCaptureApp.Forms
+{
+    partial class MeterWheelControlForm
+    {
+        private System.ComponentModel.IContainer components = null;
+        private System.Windows.Forms.ComboBox comboCardId;
+        private System.Windows.Forms.Label labelCard;
+        private System.Windows.Forms.Button buttonConnect;
+        private System.Windows.Forms.Label labelStatus;
+        private System.Windows.Forms.Label labelEncoderTitle;
+        private System.Windows.Forms.Label labelEncoderValue;
+        private System.Windows.Forms.Button buttonClearEncoder;
+        private System.Windows.Forms.NumericUpDown numericEncoder;
+        private System.Windows.Forms.Button buttonSetEncoder;
+        private System.Windows.Forms.Label labelCompareTitle;
+        private System.Windows.Forms.Label labelCompareValue;
+        private System.Windows.Forms.Button buttonClearCompare;
+        private System.Windows.Forms.NumericUpDown numericCompare;
+        private System.Windows.Forms.Button buttonSetCompare;
+        private System.Windows.Forms.Timer timerRefresh;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.comboCardId = new System.Windows.Forms.ComboBox();
+            this.labelCard = new System.Windows.Forms.Label();
+            this.buttonConnect = new System.Windows.Forms.Button();
+            this.labelStatus = new System.Windows.Forms.Label();
+            this.labelEncoderTitle = new System.Windows.Forms.Label();
+            this.labelEncoderValue = new System.Windows.Forms.Label();
+            this.buttonClearEncoder = new System.Windows.Forms.Button();
+            this.numericEncoder = new System.Windows.Forms.NumericUpDown();
+            this.buttonSetEncoder = new System.Windows.Forms.Button();
+            this.labelCompareTitle = new System.Windows.Forms.Label();
+            this.labelCompareValue = new System.Windows.Forms.Label();
+            this.buttonClearCompare = new System.Windows.Forms.Button();
+            this.numericCompare = new System.Windows.Forms.NumericUpDown();
+            this.buttonSetCompare = new System.Windows.Forms.Button();
+            this.timerRefresh = new System.Windows.Forms.Timer(this.components);
+            ((System.ComponentModel.ISupportInitialize)(this.numericEncoder)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericCompare)).BeginInit();
+            this.SuspendLayout();
+            // 
+            // comboCardId
+            // 
+            this.comboCardId.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboCardId.FormattingEnabled = true;
+            this.comboCardId.Items.AddRange(new object[] {
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15"});
+            this.comboCardId.Location = new System.Drawing.Point(68, 14);
+            this.comboCardId.Name = "comboCardId";
+            this.comboCardId.Size = new System.Drawing.Size(72, 25);
+            this.comboCardId.TabIndex = 1;
+            // 
+            // labelCard
+            // 
+            this.labelCard.AutoSize = true;
+            this.labelCard.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelCard.ForeColor = System.Drawing.Color.White;
+            this.labelCard.Location = new System.Drawing.Point(16, 17);
+            this.labelCard.Name = "labelCard";
+            this.labelCard.Size = new System.Drawing.Size(38, 19);
+            this.labelCard.TabIndex = 0;
+            this.labelCard.Text = "Card";
+            // 
+            // buttonConnect
+            // 
+            this.buttonConnect.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonConnect.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonConnect.ForeColor = System.Drawing.Color.White;
+            this.buttonConnect.Location = new System.Drawing.Point(152, 12);
+            this.buttonConnect.Name = "buttonConnect";
+            this.buttonConnect.Size = new System.Drawing.Size(96, 30);
+            this.buttonConnect.TabIndex = 2;
+            this.buttonConnect.Text = "Connect";
+            this.buttonConnect.UseVisualStyleBackColor = false;
+            this.buttonConnect.Click += new System.EventHandler(this.buttonConnect_Click);
+            // 
+            // labelStatus
+            // 
+            this.labelStatus.AutoSize = true;
+            this.labelStatus.ForeColor = System.Drawing.Color.FromArgb(210, 220, 240);
+            this.labelStatus.Location = new System.Drawing.Point(264, 18);
+            this.labelStatus.Name = "labelStatus";
+            this.labelStatus.Size = new System.Drawing.Size(49, 17);
+            this.labelStatus.TabIndex = 3;
+            this.labelStatus.Text = "Offline";
+            // 
+            // labelEncoderTitle
+            // 
+            this.labelEncoderTitle.AutoSize = true;
+            this.labelEncoderTitle.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelEncoderTitle.ForeColor = System.Drawing.Color.White;
+            this.labelEncoderTitle.Location = new System.Drawing.Point(16, 64);
+            this.labelEncoderTitle.Name = "labelEncoderTitle";
+            this.labelEncoderTitle.Size = new System.Drawing.Size(67, 19);
+            this.labelEncoderTitle.TabIndex = 4;
+            this.labelEncoderTitle.Text = "Encoder";
+            // 
+            // labelEncoderValue
+            // 
+            this.labelEncoderValue.BackColor = System.Drawing.Color.FromArgb(8, 12, 20);
+            this.labelEncoderValue.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.labelEncoderValue.Font = new System.Drawing.Font("Consolas", 13.8F, System.Drawing.FontStyle.Bold);
+            this.labelEncoderValue.ForeColor = System.Drawing.Color.White;
+            this.labelEncoderValue.Location = new System.Drawing.Point(92, 56);
+            this.labelEncoderValue.Name = "labelEncoderValue";
+            this.labelEncoderValue.Size = new System.Drawing.Size(170, 34);
+            this.labelEncoderValue.TabIndex = 5;
+            this.labelEncoderValue.Text = "0";
+            this.labelEncoderValue.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // buttonClearEncoder
+            // 
+            this.buttonClearEncoder.BackColor = System.Drawing.Color.FromArgb(36, 51, 84);
+            this.buttonClearEncoder.Enabled = false;
+            this.buttonClearEncoder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonClearEncoder.ForeColor = System.Drawing.Color.White;
+            this.buttonClearEncoder.Location = new System.Drawing.Point(272, 56);
+            this.buttonClearEncoder.Name = "buttonClearEncoder";
+            this.buttonClearEncoder.Size = new System.Drawing.Size(64, 34);
+            this.buttonClearEncoder.TabIndex = 6;
+            this.buttonClearEncoder.Text = "Clear";
+            this.buttonClearEncoder.UseVisualStyleBackColor = false;
+            this.buttonClearEncoder.Click += new System.EventHandler(this.buttonClearEncoder_Click);
+            // 
+            // numericEncoder
+            // 
+            this.numericEncoder.Location = new System.Drawing.Point(92, 96);
+            this.numericEncoder.Maximum = new decimal(new int[] {
+            2147483647,
+            0,
+            0,
+            0});
+            this.numericEncoder.Minimum = -2147483648M;
+            this.numericEncoder.Name = "numericEncoder";
+            this.numericEncoder.Size = new System.Drawing.Size(170, 25);
+            this.numericEncoder.TabIndex = 7;
+            this.numericEncoder.ThousandsSeparator = true;
+            // 
+            // buttonSetEncoder
+            // 
+            this.buttonSetEncoder.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonSetEncoder.Enabled = false;
+            this.buttonSetEncoder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonSetEncoder.ForeColor = System.Drawing.Color.White;
+            this.buttonSetEncoder.Location = new System.Drawing.Point(272, 94);
+            this.buttonSetEncoder.Name = "buttonSetEncoder";
+            this.buttonSetEncoder.Size = new System.Drawing.Size(64, 30);
+            this.buttonSetEncoder.TabIndex = 8;
+            this.buttonSetEncoder.Text = "Set";
+            this.buttonSetEncoder.UseVisualStyleBackColor = false;
+            this.buttonSetEncoder.Click += new System.EventHandler(this.buttonSetEncoder_Click);
+            // 
+            // labelCompareTitle
+            // 
+            this.labelCompareTitle.AutoSize = true;
+            this.labelCompareTitle.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelCompareTitle.ForeColor = System.Drawing.Color.White;
+            this.labelCompareTitle.Location = new System.Drawing.Point(16, 150);
+            this.labelCompareTitle.Name = "labelCompareTitle";
+            this.labelCompareTitle.Size = new System.Drawing.Size(74, 19);
+            this.labelCompareTitle.TabIndex = 9;
+            this.labelCompareTitle.Text = "Compare";
+            // 
+            // labelCompareValue
+            // 
+            this.labelCompareValue.BackColor = System.Drawing.Color.FromArgb(8, 12, 20);
+            this.labelCompareValue.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.labelCompareValue.Font = new System.Drawing.Font("Consolas", 13.8F, System.Drawing.FontStyle.Bold);
+            this.labelCompareValue.ForeColor = System.Drawing.Color.White;
+            this.labelCompareValue.Location = new System.Drawing.Point(92, 142);
+            this.labelCompareValue.Name = "labelCompareValue";
+            this.labelCompareValue.Size = new System.Drawing.Size(170, 34);
+            this.labelCompareValue.TabIndex = 10;
+            this.labelCompareValue.Text = "0";
+            this.labelCompareValue.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // buttonClearCompare
+            // 
+            this.buttonClearCompare.BackColor = System.Drawing.Color.FromArgb(36, 51, 84);
+            this.buttonClearCompare.Enabled = false;
+            this.buttonClearCompare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonClearCompare.ForeColor = System.Drawing.Color.White;
+            this.buttonClearCompare.Location = new System.Drawing.Point(272, 142);
+            this.buttonClearCompare.Name = "buttonClearCompare";
+            this.buttonClearCompare.Size = new System.Drawing.Size(64, 34);
+            this.buttonClearCompare.TabIndex = 11;
+            this.buttonClearCompare.Text = "Clear";
+            this.buttonClearCompare.UseVisualStyleBackColor = false;
+            this.buttonClearCompare.Click += new System.EventHandler(this.buttonClearCompare_Click);
+            // 
+            // numericCompare
+            // 
+            this.numericCompare.Location = new System.Drawing.Point(92, 182);
+            this.numericCompare.Maximum = new decimal(new int[] {
+            2147483647,
+            0,
+            0,
+            0});
+            this.numericCompare.Minimum = -2147483648M;
+            this.numericCompare.Name = "numericCompare";
+            this.numericCompare.Size = new System.Drawing.Size(170, 25);
+            this.numericCompare.TabIndex = 12;
+            this.numericCompare.ThousandsSeparator = true;
+            // 
+            // buttonSetCompare
+            // 
+            this.buttonSetCompare.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonSetCompare.Enabled = false;
+            this.buttonSetCompare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonSetCompare.ForeColor = System.Drawing.Color.White;
+            this.buttonSetCompare.Location = new System.Drawing.Point(272, 180);
+            this.buttonSetCompare.Name = "buttonSetCompare";
+            this.buttonSetCompare.Size = new System.Drawing.Size(64, 30);
+            this.buttonSetCompare.TabIndex = 13;
+            this.buttonSetCompare.Text = "Set";
+            this.buttonSetCompare.UseVisualStyleBackColor = false;
+            this.buttonSetCompare.Click += new System.EventHandler(this.buttonSetCompare_Click);
+            // 
+            // timerRefresh
+            // 
+            this.timerRefresh.Interval = 200;
+            this.timerRefresh.Tick += new System.EventHandler(this.timerRefresh_Tick);
+            // 
+            // MeterWheelControlForm
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.FromArgb(18, 23, 34);
+            this.ClientSize = new System.Drawing.Size(368, 232);
+            this.Controls.Add(this.buttonSetCompare);
+            this.Controls.Add(this.numericCompare);
+            this.Controls.Add(this.buttonClearCompare);
+            this.Controls.Add(this.labelCompareValue);
+            this.Controls.Add(this.labelCompareTitle);
+            this.Controls.Add(this.buttonSetEncoder);
+            this.Controls.Add(this.numericEncoder);
+            this.Controls.Add(this.buttonClearEncoder);
+            this.Controls.Add(this.labelEncoderValue);
+            this.Controls.Add(this.labelEncoderTitle);
+            this.Controls.Add(this.labelStatus);
+            this.Controls.Add(this.buttonConnect);
+            this.Controls.Add(this.labelCard);
+            this.Controls.Add(this.comboCardId);
+            this.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F);
+            this.MinimumSize = new System.Drawing.Size(386, 279);
+            this.Name = "MeterWheelControlForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Text = "Meter Wheel Control";
+            ((System.ComponentModel.ISupportInitialize)(this.numericEncoder)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericCompare)).EndInit();
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+        }
+    }
+}
