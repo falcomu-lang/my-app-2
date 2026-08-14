@@ -1,10 +1,12 @@
 Public Class Extension_Form
+    Private _initialized As Boolean
     Dim Offset_Text(8) As TextBox
     Dim Pulse_Text(8) As TextBox
     Dim State_Check(8) As CheckBox
     Dim Mask_Check(8) As CheckBox
     Dim Status_Check(8) As CheckBox
     Sub initial()
+        If _initialized Then Return
         Offset_Text(0) = OffsetCompare_TextBox_0
         Offset_Text(1) = OffsetCompare_TextBox_1
         Offset_Text(2) = OffsetCompare_TextBox_2
@@ -49,11 +51,13 @@ Public Class Extension_Form
         Mask_Check(5) = Mask_CheckBox_5
         Mask_Check(6) = Mask_CheckBox_6
         Mask_Check(7) = Mask_CheckBox_7
+        _initialized = True
     End Sub
     Private Sub Apply_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Apply_Button.Click
         Call apply()
     End Sub
     Sub apply()
+        initial()
         Dim i As Byte
         Dim mask As Byte
         Dim state As Byte
@@ -87,6 +91,7 @@ Public Class Extension_Form
         Status = LSI8181_compare_offset_mask_set(CardID, mask)
     End Sub
     Sub Parameter_read_formload()
+        initial()
         Dim i As Byte
         Dim mask As Byte
         Dim state As Byte
@@ -118,6 +123,7 @@ Public Class Extension_Form
     End Sub
 
     Sub Parameter_read()
+        initial()
         Dim i As Byte
         Dim state As Byte
         For i = 0 To 7
@@ -145,6 +151,7 @@ Public Class Extension_Form
     End Sub
 
     Private Sub Timer1_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Timer1.Tick
+        initial()
         Dim i As Byte
         Parameter_read()
         For i = 0 To 7
