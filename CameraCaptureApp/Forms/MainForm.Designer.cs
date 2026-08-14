@@ -15,7 +15,6 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Button buttonStop;
         private System.Windows.Forms.Button buttonCapture;
         private System.Windows.Forms.Button buttonLoadImage;
-        private System.Windows.Forms.Button buttonMeterWheelControl;
         private System.Windows.Forms.Label labelHeaderConnection;
         private System.Windows.Forms.Label labelHeaderConnectionValue;
         private System.Windows.Forms.Label labelHeaderCamera;
@@ -59,7 +58,6 @@ namespace CameraCaptureApp.Forms
             this.labelHeaderConnectionValue = new System.Windows.Forms.Label();
             this.labelHeaderConnection = new System.Windows.Forms.Label();
             this.panelLeft = new System.Windows.Forms.Panel();
-            this.buttonMeterWheelControl = new System.Windows.Forms.Button();
             this.buttonLoadImage = new System.Windows.Forms.Button();
             this.buttonCapture = new System.Windows.Forms.Button();
             this.buttonStop = new System.Windows.Forms.Button();
@@ -158,7 +156,6 @@ namespace CameraCaptureApp.Forms
             // panelLeft
             // 
             this.panelLeft.BackColor = System.Drawing.Color.FromArgb(10, 14, 24);
-            this.panelLeft.Controls.Add(this.buttonMeterWheelControl);
             this.panelLeft.Controls.Add(this.buttonLoadImage);
             this.panelLeft.Controls.Add(this.buttonCapture);
             this.panelLeft.Controls.Add(this.buttonStop);
@@ -229,15 +226,6 @@ namespace CameraCaptureApp.Forms
             this.buttonLoadImage.Size = new System.Drawing.Size(120, 42);
             this.buttonLoadImage.Text = "Load Image";
             this.buttonLoadImage.Click += new System.EventHandler(this.buttonLoadImage_Click);
-            this.buttonMeterWheelControl.BackColor = System.Drawing.Color.FromArgb(36, 51, 84);
-            this.buttonMeterWheelControl.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.buttonMeterWheelControl.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
-            this.buttonMeterWheelControl.ForeColor = System.Drawing.Color.White;
-            this.buttonMeterWheelControl.Location = new System.Drawing.Point(19, 326);
-            this.buttonMeterWheelControl.Size = new System.Drawing.Size(252, 48);
-            this.buttonMeterWheelControl.Text = "米輪控制";
-            this.buttonMeterWheelControl.Click += new System.EventHandler(this.buttonMeterWheelControl_Click);
-            // 
             // panelContent
             // 
             this.panelContent.BackColor = System.Drawing.Color.Black;
