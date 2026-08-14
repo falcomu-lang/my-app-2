@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Forms;
+using CameraCaptureApp.Models;
 using CameraCaptureApp.Native;
 using CameraCaptureApp.Services;
 
@@ -8,12 +9,16 @@ namespace CameraCaptureApp.Forms
     public partial class MeterWheelControlForm : Form
     {
         private readonly Lsi8181MeterWheelService _meterWheelService = new Lsi8181MeterWheelService();
+        private readonly ISettingsService _settingsService;
+        private readonly CameraSettings _settings;
 
-        public MeterWheelControlForm()
+        public MeterWheelControlForm(CameraSettings settings, ISettingsService settingsService)
         {
+            _settings = settings == null ? CameraSettings.CreateDefault() : settings;
+            _settingsService = settingsService;
             InitializeComponent();
             comboCardId.SelectedIndex = 0;
-            comboMultipleRate.SelectedIndex = 0;
+            LoadMeterWheelSettingsToUi();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -36,7 +41,11 @@ namespace CameraCaptureApp.Forms
                 }
                 else
                 {
-                    _meterWheelService.Open((byte)comboCardId.SelectedIndex);
+                    _meterWheelService.Open(
+                        (byte)comboCardId.SelectedIndex,
+                        GetSelectedMultipleRate(),
+                        (int)numericIncrement.Value,
+                        (ushort)numericCmpOutWidth.Value);
                     timerRefresh.Start();
                     labelStatus.Text = "Connected";
                 }
@@ -73,16 +82,19 @@ namespace CameraCaptureApp.Forms
         private void buttonApplyIncrement_Click(object sender, EventArgs e)
         {
             SetCompareIncrement((int)numericIncrement.Value);
+            SaveMeterWheelSettingsFromUi();
         }
 
         private void buttonSetMultipleRate_Click(object sender, EventArgs e)
         {
             SetMultipleRate(GetSelectedMultipleRate());
+            SaveMeterWheelSettingsFromUi();
         }
 
         private void buttonSetCmpOutWidth_Click(object sender, EventArgs e)
         {
             SetCmpOutWidth((ushort)numericCmpOutWidth.Value);
+            SaveMeterWheelSettingsFromUi();
         }
 
         private void timerRefresh_Tick(object sender, EventArgs e)
@@ -198,6 +210,45 @@ namespace CameraCaptureApp.Forms
                 default:
                     return Lsi8181Native.Multiple4;
             }
+        }
+
+        private void LoadMeterWheelSettingsToUi()
+        {
+            numericIncrement.Value = ClampToNumericRange(numericIncrement, _settings.MeterWheelCompareIncrement);
+            numericCmpOutWidth.Value = ClampToNumericRange(numericCmpOutWidth, _settings.MeterWheelCmpOutWidth);
+            comboMultipleRate.SelectedIndex = NormalizeMultipleRateIndex(_settings.MeterWheelMultipleRate);
+        }
+
+        private void SaveMeterWheelSettingsFromUi()
+        {
+            _settings.MeterWheelCompareIncrement = (int)numericIncrement.Value;
+            _settings.MeterWheelMultipleRate = comboMultipleRate.SelectedIndex;
+            _settings.MeterWheelCmpOutWidth = (int)numericCmpOutWidth.Value;
+
+            if (_settingsService != null)
+            {
+                _settingsService.Save(_settings);
+            }
+        }
+
+        private static int NormalizeMultipleRateIndex(int value)
+        {
+            return value >= 0 && value <= 2 ? value : 0;
+        }
+
+        private static decimal ClampToNumericRange(NumericUpDown numeric, int value)
+        {
+            if (value < numeric.Minimum)
+            {
+                return numeric.Minimum;
+            }
+
+            if (value > numeric.Maximum)
+            {
+                return numeric.Maximum;
+            }
+
+            return value;
         }
 
         private void ShowError(Exception ex)

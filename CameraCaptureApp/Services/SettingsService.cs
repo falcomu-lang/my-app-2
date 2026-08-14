@@ -53,6 +53,9 @@ namespace CameraCaptureApp.Services
             settings.SaveFolder = GetString(values, "SaveFolder", settings.SaveFolder);
             settings.FileNamePattern = GetString(values, "FileNamePattern", settings.FileNamePattern);
             settings.ImageSaveFormat = GetEnum(values, "ImageSaveFormat", settings.ImageSaveFormat);
+            settings.MeterWheelCompareIncrement = GetInt(values, "MeterWheelCompareIncrement", settings.MeterWheelCompareIncrement);
+            settings.MeterWheelMultipleRate = GetInt(values, "MeterWheelMultipleRate", settings.MeterWheelMultipleRate);
+            settings.MeterWheelCmpOutWidth = GetInt(values, "MeterWheelCmpOutWidth", settings.MeterWheelCmpOutWidth);
 
             return settings;
         }
@@ -87,7 +90,10 @@ namespace CameraCaptureApp.Services
                 "AutoSave=" + settings.AutoSave.ToString(),
                 "SaveFolder=" + settings.SaveFolder,
                 "FileNamePattern=" + settings.FileNamePattern,
-                "ImageSaveFormat=" + settings.ImageSaveFormat.ToString()
+                "ImageSaveFormat=" + settings.ImageSaveFormat.ToString(),
+                "MeterWheelCompareIncrement=" + settings.MeterWheelCompareIncrement.ToString(CultureInfo.InvariantCulture),
+                "MeterWheelMultipleRate=" + settings.MeterWheelMultipleRate.ToString(CultureInfo.InvariantCulture),
+                "MeterWheelCmpOutWidth=" + settings.MeterWheelCmpOutWidth.ToString(CultureInfo.InvariantCulture)
             };
 
             File.WriteAllLines(_settingsFilePath, lines, Encoding.UTF8);

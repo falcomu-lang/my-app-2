@@ -52,6 +52,12 @@ namespace CameraCaptureApp.Models
 
         public ImageSaveFormat ImageSaveFormat { get; set; }
 
+        public int MeterWheelCompareIncrement { get; set; }
+
+        public int MeterWheelMultipleRate { get; set; }
+
+        public int MeterWheelCmpOutWidth { get; set; }
+
         public static CameraSettings CreateDefault()
         {
             return new CameraSettings
@@ -80,7 +86,10 @@ namespace CameraCaptureApp.Models
                 AutoSave = false,
                 SaveFolder = string.Empty,
                 FileNamePattern = "capture_{yyyyMMdd_HHmmss}",
-                ImageSaveFormat = ImageSaveFormat.Png
+                ImageSaveFormat = ImageSaveFormat.Png,
+                MeterWheelCompareIncrement = 0,
+                MeterWheelMultipleRate = 0,
+                MeterWheelCmpOutWidth = 0
             };
         }
 

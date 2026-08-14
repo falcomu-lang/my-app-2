@@ -108,7 +108,7 @@ namespace CameraCaptureApp.Forms
         {
             if (_meterWheelControlForm == null || _meterWheelControlForm.IsDisposed)
             {
-                _meterWheelControlForm = new MeterWheelControlForm();
+                _meterWheelControlForm = new MeterWheelControlForm(_settings, _settingsService);
                 _meterWheelControlForm.FormClosed += MeterWheelControlForm_FormClosed;
                 _meterWheelControlForm.Show(this);
                 return;

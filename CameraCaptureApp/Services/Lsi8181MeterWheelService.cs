@@ -18,7 +18,7 @@ namespace CameraCaptureApp.Services
             get { return _initialized; }
         }
 
-        public void Open(byte cardId)
+        public void Open(byte cardId, byte multipleRate, int compareIncrement, ushort cmpOutWidth)
         {
             var status = Lsi8181Native.LSI8181_initial();
             EnsureSuccess(status, "Initialize LSI8181");
@@ -35,13 +35,16 @@ namespace CameraCaptureApp.Services
                 cardId,
                 Lsi8181Native.QuadratureMode,
                 Lsi8181Native.DebounceTime1Us,
-                Lsi8181Native.Multiple4);
+                multipleRate);
             EnsureSuccess(status, "Set encoder input mode");
 
             status = Lsi8181Native.LSI8181_compare_mode_set(cardId, Lsi8181Native.CompareAutoIncrement);
             EnsureSuccess(status, "Set compare mode to auto increment");
 
-            status = Lsi8181Native.LSI8181_CO_mode_set(cardId, Lsi8181Native.CmpOutPulse, Lsi8181Native.NoGate, 0);
+            status = Lsi8181Native.LSI8181_compare_increment_set(cardId, compareIncrement);
+            EnsureSuccess(status, "Set compare auto increment value");
+
+            status = Lsi8181Native.LSI8181_CO_mode_set(cardId, Lsi8181Native.CmpOutPulse, Lsi8181Native.NoGate, cmpOutWidth);
             EnsureSuccess(status, "Set CMP OUT pulse output mode");
 
             status = Lsi8181Native.LSI8181_counter_start(cardId, Lsi8181Native.CounterCompare);

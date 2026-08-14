@@ -347,9 +347,9 @@ namespace CameraCaptureApp.Forms
             this.labelCmpOutWidthTitle.ForeColor = System.Drawing.Color.White;
             this.labelCmpOutWidthTitle.Location = new System.Drawing.Point(16, 304);
             this.labelCmpOutWidthTitle.Name = "labelCmpOutWidthTitle";
-            this.labelCmpOutWidthTitle.Size = new System.Drawing.Size(76, 19);
+            this.labelCmpOutWidthTitle.Size = new System.Drawing.Size(115, 19);
             this.labelCmpOutWidthTitle.TabIndex = 20;
-            this.labelCmpOutWidthTitle.Text = "Out Width";
+            this.labelCmpOutWidthTitle.Text = "CMP Out Width";
             // 
             // numericCmpOutWidth
             // 
