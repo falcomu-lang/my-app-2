@@ -7,6 +7,8 @@ namespace CameraCaptureApp.Services
     {
         bool IsInitialized { get; }
 
+        IReadOnlyList<Lsi8181CardInfo> LastCards { get; }
+
         int LastStatusCode { get; }
 
         string LastMessage { get; }

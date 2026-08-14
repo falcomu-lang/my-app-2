@@ -28,6 +28,7 @@ namespace CameraCaptureApp.Forms
         private readonly SemaphoreSlim _snapshotSaveGate = new SemaphoreSlim(MaxConcurrentSnapshotSaves, MaxConcurrentSnapshotSaves);
         private readonly object _snapshotProgressLock = new object();
         private bool _autoConnectAttempted;
+        private bool _meterWheelConnectionWarningShown;
         private int _pendingSnapshotSaveCount;
         private int _snapshotSaveQueueCount;
         private int _snapshotSaveActiveCount;
@@ -647,7 +648,45 @@ namespace CameraCaptureApp.Forms
 
         private void MainForm_Shown(object sender, EventArgs e)
         {
+            TryConnectMeterWheelOnStart();
             TryAutoConnectOnStart();
+        }
+
+        private void TryConnectMeterWheelOnStart()
+        {
+            try
+            {
+                var cards = _lsi8181Service.InitializeAndScanCards();
+                if (cards.Count == 0)
+                {
+                    ShowMeterWheelConnectionWarning("No LSI-8181 card was found.");
+                    return;
+                }
+
+                labelFooterMessageValue.Text = "LSI-8181 connected. Cards found: " + cards.Count + ".";
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("LSI-8181 startup connection failed.", ex);
+                ShowMeterWheelConnectionWarning("LSI-8181 card could not be connected.\r\n" + ex.Message);
+            }
+        }
+
+        private void ShowMeterWheelConnectionWarning(string message)
+        {
+            if (_meterWheelConnectionWarningShown)
+            {
+                return;
+            }
+
+            _meterWheelConnectionWarningShown = true;
+            labelFooterMessageValue.Text = message;
+            MessageBox.Show(
+                this,
+                message,
+                "LSI-8181 Connection",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
         }
 
         private void ApplySettingsToUi()

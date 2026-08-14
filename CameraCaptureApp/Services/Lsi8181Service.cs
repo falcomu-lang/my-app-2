@@ -8,8 +8,14 @@ namespace CameraCaptureApp.Services
     public sealed class Lsi8181Service : ILsi8181Service
     {
         private bool _disposed;
+        private IReadOnlyList<Lsi8181CardInfo> _lastCards = new List<Lsi8181CardInfo>();
 
         public bool IsInitialized { get; private set; }
+
+        public IReadOnlyList<Lsi8181CardInfo> LastCards
+        {
+            get { return _lastCards; }
+        }
 
         public int LastStatusCode { get; private set; }
 
@@ -44,6 +50,7 @@ namespace CameraCaptureApp.Services
             }
 
             SetStatus(Lsi8181Native.NoError, cards.Count + " LSI-8181 card(s) found.");
+            _lastCards = cards;
             return cards;
         }
 

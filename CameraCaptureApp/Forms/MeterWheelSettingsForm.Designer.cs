@@ -18,10 +18,9 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelCmpOutWidth;
         private System.Windows.Forms.Label labelStatus;
         private System.Windows.Forms.ComboBox comboBoxMultipleRate;
-        private System.Windows.Forms.Button buttonApplyMultipleRate;
         private System.Windows.Forms.NumericUpDown numericAutoIncrement;
         private System.Windows.Forms.NumericUpDown numericCmpOutWidth;
-        private System.Windows.Forms.Button buttonApplyAutoIncrement;
+        private System.Windows.Forms.Button buttonApplySettings;
         private System.Windows.Forms.Timer timerCounterRefresh;
 
         protected override void Dispose(bool disposing)
@@ -52,10 +51,9 @@ namespace CameraCaptureApp.Forms
             this.labelCmpOutWidth = new System.Windows.Forms.Label();
             this.labelStatus = new System.Windows.Forms.Label();
             this.comboBoxMultipleRate = new System.Windows.Forms.ComboBox();
-            this.buttonApplyMultipleRate = new System.Windows.Forms.Button();
             this.numericAutoIncrement = new System.Windows.Forms.NumericUpDown();
             this.numericCmpOutWidth = new System.Windows.Forms.NumericUpDown();
-            this.buttonApplyAutoIncrement = new System.Windows.Forms.Button();
+            this.buttonApplySettings = new System.Windows.Forms.Button();
             this.timerCounterRefresh = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.numericAutoIncrement)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericCmpOutWidth)).BeginInit();
@@ -204,16 +202,6 @@ namespace CameraCaptureApp.Forms
             this.comboBoxMultipleRate.Size = new System.Drawing.Size(180, 24);
             this.comboBoxMultipleRate.TabIndex = 10;
             // 
-            // buttonApplyMultipleRate
-            // 
-            this.buttonApplyMultipleRate.Location = new System.Drawing.Point(229, 296);
-            this.buttonApplyMultipleRate.Name = "buttonApplyMultipleRate";
-            this.buttonApplyMultipleRate.Size = new System.Drawing.Size(173, 30);
-            this.buttonApplyMultipleRate.TabIndex = 11;
-            this.buttonApplyMultipleRate.Text = "Apply Multiple Rate";
-            this.buttonApplyMultipleRate.UseVisualStyleBackColor = true;
-            this.buttonApplyMultipleRate.Click += new System.EventHandler(this.buttonApplyMultipleRate_Click);
-            // 
             // numericAutoIncrement
             // 
             this.numericAutoIncrement.Location = new System.Drawing.Point(34, 363);
@@ -231,15 +219,15 @@ namespace CameraCaptureApp.Forms
             this.numericCmpOutWidth.Size = new System.Drawing.Size(180, 23);
             this.numericCmpOutWidth.TabIndex = 16;
             // 
-            // buttonApplyAutoIncrement
+            // buttonApplySettings
             // 
-            this.buttonApplyAutoIncrement.Location = new System.Drawing.Point(229, 423);
-            this.buttonApplyAutoIncrement.Name = "buttonApplyAutoIncrement";
-            this.buttonApplyAutoIncrement.Size = new System.Drawing.Size(173, 30);
-            this.buttonApplyAutoIncrement.TabIndex = 14;
-            this.buttonApplyAutoIncrement.Text = "Apply Auto Increment";
-            this.buttonApplyAutoIncrement.UseVisualStyleBackColor = true;
-            this.buttonApplyAutoIncrement.Click += new System.EventHandler(this.buttonApplyAutoIncrement_Click);
+            this.buttonApplySettings.Location = new System.Drawing.Point(229, 423);
+            this.buttonApplySettings.Name = "buttonApplySettings";
+            this.buttonApplySettings.Size = new System.Drawing.Size(173, 30);
+            this.buttonApplySettings.TabIndex = 14;
+            this.buttonApplySettings.Text = "Apply / Save Settings";
+            this.buttonApplySettings.UseVisualStyleBackColor = true;
+            this.buttonApplySettings.Click += new System.EventHandler(this.buttonApplySettings_Click);
             // 
             // timerCounterRefresh
             // 
@@ -251,12 +239,11 @@ namespace CameraCaptureApp.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(584, 567);
-            this.Controls.Add(this.buttonApplyAutoIncrement);
+            this.Controls.Add(this.buttonApplySettings);
             this.Controls.Add(this.numericCmpOutWidth);
             this.Controls.Add(this.labelCmpOutWidth);
             this.Controls.Add(this.numericAutoIncrement);
             this.Controls.Add(this.labelAutoIncrement);
-            this.Controls.Add(this.buttonApplyMultipleRate);
             this.Controls.Add(this.comboBoxMultipleRate);
             this.Controls.Add(this.labelStatus);
             this.Controls.Add(this.labelMultipleRate);

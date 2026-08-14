@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Windows.Forms;
 using CameraCaptureApp.Models;
 using CameraCaptureApp.Services;
@@ -13,6 +14,7 @@ namespace CameraCaptureApp.Forms
         private CameraSettings _settings;
         private IReadOnlyList<Lsi8181CardInfo> _cards;
         private bool _counterRefreshInProgress;
+        private bool _resourceUnavailableWarningShown;
 
         public MeterWheelSettingsForm(ILsi8181Service lsi8181Service, ISettingsService settingsService)
         {
@@ -25,33 +27,14 @@ namespace CameraCaptureApp.Forms
             numericAutoIncrement.Value = ClampToNumericRange(numericAutoIncrement, _settings.Lsi8181AutoIncrement);
             numericCmpOutWidth.Value = ClampToNumericRange(numericCmpOutWidth, _settings.Lsi8181CmpOutWidth);
             labelStatus.Text = "Click Open / Scan to find LSI-8181 cards.";
+            PopulateCards(_lsi8181Service.LastCards);
         }
 
         private void buttonOpenScan_Click(object sender, EventArgs e)
         {
             try
             {
-                comboBoxCardId.Items.Clear();
-                _cards = _lsi8181Service.InitializeAndScanCards();
-                foreach (var card in _cards)
-                {
-                    comboBoxCardId.Items.Add(card);
-                }
-
-                if (comboBoxCardId.Items.Count > 0)
-                {
-                    comboBoxCardId.SelectedIndex = FindCardIndex(_settings.Lsi8181CardId);
-                    ReadCounterForSelectedCard();
-                    ReadCompareValueForSelectedCard();
-                    ReadMultipleRateForSelectedCard();
-                    ReadAutoIncrementForSelectedCard();
-                    timerCounterRefresh.Start();
-                }
-                else
-                {
-                    timerCounterRefresh.Stop();
-                }
-
+                PopulateCards(_lsi8181Service.InitializeAndScanCards());
                 labelStatus.Text = _lsi8181Service.LastMessage;
             }
             catch (Exception ex)
@@ -71,7 +54,7 @@ namespace CameraCaptureApp.Forms
             }
             catch (Exception ex)
             {
-                ShowError("Clear counter failed", ex);
+                HandleLsi8181ResourceFailure("Clear counter failed", ex);
             }
         }
 
@@ -86,7 +69,7 @@ namespace CameraCaptureApp.Forms
             }
             catch (Exception ex)
             {
-                ShowError("Clear compare value failed", ex);
+                HandleLsi8181ResourceFailure("Clear compare value failed", ex);
             }
         }
 
@@ -95,7 +78,7 @@ namespace CameraCaptureApp.Forms
             Close();
         }
 
-        private void buttonApplyMultipleRate_Click(object sender, EventArgs e)
+        private void buttonApplySettings_Click(object sender, EventArgs e)
         {
             try
             {
@@ -106,39 +89,20 @@ namespace CameraCaptureApp.Forms
                     throw new InvalidOperationException("Please select a multiple rate first.");
                 }
 
+                var incrementValue = decimal.ToInt32(numericAutoIncrement.Value);
+                var cmpOutWidth = decimal.ToUInt16(numericCmpOutWidth.Value);
                 _lsi8181Service.SetMultipleRate(card.CardId, option.Value);
+                _lsi8181Service.ApplyAutoIncrementMode(card.CardId, incrementValue, cmpOutWidth);
                 SaveMeterWheelSettings(
                     card.CardId,
                     option.Value,
-                    decimal.ToInt32(numericAutoIncrement.Value),
-                    decimal.ToInt32(numericCmpOutWidth.Value));
-                labelStatus.Text = "Multiple rate set to " + option.Text + ".";
-            }
-            catch (Exception ex)
-            {
-                ShowError("Apply multiple rate failed", ex);
-            }
-        }
-
-        private void buttonApplyAutoIncrement_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var card = GetSelectedCard();
-                var incrementValue = decimal.ToInt32(numericAutoIncrement.Value);
-                var cmpOutWidth = decimal.ToUInt16(numericCmpOutWidth.Value);
-                _lsi8181Service.ApplyAutoIncrementMode(card.CardId, incrementValue, cmpOutWidth);
-                var option = comboBoxMultipleRate.SelectedItem as MultipleRateOption;
-                SaveMeterWheelSettings(
-                    card.CardId,
-                    option != null ? option.Value : _settings.Lsi8181MultipleRate,
                     incrementValue,
                     cmpOutWidth);
-                labelStatus.Text = "Auto increment compare mode enabled. Increment: " + incrementValue + ", CMP OUT width: " + cmpOutWidth + ".";
+                labelStatus.Text = "Settings applied and saved. Multiple rate: " + option.Text + ", increment: " + incrementValue + ", CMP OUT width: " + cmpOutWidth + ".";
             }
             catch (Exception ex)
             {
-                ShowError("Apply auto increment failed", ex);
+                HandleLsi8181ResourceFailure("Apply settings failed", ex);
             }
         }
 
@@ -168,11 +132,36 @@ namespace CameraCaptureApp.Forms
             catch (Exception ex)
             {
                 timerCounterRefresh.Stop();
-                ShowError("Auto counter refresh failed", ex);
+                HandleLsi8181ResourceFailure("Auto counter refresh failed", ex);
             }
             finally
             {
                 _counterRefreshInProgress = false;
+            }
+        }
+
+        private void PopulateCards(IReadOnlyList<Lsi8181CardInfo> cards)
+        {
+            comboBoxCardId.Items.Clear();
+            _cards = cards ?? new List<Lsi8181CardInfo>();
+            foreach (var card in _cards)
+            {
+                comboBoxCardId.Items.Add(card);
+            }
+
+            if (comboBoxCardId.Items.Count > 0)
+            {
+                comboBoxCardId.SelectedIndex = FindCardIndex(_settings.Lsi8181CardId);
+                ReadCounterForSelectedCard();
+                ReadCompareValueForSelectedCard();
+                ReadMultipleRateForSelectedCard();
+                ReadAutoIncrementForSelectedCard();
+                timerCounterRefresh.Start();
+                labelStatus.Text = _lsi8181Service.LastMessage;
+            }
+            else
+            {
+                timerCounterRefresh.Stop();
             }
         }
 
@@ -186,7 +175,7 @@ namespace CameraCaptureApp.Forms
             }
             catch (Exception ex)
             {
-                ShowError("Read counter failed", ex);
+                HandleLsi8181ResourceFailure("Read counter failed", ex);
             }
         }
 
@@ -199,7 +188,7 @@ namespace CameraCaptureApp.Forms
             }
             catch (Exception ex)
             {
-                ShowError("Read compare value failed", ex);
+                HandleLsi8181ResourceFailure("Read compare value failed", ex);
             }
         }
 
@@ -213,7 +202,7 @@ namespace CameraCaptureApp.Forms
             }
             catch (Exception ex)
             {
-                ShowError("Read multiple rate failed", ex);
+                HandleLsi8181ResourceFailure("Read multiple rate failed", ex);
             }
         }
 
@@ -227,8 +216,58 @@ namespace CameraCaptureApp.Forms
             }
             catch (Exception ex)
             {
-                ShowError("Read auto increment failed", ex);
+                HandleLsi8181ResourceFailure("Read auto increment failed", ex);
             }
+        }
+
+        private void HandleLsi8181ResourceFailure(string title, Exception originalException)
+        {
+            AppLogger.Log(title, originalException);
+            labelStatus.Text = title + ". Reconnecting LSI-8181...";
+
+            if (TryReconnectLsi8181())
+            {
+                _resourceUnavailableWarningShown = false;
+                labelStatus.Text = "LSI-8181 reconnected.";
+                return;
+            }
+
+            if (_resourceUnavailableWarningShown)
+            {
+                labelStatus.Text = "LSI-8181 resource unavailable.";
+                return;
+            }
+
+            _resourceUnavailableWarningShown = true;
+            ShowError("LSI-8181 Resource Unavailable", new InvalidOperationException("Could not access the LSI-8181 resource after 3 reconnect attempts.", originalException));
+        }
+
+        private bool TryReconnectLsi8181()
+        {
+            timerCounterRefresh.Stop();
+            for (var attempt = 1; attempt <= 3; attempt++)
+            {
+                try
+                {
+                    _lsi8181Service.Close();
+                    Thread.Sleep(150);
+                    var cards = _lsi8181Service.InitializeAndScanCards();
+                    if (cards.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    PopulateCards(cards);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Log("LSI-8181 reconnect attempt " + attempt + " failed.", ex);
+                }
+            }
+
+            timerCounterRefresh.Stop();
+            return false;
         }
 
         private static decimal ClampToNumericRange(NumericUpDown control, decimal value)
