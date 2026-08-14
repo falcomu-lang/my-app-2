@@ -20,6 +20,12 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelIncrementTitle;
         private System.Windows.Forms.NumericUpDown numericIncrement;
         private System.Windows.Forms.Button buttonApplyIncrement;
+        private System.Windows.Forms.Label labelMultipleRateTitle;
+        private System.Windows.Forms.ComboBox comboMultipleRate;
+        private System.Windows.Forms.Button buttonSetMultipleRate;
+        private System.Windows.Forms.Label labelCmpOutWidthTitle;
+        private System.Windows.Forms.NumericUpDown numericCmpOutWidth;
+        private System.Windows.Forms.Button buttonSetCmpOutWidth;
         private System.Windows.Forms.Timer timerRefresh;
 
         protected override void Dispose(bool disposing)
@@ -52,10 +58,17 @@ namespace CameraCaptureApp.Forms
             this.labelIncrementTitle = new System.Windows.Forms.Label();
             this.numericIncrement = new System.Windows.Forms.NumericUpDown();
             this.buttonApplyIncrement = new System.Windows.Forms.Button();
+            this.labelMultipleRateTitle = new System.Windows.Forms.Label();
+            this.comboMultipleRate = new System.Windows.Forms.ComboBox();
+            this.buttonSetMultipleRate = new System.Windows.Forms.Button();
+            this.labelCmpOutWidthTitle = new System.Windows.Forms.Label();
+            this.numericCmpOutWidth = new System.Windows.Forms.NumericUpDown();
+            this.buttonSetCmpOutWidth = new System.Windows.Forms.Button();
             this.timerRefresh = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.numericEncoder)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericCompare)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericIncrement)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericCmpOutWidth)).BeginInit();
             this.SuspendLayout();
             // 
             // comboCardId
@@ -289,6 +302,82 @@ namespace CameraCaptureApp.Forms
             this.buttonApplyIncrement.UseVisualStyleBackColor = false;
             this.buttonApplyIncrement.Click += new System.EventHandler(this.buttonApplyIncrement_Click);
             // 
+            // labelMultipleRateTitle
+            // 
+            this.labelMultipleRateTitle.AutoSize = true;
+            this.labelMultipleRateTitle.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelMultipleRateTitle.ForeColor = System.Drawing.Color.White;
+            this.labelMultipleRateTitle.Location = new System.Drawing.Point(16, 264);
+            this.labelMultipleRateTitle.Name = "labelMultipleRateTitle";
+            this.labelMultipleRateTitle.Size = new System.Drawing.Size(100, 19);
+            this.labelMultipleRateTitle.TabIndex = 17;
+            this.labelMultipleRateTitle.Text = "Multiple Rate";
+            // 
+            // comboMultipleRate
+            // 
+            this.comboMultipleRate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboMultipleRate.FormattingEnabled = true;
+            this.comboMultipleRate.Items.AddRange(new object[] {
+            "X4",
+            "X2",
+            "X1"});
+            this.comboMultipleRate.Location = new System.Drawing.Point(122, 260);
+            this.comboMultipleRate.Name = "comboMultipleRate";
+            this.comboMultipleRate.Size = new System.Drawing.Size(140, 25);
+            this.comboMultipleRate.TabIndex = 18;
+            // 
+            // buttonSetMultipleRate
+            // 
+            this.buttonSetMultipleRate.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonSetMultipleRate.Enabled = false;
+            this.buttonSetMultipleRate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonSetMultipleRate.ForeColor = System.Drawing.Color.White;
+            this.buttonSetMultipleRate.Location = new System.Drawing.Point(272, 258);
+            this.buttonSetMultipleRate.Name = "buttonSetMultipleRate";
+            this.buttonSetMultipleRate.Size = new System.Drawing.Size(64, 30);
+            this.buttonSetMultipleRate.TabIndex = 19;
+            this.buttonSetMultipleRate.Text = "Set";
+            this.buttonSetMultipleRate.UseVisualStyleBackColor = false;
+            this.buttonSetMultipleRate.Click += new System.EventHandler(this.buttonSetMultipleRate_Click);
+            // 
+            // labelCmpOutWidthTitle
+            // 
+            this.labelCmpOutWidthTitle.AutoSize = true;
+            this.labelCmpOutWidthTitle.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelCmpOutWidthTitle.ForeColor = System.Drawing.Color.White;
+            this.labelCmpOutWidthTitle.Location = new System.Drawing.Point(16, 304);
+            this.labelCmpOutWidthTitle.Name = "labelCmpOutWidthTitle";
+            this.labelCmpOutWidthTitle.Size = new System.Drawing.Size(76, 19);
+            this.labelCmpOutWidthTitle.TabIndex = 20;
+            this.labelCmpOutWidthTitle.Text = "Out Width";
+            // 
+            // numericCmpOutWidth
+            // 
+            this.numericCmpOutWidth.Location = new System.Drawing.Point(122, 300);
+            this.numericCmpOutWidth.Maximum = new decimal(new int[] {
+            65535,
+            0,
+            0,
+            0});
+            this.numericCmpOutWidth.Name = "numericCmpOutWidth";
+            this.numericCmpOutWidth.Size = new System.Drawing.Size(140, 25);
+            this.numericCmpOutWidth.TabIndex = 21;
+            this.numericCmpOutWidth.ThousandsSeparator = true;
+            // 
+            // buttonSetCmpOutWidth
+            // 
+            this.buttonSetCmpOutWidth.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonSetCmpOutWidth.Enabled = false;
+            this.buttonSetCmpOutWidth.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonSetCmpOutWidth.ForeColor = System.Drawing.Color.White;
+            this.buttonSetCmpOutWidth.Location = new System.Drawing.Point(272, 298);
+            this.buttonSetCmpOutWidth.Name = "buttonSetCmpOutWidth";
+            this.buttonSetCmpOutWidth.Size = new System.Drawing.Size(64, 30);
+            this.buttonSetCmpOutWidth.TabIndex = 22;
+            this.buttonSetCmpOutWidth.Text = "Set";
+            this.buttonSetCmpOutWidth.UseVisualStyleBackColor = false;
+            this.buttonSetCmpOutWidth.Click += new System.EventHandler(this.buttonSetCmpOutWidth_Click);
+            // 
             // timerRefresh
             // 
             this.timerRefresh.Interval = 200;
@@ -299,7 +388,13 @@ namespace CameraCaptureApp.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(18, 23, 34);
-            this.ClientSize = new System.Drawing.Size(368, 270);
+            this.ClientSize = new System.Drawing.Size(368, 350);
+            this.Controls.Add(this.buttonSetCmpOutWidth);
+            this.Controls.Add(this.numericCmpOutWidth);
+            this.Controls.Add(this.labelCmpOutWidthTitle);
+            this.Controls.Add(this.buttonSetMultipleRate);
+            this.Controls.Add(this.comboMultipleRate);
+            this.Controls.Add(this.labelMultipleRateTitle);
             this.Controls.Add(this.buttonApplyIncrement);
             this.Controls.Add(this.numericIncrement);
             this.Controls.Add(this.labelIncrementTitle);
@@ -318,13 +413,14 @@ namespace CameraCaptureApp.Forms
             this.Controls.Add(this.labelCard);
             this.Controls.Add(this.comboCardId);
             this.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F);
-            this.MinimumSize = new System.Drawing.Size(386, 317);
+            this.MinimumSize = new System.Drawing.Size(386, 397);
             this.Name = "MeterWheelControlForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Meter Wheel Control";
             ((System.ComponentModel.ISupportInitialize)(this.numericEncoder)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericCompare)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericIncrement)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericCmpOutWidth)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 

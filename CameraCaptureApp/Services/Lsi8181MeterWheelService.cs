@@ -41,8 +41,11 @@ namespace CameraCaptureApp.Services
             status = Lsi8181Native.LSI8181_compare_mode_set(cardId, Lsi8181Native.CompareAutoIncrement);
             EnsureSuccess(status, "Set compare mode to auto increment");
 
-            status = Lsi8181Native.LSI8181_counter_start(cardId, Lsi8181Native.CounterRun);
-            EnsureSuccess(status, "Start encoder counter");
+            status = Lsi8181Native.LSI8181_CO_mode_set(cardId, Lsi8181Native.CmpOutPulse, Lsi8181Native.NoGate, 0);
+            EnsureSuccess(status, "Set CMP OUT pulse output mode");
+
+            status = Lsi8181Native.LSI8181_counter_start(cardId, Lsi8181Native.CounterCompare);
+            EnsureSuccess(status, "Start encoder counter with compare output");
         }
 
         public int ReadEncoder()
@@ -82,6 +85,28 @@ namespace CameraCaptureApp.Services
             EnsureOpen();
             var status = Lsi8181Native.LSI8181_compare_increment_set(_cardId, value);
             EnsureSuccess(status, "Set compare auto increment value");
+        }
+
+        public void SetMultipleRate(byte multipleRate)
+        {
+            EnsureOpen();
+            var status = Lsi8181Native.LSI8181_CI_mode_set(
+                _cardId,
+                Lsi8181Native.QuadratureMode,
+                Lsi8181Native.DebounceTime1Us,
+                multipleRate);
+            EnsureSuccess(status, "Set encoder multiple rate");
+        }
+
+        public void SetCmpOutWidth(ushort outWidth)
+        {
+            EnsureOpen();
+            var status = Lsi8181Native.LSI8181_CO_mode_set(
+                _cardId,
+                Lsi8181Native.CmpOutPulse,
+                Lsi8181Native.NoGate,
+                outWidth);
+            EnsureSuccess(status, "Set CMP OUT pulse width");
         }
 
         public void Close()

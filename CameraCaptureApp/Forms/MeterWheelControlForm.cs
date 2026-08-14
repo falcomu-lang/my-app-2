@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Forms;
+using CameraCaptureApp.Native;
 using CameraCaptureApp.Services;
 
 namespace CameraCaptureApp.Forms
@@ -11,6 +12,8 @@ namespace CameraCaptureApp.Forms
         public MeterWheelControlForm()
         {
             InitializeComponent();
+            comboCardId.SelectedIndex = 0;
+            comboMultipleRate.SelectedIndex = 0;
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -70,6 +73,16 @@ namespace CameraCaptureApp.Forms
         private void buttonApplyIncrement_Click(object sender, EventArgs e)
         {
             SetCompareIncrement((int)numericIncrement.Value);
+        }
+
+        private void buttonSetMultipleRate_Click(object sender, EventArgs e)
+        {
+            SetMultipleRate(GetSelectedMultipleRate());
+        }
+
+        private void buttonSetCmpOutWidth_Click(object sender, EventArgs e)
+        {
+            SetCmpOutWidth((ushort)numericCmpOutWidth.Value);
         }
 
         private void timerRefresh_Tick(object sender, EventArgs e)
@@ -134,6 +147,8 @@ namespace CameraCaptureApp.Forms
             buttonClearCompare.Enabled = isConnected;
             buttonSetCompare.Enabled = isConnected;
             buttonApplyIncrement.Enabled = isConnected;
+            buttonSetMultipleRate.Enabled = isConnected;
+            buttonSetCmpOutWidth.Enabled = isConnected;
         }
 
         private void SetCompareIncrement(int value)
@@ -145,6 +160,43 @@ namespace CameraCaptureApp.Forms
             catch (Exception ex)
             {
                 ShowError(ex);
+            }
+        }
+
+        private void SetMultipleRate(byte multipleRate)
+        {
+            try
+            {
+                _meterWheelService.SetMultipleRate(multipleRate);
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex);
+            }
+        }
+
+        private void SetCmpOutWidth(ushort outWidth)
+        {
+            try
+            {
+                _meterWheelService.SetCmpOutWidth(outWidth);
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex);
+            }
+        }
+
+        private byte GetSelectedMultipleRate()
+        {
+            switch (comboMultipleRate.SelectedIndex)
+            {
+                case 1:
+                    return Lsi8181Native.Multiple2;
+                case 2:
+                    return Lsi8181Native.Multiple1;
+                default:
+                    return Lsi8181Native.Multiple4;
             }
         }
 
