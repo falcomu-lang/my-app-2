@@ -209,7 +209,7 @@ Public Class Compare_Form
 
     Private Sub ApplyIncrementEnable()
         'Enable single mode
-        Status = LSI8181_compare_mode_set(Val(Main_Form.ID_ComboBox.Text), 2)
+        ApplyCompareModeSettings(2)
         'Start compare
         Status = LSI8181_counter_start(Val(Main_Form.ID_ComboBox.Text), 2)
         Increment_Button.Enabled = False
@@ -222,6 +222,7 @@ Public Class Compare_Form
 
         Dim CMP_polarity As Byte
         ForcePulseOutputForAutoIncrement()
+        ForceCompareOutChecked()
         Dim mode As Byte = GetSelectedIndex(CompareOutput_ComboBox)
         Dim dutyCycle As UInt16 = GetUInt16Text(DutyCycle_TextBox)
         If CompareOutPolarity_CheckBox.Checked = True Then
@@ -300,6 +301,7 @@ Public Class Compare_Form
 
     Public Sub ApplySavedSettingsToCard()
         'Follow the official Compare Operation screen from upper-left downward, then enable last.
+        ApplyCompareModeSettings(GetSelectedIndex(CompareMode_ComboBox))
         Status = LSI8181_compare_increment_set(Val(Main_Form.ID_ComboBox.Text), Val(AutoIncrement_TextBox.Text))
         ApplyCompareInputSettings()
         ApplyHomingSettings()
@@ -309,11 +311,8 @@ Public Class Compare_Form
         Status = LSI8181_compare_value_set(Val(Main_Form.ID_ComboBox.Text), Val(CompareValue_TextBox.Text))
 
         RestoreCompareOutCheckedState()
-        If CompareOut_CheckBox.Checked = True Then
-            Status = LSI8181_toggle_preset(Val(Main_Form.ID_ComboBox.Text), 1)
-        Else
-            Status = LSI8181_toggle_preset(Val(Main_Form.ID_ComboBox.Text), 0)
-        End If
+        ForceCompareOutChecked()
+        Status = LSI8181_toggle_preset(Val(Main_Form.ID_ComboBox.Text), 1)
 
         Dim lastEnableMode As String = OfficialSettingsStore.GetValue("Compare.LastEnableMode", "")
         If lastEnableMode = "Single" Then
@@ -325,7 +324,18 @@ Public Class Compare_Form
             ApplyIncrementEnable()
         ElseIf lastEnableMode = "Disabled" Then
             Status = LSI8181_counter_start(Val(Main_Form.ID_ComboBox.Text), 1)
+        ElseIf CompareMode_ComboBox.SelectedIndex = 0 Then
+            ApplySingleEnable()
+        ElseIf CompareMode_ComboBox.SelectedIndex = 1 Then
+            ApplyFifoDataSettings()
+            ApplyFifoEnable()
+        ElseIf CompareMode_ComboBox.SelectedIndex = 2 Then
+            ApplyIncrementEnable()
         End If
+    End Sub
+
+    Private Sub ApplyCompareModeSettings(ByVal mode As Byte)
+        Status = LSI8181_compare_mode_set(Val(Main_Form.ID_ComboBox.Text), mode)
     End Sub
 
     Private Function GetSelectedIndex(ByVal comboBox As ComboBox) As Byte
@@ -381,6 +391,14 @@ Public Class Compare_Form
         If Boolean.TryParse(savedValue, checked) Then
             CompareOut_CheckBox.Checked = checked
         End If
+    End Sub
+
+    Private Sub ForceCompareOutChecked()
+        If CompareOut_CheckBox.Checked = False Then
+            CompareOut_CheckBox.Checked = True
+        End If
+
+        OfficialSettingsStore.SetValue("Compare.CompareOutChecked", "True")
     End Sub
     Private Sub CompareInput_ComboBox_SelectedIndexChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles CompareInput_ComboBox.SelectedIndexChanged
         If OfficialSettingsStore.IsRestoring Then Return
