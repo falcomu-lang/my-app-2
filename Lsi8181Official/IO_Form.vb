@@ -1,10 +1,12 @@
 Public Class IO_Form
+    Private _initialized As Boolean
     Dim InputPolarity(8) As CheckBox
     Dim OutputPolarity(8) As CheckBox
     Dim Input(8) As CheckBox
     Dim Output(8) As CheckBox
     Dim AutoNumber As Byte = 0
     Sub initial()
+        If _initialized Then Return
         InputPolarity(0) = InputPolarity_CheckBox_0
         InputPolarity(1) = InputPolarity_CheckBox_1
         InputPolarity(2) = InputPolarity_CheckBox_2
@@ -40,6 +42,7 @@ Public Class IO_Form
         Output(5) = Output_CheckBox_5
         Output(6) = Output_CheckBox_6
         Output(7) = Output_CheckBox_7
+        _initialized = True
     End Sub
 
     Private Sub SetInputPolarity(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles InputPolarity_CheckBox_0.CheckedChanged, InputPolarity_CheckBox_7.CheckedChanged, InputPolarity_CheckBox_6.CheckedChanged, InputPolarity_CheckBox_5.CheckedChanged, InputPolarity_CheckBox_4.CheckedChanged, InputPolarity_CheckBox_3.CheckedChanged, InputPolarity_CheckBox_2.CheckedChanged, InputPolarity_CheckBox_1.CheckedChanged
@@ -137,7 +140,7 @@ Public Class IO_Form
 
     Private Sub Debounce_ComboBox_SelectedIndexChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Debounce_ComboBox.SelectedIndexChanged
         If OfficialSettingsStore.IsRestoring Then Return
-        Status = LSI8181_debounce_time_set(CardID, Debounce_ComboBox.SelectedIndex)
+        Status = LSI8181_debounce_time_set(CardID, GetDebounceMode())
     End Sub
 
     Private Sub ExitDoor_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ExitDoor_Button.Click
@@ -188,11 +191,23 @@ Public Class IO_Form
             End If
             Status = LSI8181_point_set(CardID, O_PORT0, point, state)
         Next
-        Status = LSI8181_debounce_time_set(CardID, Debounce_ComboBox.SelectedIndex)
+        Status = LSI8181_debounce_time_set(CardID, GetDebounceMode())
         If Auto_Button.Checked = True Then
             IsIoAutoRun = True
         Else
             IsIoAutoRun = False
         End If
     End Sub
+
+    Private Function GetDebounceMode() As Byte
+        If Debounce_ComboBox.SelectedIndex < 0 Then
+            If Debounce_ComboBox.Items.Count > 0 Then
+                Debounce_ComboBox.SelectedIndex = 0
+            End If
+
+            Return 0
+        End If
+
+        Return CByte(Debounce_ComboBox.SelectedIndex)
+    End Function
 End Class
