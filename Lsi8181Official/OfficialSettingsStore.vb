@@ -271,9 +271,9 @@ Friend NotInheritable Class OfficialSettingsStore
             lines.Add(key & "=" & Values(key))
         Next
 
-        Dim directory = Path.GetDirectoryName(SettingsPath)
-        If Not String.IsNullOrEmpty(directory) Then
-            Directory.CreateDirectory(directory)
+        Dim settingsDirectory = Path.GetDirectoryName(SettingsPath)
+        If Not String.IsNullOrEmpty(settingsDirectory) Then
+            System.IO.Directory.CreateDirectory(settingsDirectory)
         End If
 
         File.WriteAllLines(SettingsPath, lines.ToArray(), Encoding.UTF8)
