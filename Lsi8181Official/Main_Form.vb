@@ -65,12 +65,20 @@ Public Class Main_Form
             Return
         End If
 
-        Compare_Form.ApplySavedSettingsToCard()
-        IO_Form.ApplySavedSettingsToCard()
-        Segment_Form.ApplySavedSettingsToCard()
-        Extension_Form.ApplySavedSettingsToCard()
-        Timer_Form.ApplySavedSettingsToCard()
-        Interrupt_Form.ApplySavedSettingsToCard()
+        ApplyPageSettings("Compare", Sub() Compare_Form.ApplySavedSettingsToCard())
+        ApplyPageSettings("IO", Sub() IO_Form.ApplySavedSettingsToCard())
+        ApplyPageSettings("Segment", Sub() Segment_Form.ApplySavedSettingsToCard())
+        ApplyPageSettings("Extension", Sub() Extension_Form.ApplySavedSettingsToCard())
+        ApplyPageSettings("Timer", Sub() Timer_Form.ApplySavedSettingsToCard())
+        ApplyPageSettings("Interrupt", Sub() Interrupt_Form.ApplySavedSettingsToCard())
+    End Sub
+
+    Private Sub ApplyPageSettings(ByVal pageName As String, ByVal applyAction As Action)
+        Try
+            applyAction()
+        Catch ex As Exception
+            MsgBox("Apply saved LSI8181 " & pageName & " settings failed: " & ex.Message)
+        End Try
     End Sub
 
     Private Sub FileToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles FileToolStripMenuItem.Click

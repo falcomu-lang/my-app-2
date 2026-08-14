@@ -1,22 +1,23 @@
 Public Class Compare_Form
     Public Sub ReadCompareMode()
-        Dim mode As Integer
+        Dim mode As Byte
         'Read compare mode
         Status = LSI8181_compare_mode_read(Val(Main_Form.ID_ComboBox.Text), mode)
-        CompareMode_ComboBox.SelectedIndex = mode
+        SetSelectedIndex(CompareMode_ComboBox, mode)
 
-        Dim debounce, multiple As Integer
+        Dim debounce As Byte
+        Dim multiple As Byte
         'Read compare input parameter
         Status = LSI8181_CI_mode_read(Val(Main_Form.ID_ComboBox.Text), mode, debounce, multiple)
-        CompareInput_ComboBox.SelectedIndex = mode
-        CompareDebounce_ComboBox.SelectedIndex = debounce
-        MultipleRate_ComboBox.SelectedIndex = multiple
+        SetSelectedIndex(CompareInput_ComboBox, mode)
+        SetSelectedIndex(CompareDebounce_ComboBox, debounce)
+        SetSelectedIndex(MultipleRate_ComboBox, multiple)
 
-        Dim count As UInteger
+        Dim count As UInt16
         Dim single_cont As Byte
         'Read homing mode
         Status = LSI8181_HOMING_mode_read(Val(Main_Form.ID_ComboBox.Text), mode, count, single_cont)
-        HomingMode_ComboBox.SelectedIndex = mode
+        SetSelectedIndex(HomingMode_ComboBox, mode)
         If single_cont = 1 Then
             ContinuousMode_CheckBox.Checked = True
         Else
@@ -25,10 +26,10 @@ Public Class Compare_Form
         ContinuousCount_TextBox.Text = count
 
         Dim polarity As Byte
-        Dim width As Integer
+        Dim width As UInt16
         'Read CMP Out mode ,polarity state ,duty cycyle
         Status = LSI8181_compare_CMP_OUT_read(Val(Main_Form.ID_ComboBox.Text), polarity, mode, width)
-        CompareOutput_ComboBox.SelectedIndex = mode
+        SetSelectedIndex(CompareOutput_ComboBox, mode)
         DutyCycle_TextBox.Text = width
         If polarity = 1 Then
             CompareOutPolarity_CheckBox.Checked = True
@@ -36,10 +37,10 @@ Public Class Compare_Form
             CompareOutPolarity_CheckBox.Checked = False
         End If
 
-        Dim gate As Integer
+        Dim gate As Byte
         'Read Gate Status    
         Status = LSI8181_CO_mode_read(Val(Main_Form.ID_ComboBox.Text), mode, gate, width)
-        CompareGate_CheckBox.Checked = gate
+        CompareGate_CheckBox.Checked = (gate <> 0)
 
         'Read Gate polarity
         Status = LSI8181_port_polarity_read(Val(Main_Form.ID_ComboBox.Text), 0, polarity)
@@ -61,8 +62,9 @@ Public Class Compare_Form
         Status = LSI8181_compare_value_read(Val(Main_Form.ID_ComboBox.Text), value)
         CompareValue_TextBox.Text = value
         'Read thresholdValue
-        Status = LSI8181_compare_FIFO_threshold_read(Val(Main_Form.ID_ComboBox.Text), value)
-        ThresholdValue_TextBox.Text = value
+        Dim thresholdValue As UInt16
+        Status = LSI8181_compare_FIFO_threshold_read(Val(Main_Form.ID_ComboBox.Text), thresholdValue)
+        ThresholdValue_TextBox.Text = thresholdValue
     End Sub
 
     Public Sub CompareAction()
@@ -220,8 +222,8 @@ Public Class Compare_Form
     Private Sub ApplyCompareOutSettings()
 
         Dim CMP_polarity As Byte
-        Dim mode As Integer = CompareOutput_ComboBox.SelectedIndex
-        Dim dutyCycle As UInteger = DutyCycle_TextBox.Text
+        Dim mode As Byte = GetSelectedIndex(CompareOutput_ComboBox)
+        Dim dutyCycle As UInt16 = GetUInt16Text(DutyCycle_TextBox)
         If CompareOutPolarity_CheckBox.Checked = True Then
             CMP_polarity = 1
         Else
@@ -245,9 +247,9 @@ Public Class Compare_Form
     End Sub
 
     Private Sub ApplyCompareInputSettings()
-        Dim mode As Integer = CompareInput_ComboBox.SelectedIndex
-        Dim debounce_time As Integer = CompareDebounce_ComboBox.SelectedIndex
-        Dim multiple_rate As Integer = MultipleRate_ComboBox.SelectedIndex
+        Dim mode As Byte = GetSelectedIndex(CompareInput_ComboBox)
+        Dim debounce_time As Byte = GetSelectedIndex(CompareDebounce_ComboBox)
+        Dim multiple_rate As Byte = GetSelectedIndex(MultipleRate_ComboBox)
         'Set compare input mode
         Status = LSI8181_CI_mode_set(Val(Main_Form.ID_ComboBox.Text), mode, debounce_time, multiple_rate)
     End Sub
@@ -257,8 +259,8 @@ Public Class Compare_Form
     End Sub
 
     Private Sub ApplyHomingSettings()
-        Dim mode As Integer = HomingMode_ComboBox.SelectedIndex
-        Dim count As UInteger = ContinuousCount_TextBox.Text
+        Dim mode As Byte = GetSelectedIndex(HomingMode_ComboBox)
+        Dim count As UInt16 = GetUInt16Text(ContinuousCount_TextBox)
         Dim continuousMode As Byte
         If ContinuousMode_CheckBox.Checked = True Then
             continuousMode = 1
@@ -275,10 +277,10 @@ Public Class Compare_Form
     End Sub
 
     Private Sub ApplyFifoDataSettings()
-        Dim positioneMode As Integer = PositionMode_ComboBox.SelectedIndex
+        Dim positioneMode As Byte = GetSelectedIndex(PositionMode_ComboBox)
         Dim FifoData(0 To 1023) As Int32
         FifoData(0) = Val(FifoData_TextBox.Text)
-        Status = LSI8181_compare_FIFO_threshold_set(Val(Main_Form.ID_ComboBox.Text), Val(ThresholdValue_TextBox.Text))
+        Status = LSI8181_compare_FIFO_threshold_set(Val(Main_Form.ID_ComboBox.Text), GetUInt16Text(ThresholdValue_TextBox))
 
         If Status > 0 Then
             MsgBox("error:" + Status.ToString())
@@ -297,35 +299,68 @@ Public Class Compare_Form
 
 
     Public Sub ApplySavedSettingsToCard()
-        Try
-            'Follow the official Compare Operation screen from upper-left downward, then enable last.
-            Status = LSI8181_compare_increment_set(Val(Main_Form.ID_ComboBox.Text), Val(AutoIncrement_TextBox.Text))
-            ApplyCompareInputSettings()
-            ApplyHomingSettings()
-            ApplyCompareOutSettings()
-            ApplyFifoDataSettings()
-            Status = LSI8181_compare_value_set(Val(Main_Form.ID_ComboBox.Text), Val(CompareValue_TextBox.Text))
+        'Follow the official Compare Operation screen from upper-left downward, then enable last.
+        Status = LSI8181_compare_increment_set(Val(Main_Form.ID_ComboBox.Text), Val(AutoIncrement_TextBox.Text))
+        ApplyCompareInputSettings()
+        ApplyHomingSettings()
+        ApplyCompareOutSettings()
+        ApplyFifoDataSettings()
+        Status = LSI8181_compare_value_set(Val(Main_Form.ID_ComboBox.Text), Val(CompareValue_TextBox.Text))
 
-            If CompareOut_CheckBox.Checked = True Then
-                Status = LSI8181_toggle_preset(Val(Main_Form.ID_ComboBox.Text), 1)
-            Else
-                Status = LSI8181_toggle_preset(Val(Main_Form.ID_ComboBox.Text), 0)
-            End If
+        If CompareOut_CheckBox.Checked = True Then
+            Status = LSI8181_toggle_preset(Val(Main_Form.ID_ComboBox.Text), 1)
+        Else
+            Status = LSI8181_toggle_preset(Val(Main_Form.ID_ComboBox.Text), 0)
+        End If
 
-            Dim lastEnableMode As String = OfficialSettingsStore.GetValue("Compare.LastEnableMode", "")
-            If lastEnableMode = "Single" Then
-                ApplySingleEnable()
-            ElseIf lastEnableMode = "Fifo" Then
-                ApplyFifoEnable()
-            ElseIf lastEnableMode = "Increment" Then
-                ApplyIncrementEnable()
-            ElseIf lastEnableMode = "Disabled" Then
-                Status = LSI8181_counter_start(Val(Main_Form.ID_ComboBox.Text), 1)
-            End If
-        Catch ex As Exception
-            MsgBox("Apply saved LSI8181 settings failed: " & ex.Message)
-        End Try
+        Dim lastEnableMode As String = OfficialSettingsStore.GetValue("Compare.LastEnableMode", "")
+        If lastEnableMode = "Single" Then
+            ApplySingleEnable()
+        ElseIf lastEnableMode = "Fifo" Then
+            ApplyFifoEnable()
+        ElseIf lastEnableMode = "Increment" Then
+            ApplyIncrementEnable()
+        ElseIf lastEnableMode = "Disabled" Then
+            Status = LSI8181_counter_start(Val(Main_Form.ID_ComboBox.Text), 1)
+        End If
     End Sub
+
+    Private Function GetSelectedIndex(ByVal comboBox As ComboBox) As Byte
+        If comboBox.SelectedIndex < 0 Then
+            If comboBox.Items.Count > 0 Then
+                comboBox.SelectedIndex = 0
+            End If
+
+            Return 0
+        End If
+
+        Return CByte(comboBox.SelectedIndex)
+    End Function
+
+    Private Sub SetSelectedIndex(ByVal comboBox As ComboBox, ByVal selectedIndex As Integer)
+        If selectedIndex < 0 OrElse selectedIndex >= comboBox.Items.Count Then
+            If comboBox.Items.Count > 0 Then
+                comboBox.SelectedIndex = 0
+            End If
+
+            Return
+        End If
+
+        comboBox.SelectedIndex = selectedIndex
+    End Sub
+
+    Private Function GetUInt16Text(ByVal textBox As TextBox) As UInt16
+        Dim value As UInt32
+        If Not UInt32.TryParse(textBox.Text, value) Then
+            Return 0
+        End If
+
+        If value > UInt16.MaxValue Then
+            Return UInt16.MaxValue
+        End If
+
+        Return CUShort(value)
+    End Function
     Private Sub CompareInput_ComboBox_SelectedIndexChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles CompareInput_ComboBox.SelectedIndexChanged
         If OfficialSettingsStore.IsRestoring Then Return
         Select Case CompareInput_ComboBox.SelectedIndex
