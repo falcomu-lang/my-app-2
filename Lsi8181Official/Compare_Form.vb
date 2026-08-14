@@ -75,11 +75,7 @@ Public Class Compare_Form
             MultipleRate_ComboBox.Enabled = False
         End If
         'Compare pulse ,duty cycle
-        If CompareOutput_ComboBox.SelectedIndex = 1 Then
-            DutyCycle_TextBox.Enabled = True
-        Else
-            DutyCycle_TextBox.Enabled = False
-        End If
+        UpdateDutyCycleEnabled()
         'Compare homing Home Z and Z
         If HomingMode_ComboBox.SelectedIndex = 6 Or HomingMode_ComboBox.SelectedIndex = 7 Then
             ContinuousCount_TextBox.Enabled = True
@@ -144,6 +140,8 @@ Public Class Compare_Form
     Private Sub Compare_Form_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
         PositionMode_ComboBox.SelectedIndex = 0
         ReadCompareMode()
+        RestoreCompareOutCheckedState()
+        UpdateDutyCycleEnabled()
     End Sub
 
     Private Sub ExitDoor_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ExitDoor_Button.Click
@@ -222,6 +220,7 @@ Public Class Compare_Form
     Private Sub ApplyCompareOutSettings()
 
         Dim CMP_polarity As Byte
+        ForcePulseOutputForAutoIncrement()
         Dim mode As Byte = GetSelectedIndex(CompareOutput_ComboBox)
         Dim dutyCycle As UInt16 = GetUInt16Text(DutyCycle_TextBox)
         If CompareOutPolarity_CheckBox.Checked = True Then
@@ -280,7 +279,7 @@ Public Class Compare_Form
         Dim positioneMode As Byte = GetSelectedIndex(PositionMode_ComboBox)
         Dim FifoData(0 To 1023) As Int32
         FifoData(0) = Val(FifoData_TextBox.Text)
-        Status = LSI8181_compare_FIFO_threshold_set(Val(Main_Form.ID_ComboBox.Text), GetUInt16Text(ThresholdValue_TextBox))
+        Status = LSI8181_compare_FIFO_threshold_set(Val(Main_Form.ID_ComboBox.Text), GetFifoThreshold())
 
         If Status > 0 Then
             MsgBox("error:" + Status.ToString())
@@ -304,9 +303,9 @@ Public Class Compare_Form
         ApplyCompareInputSettings()
         ApplyHomingSettings()
         ApplyCompareOutSettings()
-        ApplyFifoDataSettings()
         Status = LSI8181_compare_value_set(Val(Main_Form.ID_ComboBox.Text), Val(CompareValue_TextBox.Text))
 
+        RestoreCompareOutCheckedState()
         If CompareOut_CheckBox.Checked = True Then
             Status = LSI8181_toggle_preset(Val(Main_Form.ID_ComboBox.Text), 1)
         Else
@@ -317,6 +316,7 @@ Public Class Compare_Form
         If lastEnableMode = "Single" Then
             ApplySingleEnable()
         ElseIf lastEnableMode = "Fifo" Then
+            ApplyFifoDataSettings()
             ApplyFifoEnable()
         ElseIf lastEnableMode = "Increment" Then
             ApplyIncrementEnable()
@@ -361,6 +361,24 @@ Public Class Compare_Form
 
         Return CUShort(value)
     End Function
+
+    Private Function GetFifoThreshold() As UInt16
+        Dim value As UInt16 = GetUInt16Text(ThresholdValue_TextBox)
+        If value = 0 Then
+            value = 1
+            ThresholdValue_TextBox.Text = value.ToString()
+        End If
+
+        Return value
+    End Function
+
+    Private Sub RestoreCompareOutCheckedState()
+        Dim savedValue As String = OfficialSettingsStore.GetValue("Compare.CompareOutChecked", OfficialSettingsStore.GetValue("Compare_Form.CompareOut_CheckBox.Checked", ""))
+        Dim checked As Boolean
+        If Boolean.TryParse(savedValue, checked) Then
+            CompareOut_CheckBox.Checked = checked
+        End If
+    End Sub
     Private Sub CompareInput_ComboBox_SelectedIndexChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles CompareInput_ComboBox.SelectedIndexChanged
         If OfficialSettingsStore.IsRestoring Then Return
         Select Case CompareInput_ComboBox.SelectedIndex
@@ -392,14 +410,18 @@ Public Class Compare_Form
         If CompareMode_ComboBox.SelectedIndex = 2 Then
             AutoIncrement_GroupBox.Enabled = True
             Increment_Button.Enabled = True
+            ForcePulseOutputForAutoIncrement()
         Else
             AutoIncrement_GroupBox.Enabled = False
             Increment_Button.Enabled = False
         End If
+
+        UpdateDutyCycleEnabled()
     End Sub
 
     Private Sub CompareOut_CheckBox_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles CompareOut_CheckBox.CheckedChanged
         If OfficialSettingsStore.IsRestoring Then Return
+        OfficialSettingsStore.SetValue("Compare.CompareOutChecked", CompareOut_CheckBox.Checked.ToString())
 
         Dim preset As Integer
         If CompareOut_CheckBox.Checked = True Then
@@ -409,6 +431,21 @@ Public Class Compare_Form
         End If
         'Set CMP OUT point hight or low
         Status = LSI8181_toggle_preset(Val(Main_Form.ID_ComboBox.Text), preset)
+    End Sub
+
+    Private Sub CompareOutput_ComboBox_SelectedIndexChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles CompareOutput_ComboBox.SelectedIndexChanged
+        If OfficialSettingsStore.IsRestoring Then Return
+        UpdateDutyCycleEnabled()
+    End Sub
+
+    Private Sub UpdateDutyCycleEnabled()
+        DutyCycle_TextBox.Enabled = (CompareOutput_ComboBox.SelectedIndex = 1 OrElse CompareMode_ComboBox.SelectedIndex = 2)
+    End Sub
+
+    Private Sub ForcePulseOutputForAutoIncrement()
+        If CompareMode_ComboBox.SelectedIndex = 2 AndAlso CompareOutput_ComboBox.Items.Count > 1 AndAlso CompareOutput_ComboBox.SelectedIndex <> 1 Then
+            CompareOutput_ComboBox.SelectedIndex = 1
+        End If
     End Sub
 
     Private Sub APhasePolarity_CheckBox_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles APhasePolarity_CheckBox.CheckedChanged

@@ -513,12 +513,7 @@ namespace CameraCaptureApp.Forms
             _cameraDisplayControl.SaveSnapshotRequested -= CameraDisplayControl_SaveSnapshotRequested;
             _statusRefreshTimer.Stop();
             _statusRefreshTimer.Dispose();
-            if (_meterWheelControlForm != null && !_meterWheelControlForm.IsDisposed)
-            {
-                _meterWheelControlForm.CloseCardAndAllowClose();
-                _meterWheelControlForm.Dispose();
-                _meterWheelControlForm = null;
-            }
+            CloseMeterWheelControlForm();
 
             CancelPendingImageLoad();
             CancelPendingPreviewFrame();
@@ -532,6 +527,22 @@ namespace CameraCaptureApp.Forms
 
             _cameraService.Disconnect();
             base.OnFormClosed(e);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            CloseMeterWheelControlForm();
+            base.OnFormClosing(e);
+        }
+
+        private void CloseMeterWheelControlForm()
+        {
+            if (_meterWheelControlForm != null && !_meterWheelControlForm.IsDisposed)
+            {
+                _meterWheelControlForm.CloseCardAndAllowClose();
+                _meterWheelControlForm.Dispose();
+                _meterWheelControlForm = null;
+            }
         }
 
         private void CameraService_FrameReady(object sender, CameraFrameEventArgs e)
