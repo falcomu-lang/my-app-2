@@ -139,7 +139,8 @@ Public Class Compare_Form
 
     Private Sub Compare_Form_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
         PositionMode_ComboBox.SelectedIndex = 0
-        ReadCompareMode()
+        OfficialSettingsStore.RunWithoutSaving(Sub() ReadCompareMode())
+        OfficialSettingsStore.Restore(Me)
         RestoreCompareOutCheckedState()
         UpdateDutyCycleEnabled()
     End Sub

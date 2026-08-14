@@ -5,7 +5,8 @@ Public Class Segment_Form
     Dim s_stop(3) As TextBox
     Private Sub Segment_Form_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
         Initial()
-        Read_parameter()
+        OfficialSettingsStore.RunWithoutSaving(Sub() Read_parameter())
+        OfficialSettingsStore.Restore(Me)
     End Sub
     Sub Initial()
         If _initialized Then Return

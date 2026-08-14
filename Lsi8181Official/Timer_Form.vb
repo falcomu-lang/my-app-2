@@ -40,8 +40,11 @@ Public Class Timer_Form
 
     Private Sub Timer_Form_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
         Dim data As Integer
-        Status = LSI8181_TC_read(CardID, 1, data)
-        CurrentValue_TextBox.Text = data
+        OfficialSettingsStore.RunWithoutSaving(Sub()
+                                                   Status = LSI8181_TC_read(CardID, 1, data)
+                                                   CurrentValue_TextBox.Text = data
+                                               End Sub)
+        OfficialSettingsStore.Restore(Me)
     End Sub
 
     Private Sub ShowTimerIrqMask_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ShowTimerIrqMask_Button.Click

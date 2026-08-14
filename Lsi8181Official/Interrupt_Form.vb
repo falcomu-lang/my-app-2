@@ -48,7 +48,8 @@ Friend Class Interrupt_Form
 
     Private Sub Interrupt_Form_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
         InitialObject()
-        ReadIrqMask()
+        OfficialSettingsStore.RunWithoutSaving(Sub() ReadIrqMask())
+        OfficialSettingsStore.Restore(Me)
         IsOpenInterruptFormShow = True
     End Sub
 

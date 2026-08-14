@@ -46,6 +46,23 @@ Friend NotInheritable Class OfficialSettingsStore
         Return fallback
     End Function
 
+    Public Shared Sub Restore(ByVal form As Form)
+        If form Is Nothing Then
+            Return
+        End If
+
+        RunWithoutSaving(Sub() RestoreControl(form, form.Name))
+    End Sub
+
+    Public Shared Sub RunWithoutSaving(ByVal action As Action)
+        _restoring = True
+        Try
+            action()
+        Finally
+            _restoring = False
+        End Try
+    End Sub
+
     Private Shared Sub AttachControl(ByVal control As Control, ByVal formName As String)
         RestoreControl(control, formName)
         AddHandler control.ControlAdded, Sub(sender, e) AttachControl(e.Control, formName)

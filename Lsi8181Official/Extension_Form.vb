@@ -138,7 +138,8 @@ Public Class Extension_Form
     End Sub
     Private Sub Extension_Form_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
         initial()
-        Parameter_read_formload()
+        OfficialSettingsStore.RunWithoutSaving(Sub() Parameter_read_formload())
+        OfficialSettingsStore.Restore(Me)
     End Sub
 
     Private Sub Cancel_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Cancel_Button.Click

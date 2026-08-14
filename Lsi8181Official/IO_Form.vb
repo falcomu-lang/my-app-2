@@ -108,10 +108,13 @@ Public Class IO_Form
     Private Sub IO_Form_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
         Dim mode As Byte
         initial()
-        ReadIoPolarity()
-        'read debounce mode
-        Status = LSI8181_debounce_time_read(CardID, mode)
-        Debounce_ComboBox.SelectedIndex = mode
+        OfficialSettingsStore.RunWithoutSaving(Sub()
+                                                   ReadIoPolarity()
+                                                   'read debounce mode
+                                                   Status = LSI8181_debounce_time_read(CardID, mode)
+                                                   Debounce_ComboBox.SelectedIndex = mode
+                                               End Sub)
+        OfficialSettingsStore.Restore(Me)
         'open flag is true
         IsOpenIoFormShow = True
     End Sub
