@@ -32,6 +32,7 @@ namespace CameraCaptureApp.Forms
         private int _snapshotSaveCompletedCount;
         private int _snapshotSaveFailedCount;
         private SaveProgressForm _snapshotProgressForm;
+        private MeterWheelControlForm _meterWheelControlForm;
         private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
 
@@ -100,6 +101,27 @@ namespace CameraCaptureApp.Forms
                 {
                     form.Dispose();
                 }
+            }
+        }
+
+        private void buttonMeterWheel_Click(object sender, EventArgs e)
+        {
+            if (_meterWheelControlForm == null || _meterWheelControlForm.IsDisposed)
+            {
+                _meterWheelControlForm = new MeterWheelControlForm();
+                _meterWheelControlForm.FormClosed += MeterWheelControlForm_FormClosed;
+                _meterWheelControlForm.Show(this);
+                return;
+            }
+
+            _meterWheelControlForm.Activate();
+        }
+
+        private void MeterWheelControlForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if (ReferenceEquals(_meterWheelControlForm, sender))
+            {
+                _meterWheelControlForm = null;
             }
         }
 
@@ -460,6 +482,10 @@ namespace CameraCaptureApp.Forms
             _cameraDisplayControl.SaveSnapshotRequested -= CameraDisplayControl_SaveSnapshotRequested;
             _statusRefreshTimer.Stop();
             _statusRefreshTimer.Dispose();
+            if (_meterWheelControlForm != null && !_meterWheelControlForm.IsDisposed)
+            {
+                _meterWheelControlForm.Close();
+            }
 
             CancelPendingImageLoad();
             CancelPendingPreviewFrame();
@@ -678,6 +704,7 @@ namespace CameraCaptureApp.Forms
             var isPreviewing = status != null && status.IsPreviewing;
 
             buttonCameraSettings.Enabled = true;
+            buttonMeterWheel.Enabled = true;
             buttonConnect.Enabled = !isConnected;
             buttonDisconnect.Enabled = isConnected;
             buttonStartPreview.Enabled = isConnected && !isPreviewing;

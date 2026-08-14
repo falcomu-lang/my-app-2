@@ -9,6 +9,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Panel panelFooter;
         private System.Windows.Forms.Panel panelViewerHost;
         private System.Windows.Forms.Button buttonCameraSettings;
+        private System.Windows.Forms.Button buttonMeterWheel;
         private System.Windows.Forms.Button buttonConnect;
         private System.Windows.Forms.Button buttonDisconnect;
         private System.Windows.Forms.Button buttonStartPreview;
@@ -64,6 +65,7 @@ namespace CameraCaptureApp.Forms
             this.buttonStartPreview = new System.Windows.Forms.Button();
             this.buttonDisconnect = new System.Windows.Forms.Button();
             this.buttonConnect = new System.Windows.Forms.Button();
+            this.buttonMeterWheel = new System.Windows.Forms.Button();
             this.buttonCameraSettings = new System.Windows.Forms.Button();
             this.panelContent = new System.Windows.Forms.Panel();
             this.panelViewerHost = new System.Windows.Forms.Panel();
@@ -162,6 +164,7 @@ namespace CameraCaptureApp.Forms
             this.panelLeft.Controls.Add(this.buttonStartPreview);
             this.panelLeft.Controls.Add(this.buttonDisconnect);
             this.panelLeft.Controls.Add(this.buttonConnect);
+            this.panelLeft.Controls.Add(this.buttonMeterWheel);
             this.panelLeft.Controls.Add(this.buttonCameraSettings);
             this.panelLeft.Dock = System.Windows.Forms.DockStyle.Left;
             this.panelLeft.Location = new System.Drawing.Point(0, 44);
@@ -178,11 +181,19 @@ namespace CameraCaptureApp.Forms
             this.buttonCameraSettings.Size = new System.Drawing.Size(252, 54);
             this.buttonCameraSettings.Text = "Camera Settings";
             this.buttonCameraSettings.Click += new System.EventHandler(this.buttonCameraSettings_Click);
+            this.buttonMeterWheel.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonMeterWheel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonMeterWheel.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
+            this.buttonMeterWheel.ForeColor = System.Drawing.Color.White;
+            this.buttonMeterWheel.Location = new System.Drawing.Point(19, 86);
+            this.buttonMeterWheel.Size = new System.Drawing.Size(252, 48);
+            this.buttonMeterWheel.Text = "Meter Wheel";
+            this.buttonMeterWheel.Click += new System.EventHandler(this.buttonMeterWheel_Click);
             this.buttonConnect.BackColor = System.Drawing.Color.FromArgb(36, 51, 84);
             this.buttonConnect.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonConnect.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
             this.buttonConnect.ForeColor = System.Drawing.Color.White;
-            this.buttonConnect.Location = new System.Drawing.Point(19, 86);
+            this.buttonConnect.Location = new System.Drawing.Point(19, 146);
             this.buttonConnect.Size = new System.Drawing.Size(120, 48);
             this.buttonConnect.Text = "Connect";
             this.buttonConnect.Click += new System.EventHandler(this.buttonConnect_Click);
@@ -190,7 +201,7 @@ namespace CameraCaptureApp.Forms
             this.buttonDisconnect.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonDisconnect.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
             this.buttonDisconnect.ForeColor = System.Drawing.Color.White;
-            this.buttonDisconnect.Location = new System.Drawing.Point(151, 86);
+            this.buttonDisconnect.Location = new System.Drawing.Point(151, 146);
             this.buttonDisconnect.Size = new System.Drawing.Size(120, 48);
             this.buttonDisconnect.Text = "Disconnect";
             this.buttonDisconnect.Click += new System.EventHandler(this.buttonDisconnect_Click);
@@ -198,7 +209,7 @@ namespace CameraCaptureApp.Forms
             this.buttonStartPreview.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonStartPreview.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
             this.buttonStartPreview.ForeColor = System.Drawing.Color.White;
-            this.buttonStartPreview.Location = new System.Drawing.Point(19, 146);
+            this.buttonStartPreview.Location = new System.Drawing.Point(19, 206);
             this.buttonStartPreview.Size = new System.Drawing.Size(252, 48);
             this.buttonStartPreview.Text = "Start Preview";
             this.buttonStartPreview.Click += new System.EventHandler(this.buttonStartPreview_Click);
@@ -206,7 +217,7 @@ namespace CameraCaptureApp.Forms
             this.buttonStop.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonStop.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
             this.buttonStop.ForeColor = System.Drawing.Color.White;
-            this.buttonStop.Location = new System.Drawing.Point(19, 206);
+            this.buttonStop.Location = new System.Drawing.Point(19, 266);
             this.buttonStop.Size = new System.Drawing.Size(252, 48);
             this.buttonStop.Text = "Stop";
             this.buttonStop.Click += new System.EventHandler(this.buttonStop_Click);
@@ -214,7 +225,7 @@ namespace CameraCaptureApp.Forms
             this.buttonCapture.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonCapture.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
             this.buttonCapture.ForeColor = System.Drawing.Color.White;
-            this.buttonCapture.Location = new System.Drawing.Point(19, 266);
+            this.buttonCapture.Location = new System.Drawing.Point(19, 326);
             this.buttonCapture.Size = new System.Drawing.Size(120, 42);
             this.buttonCapture.Text = "Capture";
             this.buttonCapture.Click += new System.EventHandler(this.buttonCapture_Click);
@@ -222,7 +233,7 @@ namespace CameraCaptureApp.Forms
             this.buttonLoadImage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonLoadImage.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F);
             this.buttonLoadImage.ForeColor = System.Drawing.Color.White;
-            this.buttonLoadImage.Location = new System.Drawing.Point(151, 266);
+            this.buttonLoadImage.Location = new System.Drawing.Point(151, 326);
             this.buttonLoadImage.Size = new System.Drawing.Size(120, 42);
             this.buttonLoadImage.Text = "Load Image";
             this.buttonLoadImage.Click += new System.EventHandler(this.buttonLoadImage_Click);
