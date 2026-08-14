@@ -54,6 +54,15 @@ Friend NotInheritable Class OfficialSettingsStore
         RunWithoutSaving(Sub() RestoreControl(form, form.Name))
     End Sub
 
+    Public Shared Sub Save(ByVal form As Form)
+        If form Is Nothing Then
+            Return
+        End If
+
+        PersistControlTree(form)
+        SaveValues()
+    End Sub
+
     Public Shared Sub RunWithoutSaving(ByVal action As Action)
         _restoring = True
         Try
@@ -209,6 +218,14 @@ Friend NotInheritable Class OfficialSettingsStore
 
             Values(key & ".CheckedIndices") = String.Join(",", parts.ToArray())
         End If
+    End Sub
+
+    Private Shared Sub PersistControlTree(ByVal control As Control)
+        PersistControl(control)
+
+        For Each child As Control In control.Controls
+            PersistControlTree(child)
+        Next
     End Sub
 
     Private Shared Function GetKey(ByVal formName As String, ByVal control As Control) As String

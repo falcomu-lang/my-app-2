@@ -40,6 +40,7 @@ Partial Class Main_Form
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
         Me.ToolTip1 = New System.Windows.Forms.ToolTip(Me.components)
         Me.ExitDoor_Button = New System.Windows.Forms.Button
+        Me.SaveSettings_Button = New System.Windows.Forms.Button
         Me.X_Encoder_GroupBox = New System.Windows.Forms.GroupBox
         Me.X_Input_GroupBox = New System.Windows.Forms.GroupBox
         Me.InputStatus_CheckedListBox = New System.Windows.Forms.CheckedListBox
@@ -209,6 +210,20 @@ Partial Class Main_Form
         Me.ExitDoor_Button.TextAlign = System.Drawing.ContentAlignment.BottomCenter
         Me.ToolTip1.SetToolTip(Me.ExitDoor_Button, "Exit")
         Me.ExitDoor_Button.UseVisualStyleBackColor = False
+        '
+        'SaveSettings_Button
+        '
+        Me.SaveSettings_Button.BackColor = System.Drawing.SystemColors.Control
+        Me.SaveSettings_Button.Font = New System.Drawing.Font("Arial", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.SaveSettings_Button.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.SaveSettings_Button.Location = New System.Drawing.Point(176, 307)
+        Me.SaveSettings_Button.Name = "SaveSettings_Button"
+        Me.SaveSettings_Button.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.SaveSettings_Button.Size = New System.Drawing.Size(53, 34)
+        Me.SaveSettings_Button.TabIndex = 59
+        Me.SaveSettings_Button.Text = "Save"
+        Me.ToolTip1.SetToolTip(Me.SaveSettings_Button, "Save settings")
+        Me.SaveSettings_Button.UseVisualStyleBackColor = False
         '
         'X_Encoder_GroupBox
         '
@@ -399,6 +414,7 @@ Partial Class Main_Form
         Me.Controls.Add(Me.homing_mode_Label)
         Me.Controls.Add(Me.X_Encoder_GroupBox)
         Me.Controls.Add(Me.X_Compare_GroupBox)
+        Me.Controls.Add(Me.SaveSettings_Button)
         Me.Controls.Add(Me.ExitDoor_Button)
         Me.Controls.Add(Me.ID_ComboBox)
         Me.Controls.Add(Me._Label1_2)
@@ -453,5 +469,6 @@ Partial Class Main_Form
     Friend WithEvents Label1 As System.Windows.Forms.Label
     Friend WithEvents AboutToolStripMenuItem As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents HelpToolStripMenuItem1 As System.Windows.Forms.ToolStripMenuItem
+    Public WithEvents SaveSettings_Button As System.Windows.Forms.Button
 
 End Class

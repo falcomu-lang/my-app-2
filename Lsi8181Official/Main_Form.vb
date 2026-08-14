@@ -90,6 +90,21 @@ Public Class Main_Form
     Private Sub ExitDoor_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ExitDoor_Button.Click
         cloes_function()
     End Sub
+
+    Private Sub SaveSettings_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles SaveSettings_Button.Click
+        SaveOfficialSettings()
+        MsgBox("LSI8181 settings saved.")
+    End Sub
+
+    Private Sub SaveOfficialSettings()
+        OfficialSettingsStore.Save(Me)
+        OfficialSettingsStore.Save(Compare_Form)
+        OfficialSettingsStore.Save(IO_Form)
+        OfficialSettingsStore.Save(Segment_Form)
+        OfficialSettingsStore.Save(Extension_Form)
+        OfficialSettingsStore.Save(Timer_Form)
+        OfficialSettingsStore.Save(Interrupt_Form)
+    End Sub
     Private Sub Check_Card()
         Dim i As Integer
         Dim lngaddress As UInt64
