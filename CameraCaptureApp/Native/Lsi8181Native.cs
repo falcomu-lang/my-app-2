@@ -15,6 +15,8 @@ namespace CameraCaptureApp.Native
         public const byte CompareAutoIncrement = 2;
         public const byte CounterCompare = 2;
         public const byte CmpOutPulse = 1;
+        public const byte CmpOutEnabled = 1;
+        public const byte CmpOutNormalPolarity = 0;
         public const byte NoGate = 0;
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
@@ -31,6 +33,9 @@ namespace CameraCaptureApp.Native
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_CO_mode_set(byte CardID, byte out_mode, byte gate, ushort out_width);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_CMP_OUT_set(byte CardID, byte polarity, byte out_mode, ushort out_width);
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_counter_set(byte CardID, int counter_value);
@@ -55,5 +60,8 @@ namespace CameraCaptureApp.Native
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_counter_stop(byte CardID);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_toggle_preset(byte CardID, byte preset);
     }
 }
