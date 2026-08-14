@@ -304,6 +304,8 @@ Public Class Compare_Form
         ApplyCompareInputSettings()
         ApplyHomingSettings()
         ApplyCompareOutSettings()
+        ApplyCioPolaritySettings()
+        ApplyCompareGateSettings()
         Status = LSI8181_compare_value_set(Val(Main_Form.ID_ComboBox.Text), Val(CompareValue_TextBox.Text))
 
         RestoreCompareOutCheckedState()
@@ -451,38 +453,17 @@ Public Class Compare_Form
 
     Private Sub APhasePolarity_CheckBox_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles APhasePolarity_CheckBox.CheckedChanged
         If OfficialSettingsStore.IsRestoring Then Return
-        Dim polarity As UInt16
-        Status = LSI8181_CIO_polarity_read(Val(Main_Form.ID_ComboBox.Text), polarity)
-        If APhasePolarity_CheckBox.Checked = True Then
-            U16ChageBitX(A_phase, 1, polarity)
-        Else
-            U16ChageBitX(A_phase, 0, polarity)
-        End If
-        Status = LSI8181_CIO_polarity_set(Val(Main_Form.ID_ComboBox.Text), polarity)
+        ApplyCioPolaritySettings()
     End Sub
 
     Private Sub BPhasePolarity_CheckBox_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles BPhasePolarity_CheckBox.CheckedChanged
         If OfficialSettingsStore.IsRestoring Then Return
-        Dim polarity As UInt16
-        Status = LSI8181_CIO_polarity_read(Val(Main_Form.ID_ComboBox.Text), polarity)
-        If BPhasePolarity_CheckBox.Checked = True Then
-            U16ChageBitX(B_phase, 1, polarity)
-        Else
-            U16ChageBitX(B_phase, 0, polarity)
-        End If
-        Status = LSI8181_CIO_polarity_set(Val(Main_Form.ID_ComboBox.Text), polarity)
+        ApplyCioPolaritySettings()
     End Sub
 
     Private Sub ZPhasePolarity_CheckBox_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ZPhasePolarity_CheckBox.CheckedChanged
         If OfficialSettingsStore.IsRestoring Then Return
-        Dim polarity As UInt16
-        Status = LSI8181_CIO_polarity_read(Val(Main_Form.ID_ComboBox.Text), polarity)
-        If ZPhasePolarity_CheckBox.Checked = True Then
-            U16ChageBitX(Z_phase, 1, polarity)
-        Else
-            U16ChageBitX(Z_phase, 0, polarity)
-        End If
-        Status = LSI8181_CIO_polarity_set(Val(Main_Form.ID_ComboBox.Text), polarity)
+        ApplyCioPolaritySettings()
     End Sub
     Sub U16ChageBitX(ByVal bit As Byte, ByVal state As Byte, ByRef data As UInt16)
         If ((data >> bit) And 1) = state Then
@@ -497,42 +478,45 @@ Public Class Compare_Form
 
     Private Sub HomePolarity_CheckBox_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles HomePolarity_CheckBox.CheckedChanged
         If OfficialSettingsStore.IsRestoring Then Return
-        Dim polarity As UInt16
-        Status = LSI8181_CIO_polarity_read(Val(Main_Form.ID_ComboBox.Text), polarity)
-        If HomePolarity_CheckBox.Checked = True Then
-            U16ChageBitX(HOME, 1, polarity)
-        Else
-            U16ChageBitX(HOME, 0, polarity)
-        End If
-        Status = LSI8181_CIO_polarity_set(Val(Main_Form.ID_ComboBox.Text), polarity)
+        ApplyCioPolaritySettings()
     End Sub
 
     Private Sub ClrPolarity_CheckBox_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ClrPolarity_CheckBox.CheckedChanged
         If OfficialSettingsStore.IsRestoring Then Return
-        Dim polarity As UInt16
-        Status = LSI8181_CIO_polarity_read(Val(Main_Form.ID_ComboBox.Text), polarity)
-        If ClrPolarity_CheckBox.Checked = True Then
-            U16ChageBitX(CLEAR_IN, 1, polarity)
-        Else
-            U16ChageBitX(CLEAR_IN, 0, polarity)
-        End If
-        Status = LSI8181_CIO_polarity_set(Val(Main_Form.ID_ComboBox.Text), polarity)
+        ApplyCioPolaritySettings()
     End Sub
 
     Private Sub CompareOutPolarity_CheckBox_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles CompareOutPolarity_CheckBox.CheckedChanged
         If OfficialSettingsStore.IsRestoring Then Return
-        Dim polarity As UInt16
-        Status = LSI8181_CIO_polarity_read(Val(Main_Form.ID_ComboBox.Text), polarity)
-        If CompareOutPolarity_CheckBox.Checked = True Then
-            U16ChageBitX(CMP_OUT, 1, polarity)
-        Else
-            U16ChageBitX(CMP_OUT, 0, polarity)
-        End If
-        Status = LSI8181_CIO_polarity_set(Val(Main_Form.ID_ComboBox.Text), polarity)
+        ApplyCioPolaritySettings()
     End Sub
 
     Private Sub CompareGate_CheckBox_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles CompareGate_CheckBox.CheckedChanged, CompareGatePolarity_CheckBox.CheckedChanged
         If OfficialSettingsStore.IsRestoring Then Return
+        ApplyCompareGateSettings()
+    End Sub
+
+    Private Sub ApplyCioPolaritySettings()
+        Dim polarity As UInt16
+        Status = LSI8181_CIO_polarity_read(Val(Main_Form.ID_ComboBox.Text), polarity)
+        U16ChageBitX(A_phase, GetCheckState(APhasePolarity_CheckBox), polarity)
+        U16ChageBitX(B_phase, GetCheckState(BPhasePolarity_CheckBox), polarity)
+        U16ChageBitX(Z_phase, GetCheckState(ZPhasePolarity_CheckBox), polarity)
+        U16ChageBitX(HOME, GetCheckState(HomePolarity_CheckBox), polarity)
+        U16ChageBitX(CLEAR_IN, GetCheckState(ClrPolarity_CheckBox), polarity)
+        U16ChageBitX(CMP_OUT, GetCheckState(CompareOutPolarity_CheckBox), polarity)
+        Status = LSI8181_CIO_polarity_set(Val(Main_Form.ID_ComboBox.Text), polarity)
+    End Sub
+
+    Private Function GetCheckState(ByVal checkBox As CheckBox) As Byte
+        If checkBox.Checked Then
+            Return 1
+        End If
+
+        Return 0
+    End Function
+
+    Private Sub ApplyCompareGateSettings()
         Dim Gate_polarity As Byte
         If CompareGatePolarity_CheckBox.Checked = True Then
             Gate_polarity = 1
