@@ -53,6 +53,7 @@ namespace CameraCaptureApp.Services
 
             status = Lsi8181Native.LSI8181_toggle_preset(cardId, Lsi8181Native.CmpOutEnabled);
             EnsureSuccess(status, "Enable CMP OUT");
+            EnsureCmpOutEnabled(cardId);
 
             status = Lsi8181Native.LSI8181_counter_start(cardId, Lsi8181Native.CounterCompare);
             EnsureSuccess(status, "Start encoder counter with compare output");
@@ -120,6 +121,7 @@ namespace CameraCaptureApp.Services
 
             status = Lsi8181Native.LSI8181_toggle_preset(_cardId, Lsi8181Native.CmpOutEnabled);
             EnsureSuccess(status, "Enable CMP OUT");
+            EnsureCmpOutEnabled(_cardId);
         }
 
         public void Close()
@@ -158,6 +160,17 @@ namespace CameraCaptureApp.Services
             if (status != Lsi8181Native.Success)
             {
                 throw new InvalidOperationException(action + " failed. Status: " + status);
+            }
+        }
+
+        private static void EnsureCmpOutEnabled(byte cardId)
+        {
+            byte compareOut = 0;
+            var status = Lsi8181Native.LSI8181_CO_read(cardId, ref compareOut);
+            EnsureSuccess(status, "Read CMP OUT status");
+            if (compareOut != Lsi8181Native.CmpOutEnabled)
+            {
+                throw new InvalidOperationException("CMP OUT enable readback failed. Current state: " + compareOut);
             }
         }
     }

@@ -63,5 +63,8 @@ namespace CameraCaptureApp.Native
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_toggle_preset(byte CardID, byte preset);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_CO_read(byte CardID, ref byte compare_out);
     }
 }
