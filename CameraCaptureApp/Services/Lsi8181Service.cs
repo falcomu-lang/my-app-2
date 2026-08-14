@@ -160,11 +160,6 @@ namespace CameraCaptureApp.Services
             EnsureSuccess("Enable LSI-8181 CMP OUT pulse output");
 
             SetStatus(
-                SafeCall(() => Lsi8181Native.LSI8181_toggle_preset(cardId, 1)),
-                "CMP OUT preset enabled.");
-            EnsureSuccess("Enable LSI-8181 CMP OUT preset");
-
-            SetStatus(
                 SafeCall(() => Lsi8181Native.LSI8181_compare_mode_set(cardId, 2)),
                 "Compare mode set to auto increment.");
             EnsureSuccess("Set LSI-8181 compare mode to auto increment");
@@ -173,6 +168,11 @@ namespace CameraCaptureApp.Services
                 SafeCall(() => Lsi8181Native.LSI8181_counter_start(cardId, 2)),
                 "Auto increment compare mode enabled.");
             EnsureSuccess("Enable LSI-8181 auto increment compare mode");
+
+            SetStatus(
+                SafeCall(() => Lsi8181Native.LSI8181_toggle_preset(cardId, 1)),
+                "CMP OUT checkbox forced on.");
+            EnsureSuccess("Force LSI-8181 CMP OUT checkbox on");
         }
 
         public void Close()
