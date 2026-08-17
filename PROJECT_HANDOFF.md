@@ -15,7 +15,7 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
 - Current handoff date: `2026-08-17`
-- Latest pushed commit at this handoff update: `9ad1d08 Add meter wheel reverse direction setting`
+- Latest pushed feature commit referenced by this handoff: `1a9e609 Add meter wheel reverse direction setting`
 
 Latest verified local build command:
 
