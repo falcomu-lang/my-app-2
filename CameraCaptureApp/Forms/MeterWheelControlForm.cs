@@ -9,18 +9,36 @@ namespace CameraCaptureApp.Forms
 {
     public partial class MeterWheelControlForm : Form
     {
-        private readonly Lsi8181MeterWheelService _meterWheelService = new Lsi8181MeterWheelService();
+        private readonly Lsi8181MeterWheelService _meterWheelService;
         private readonly ISettingsService _settingsService;
         private readonly CameraSettings _settings;
+        private readonly bool _ownsMeterWheelService;
         private MeterWheelExtensionCompareForm _extensionCompareForm;
 
-        public MeterWheelControlForm(CameraSettings settings, ISettingsService settingsService)
+        public MeterWheelControlForm()
+            : this(CameraSettings.CreateDefault(), null, new Lsi8181MeterWheelService())
+        {
+            _ownsMeterWheelService = true;
+        }
+
+        internal MeterWheelControlForm(
+            CameraSettings settings,
+            ISettingsService settingsService,
+            Lsi8181MeterWheelService meterWheelService)
         {
             _settings = settings == null ? CameraSettings.CreateDefault() : settings;
             _settingsService = settingsService;
+            _meterWheelService = meterWheelService ?? throw new ArgumentNullException("meterWheelService");
             InitializeComponent();
-            comboCardId.SelectedIndex = 0;
             LoadMeterWheelSettingsToUi();
+            UpdateControlStates();
+            if (_meterWheelService.IsInitialized)
+            {
+                labelStatus.Text = "Connected";
+                timerRefresh.Start();
+            }
+
+            RefreshValues();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -32,7 +50,11 @@ namespace CameraCaptureApp.Forms
                 _extensionCompareForm.Close();
             }
 
-            _meterWheelService.Dispose();
+            if (_ownsMeterWheelService)
+            {
+                _meterWheelService.Dispose();
+            }
+
             base.OnFormClosed(e);
         }
 
@@ -54,6 +76,7 @@ namespace CameraCaptureApp.Forms
                         (int)numericIncrement.Value,
                         (ushort)numericCmpOutWidth.Value,
                         CreateExtensionCompareChannelsFromSettings(_settings));
+                    SaveMeterWheelSettingsFromUi();
                     timerRefresh.Start();
                     labelStatus.Text = "Connected";
                 }
@@ -251,6 +274,7 @@ namespace CameraCaptureApp.Forms
 
         private void LoadMeterWheelSettingsToUi()
         {
+            comboCardId.SelectedIndex = NormalizeCardId(_settings.MeterWheelCardId);
             numericIncrement.Value = ClampToNumericRange(numericIncrement, _settings.MeterWheelCompareIncrement);
             numericCmpOutWidth.Value = ClampToNumericRange(numericCmpOutWidth, _settings.MeterWheelCmpOutWidth);
             comboMultipleRate.SelectedIndex = NormalizeMultipleRateIndex(_settings.MeterWheelMultipleRate);
@@ -258,6 +282,7 @@ namespace CameraCaptureApp.Forms
 
         private void SaveMeterWheelSettingsFromUi()
         {
+            _settings.MeterWheelCardId = comboCardId.SelectedIndex;
             _settings.MeterWheelCompareIncrement = (int)numericIncrement.Value;
             _settings.MeterWheelMultipleRate = comboMultipleRate.SelectedIndex;
             _settings.MeterWheelCmpOutWidth = (int)numericCmpOutWidth.Value;
@@ -271,6 +296,11 @@ namespace CameraCaptureApp.Forms
         private static int NormalizeMultipleRateIndex(int value)
         {
             return value >= 0 && value <= 2 ? value : 0;
+        }
+
+        private static int NormalizeCardId(int value)
+        {
+            return value >= 0 && value <= Lsi8181Native.CardIdMax ? value : 0;
         }
 
         private static decimal ClampToNumericRange(NumericUpDown numeric, int value)

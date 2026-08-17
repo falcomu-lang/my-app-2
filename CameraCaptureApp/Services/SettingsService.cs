@@ -54,6 +54,7 @@ namespace CameraCaptureApp.Services
             settings.FileNamePattern = GetString(values, "FileNamePattern", settings.FileNamePattern);
             settings.ImageSaveFormat = GetEnum(values, "ImageSaveFormat", settings.ImageSaveFormat);
             settings.MeterWheelCompareIncrement = GetInt(values, "MeterWheelCompareIncrement", settings.MeterWheelCompareIncrement);
+            settings.MeterWheelCardId = GetInt(values, "MeterWheelCardId", settings.MeterWheelCardId);
             settings.MeterWheelMultipleRate = GetInt(values, "MeterWheelMultipleRate", settings.MeterWheelMultipleRate);
             settings.MeterWheelCmpOutWidth = GetInt(values, "MeterWheelCmpOutWidth", settings.MeterWheelCmpOutWidth);
             settings.MeterWheelExtensionCompareMask = GetInt(values, "MeterWheelExtensionCompareMask", settings.MeterWheelExtensionCompareMask);
@@ -96,6 +97,7 @@ namespace CameraCaptureApp.Services
                 "FileNamePattern=" + settings.FileNamePattern,
                 "ImageSaveFormat=" + settings.ImageSaveFormat.ToString(),
                 "MeterWheelCompareIncrement=" + settings.MeterWheelCompareIncrement.ToString(CultureInfo.InvariantCulture),
+                "MeterWheelCardId=" + settings.MeterWheelCardId.ToString(CultureInfo.InvariantCulture),
                 "MeterWheelMultipleRate=" + settings.MeterWheelMultipleRate.ToString(CultureInfo.InvariantCulture),
                 "MeterWheelCmpOutWidth=" + settings.MeterWheelCmpOutWidth.ToString(CultureInfo.InvariantCulture),
                 "MeterWheelExtensionCompareMask=" + settings.MeterWheelExtensionCompareMask.ToString(CultureInfo.InvariantCulture),

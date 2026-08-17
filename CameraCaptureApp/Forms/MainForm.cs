@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CameraCaptureApp.Models;
+using CameraCaptureApp.Native;
 using CameraCaptureApp.Services;
 
 namespace CameraCaptureApp.Forms
@@ -18,6 +19,8 @@ namespace CameraCaptureApp.Forms
         private readonly Controls.CameraDisplayControl _cameraDisplayControl;
         private readonly FrameRecorder _frameRecorder;
         private readonly System.Windows.Forms.Timer _statusRefreshTimer;
+        private readonly System.Windows.Forms.Timer _meterWheelAutoConnectTimer;
+        private readonly Lsi8181MeterWheelService _meterWheelService;
         private CameraSettings _settings;
         private CancellationTokenSource _imageLoadTokenSource;
         private CancellationTokenSource _previewFrameTokenSource;
@@ -41,6 +44,7 @@ namespace CameraCaptureApp.Forms
             _cameraService = cameraService;
             _settingsService = settingsService;
             _settings = _settingsService.Load() ?? CameraSettings.CreateDefault();
+            _meterWheelService = new Lsi8181MeterWheelService();
 
             InitializeComponent();
 
@@ -59,6 +63,10 @@ namespace CameraCaptureApp.Forms
             _statusRefreshTimer.Interval = 300;
             _statusRefreshTimer.Tick += StatusRefreshTimer_Tick;
             _statusRefreshTimer.Start();
+
+            _meterWheelAutoConnectTimer = new System.Windows.Forms.Timer();
+            _meterWheelAutoConnectTimer.Interval = 1000;
+            _meterWheelAutoConnectTimer.Tick += MeterWheelAutoConnectTimer_Tick;
 
             this.Shown += MainForm_Shown;
         }
@@ -108,7 +116,7 @@ namespace CameraCaptureApp.Forms
         {
             if (_meterWheelControlForm == null || _meterWheelControlForm.IsDisposed)
             {
-                _meterWheelControlForm = new MeterWheelControlForm(_settings, _settingsService);
+                _meterWheelControlForm = new MeterWheelControlForm(_settings, _settingsService, _meterWheelService);
                 _meterWheelControlForm.FormClosed += MeterWheelControlForm_FormClosed;
                 _meterWheelControlForm.Show(this);
                 return;
@@ -122,6 +130,50 @@ namespace CameraCaptureApp.Forms
             if (ReferenceEquals(_meterWheelControlForm, sender))
             {
                 _meterWheelControlForm = null;
+            }
+        }
+
+        private void MeterWheelAutoConnectTimer_Tick(object sender, EventArgs e)
+        {
+            _meterWheelAutoConnectTimer.Stop();
+            AutoConnectMeterWheel();
+        }
+
+        private void AutoConnectMeterWheel()
+        {
+            if (_meterWheelService.IsInitialized)
+            {
+                return;
+            }
+
+            try
+            {
+                var cardId = (byte)Math.Max(0, Math.Min(Lsi8181Native.CardIdMax, _settings.MeterWheelCardId));
+                _meterWheelService.Open(
+                    cardId,
+                    GetMeterWheelMultipleRate(_settings.MeterWheelMultipleRate),
+                    _settings.MeterWheelCompareIncrement,
+                    (ushort)Math.Max(0, Math.Min(ushort.MaxValue, _settings.MeterWheelCmpOutWidth)),
+                    MeterWheelControlForm.CreateExtensionCompareChannelsFromSettings(_settings));
+                labelFooterMessageValue.Text = "Meter wheel connected: Card " + cardId;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Meter wheel auto-connect failed.", ex);
+                labelFooterMessageValue.Text = "Meter wheel auto-connect failed: " + ex.Message;
+            }
+        }
+
+        private static byte GetMeterWheelMultipleRate(int selectedIndex)
+        {
+            switch (selectedIndex)
+            {
+                case 1:
+                    return Lsi8181Native.Multiple2;
+                case 2:
+                    return Lsi8181Native.Multiple1;
+                default:
+                    return Lsi8181Native.Multiple4;
             }
         }
 
@@ -482,6 +534,8 @@ namespace CameraCaptureApp.Forms
             _cameraDisplayControl.SaveSnapshotRequested -= CameraDisplayControl_SaveSnapshotRequested;
             _statusRefreshTimer.Stop();
             _statusRefreshTimer.Dispose();
+            _meterWheelAutoConnectTimer.Stop();
+            _meterWheelAutoConnectTimer.Dispose();
             if (_meterWheelControlForm != null && !_meterWheelControlForm.IsDisposed)
             {
                 _meterWheelControlForm.Close();
@@ -498,6 +552,7 @@ namespace CameraCaptureApp.Forms
             }
 
             _cameraService.Disconnect();
+            _meterWheelService.Dispose();
             base.OnFormClosed(e);
         }
 
@@ -643,6 +698,7 @@ namespace CameraCaptureApp.Forms
         private void MainForm_Shown(object sender, EventArgs e)
         {
             TryAutoConnectOnStart();
+            _meterWheelAutoConnectTimer.Start();
         }
 
         private void ApplySettingsToUi()
