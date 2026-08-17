@@ -14,8 +14,8 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Main project: `CameraCaptureApp/CameraCaptureApp.csproj`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
-- Current handoff date: `2026-08-12`
-- Latest pushed commit at this handoff update: `6235311 Add uncompressed TIFF save option`
+- Current handoff date: `2026-08-17`
+- Latest pushed commit at this handoff update: `9006c8b Remove CMP OUT output-state validation`
 
 Latest verified local build command:
 
@@ -57,6 +57,72 @@ Latest local build result: `0 warning / 0 error`
   - `Gain`
   - `Length`
   - `Internal Line Rate`
+
+## LSI-8181 Meter Wheel Status
+
+- The attempted integration of the vendor's full LSI-8181 VB.NET test program has been removed from this repository.
+- Removed from the current project:
+  - `Lsi8181Official/`
+  - the `LSI8181-64` VB project entry in `CameraCaptureApp.sln`
+  - the C# project reference to `Lsi8181Official/LSI8181-64.vbproj`
+  - copied LSI8181 vendor DLL content entries from `CameraCaptureApp/CameraCaptureApp.csproj`
+  - `CameraCaptureApp/LSI8181.dll`
+  - `CameraCaptureApp/LSI8181_64.dll`
+  - `CameraCaptureApp/WindowsControlLibrary1.dll`
+  - the `米輪控制` button and all startup/open/close code that referenced `LSI8181.Main_Form`
+- New LSI-8181 support is now being rebuilt as a small purpose-built C# layer instead of embedding the vendor test program.
+- Current implementation files:
+  - `CameraCaptureApp/Native/Lsi8181Native.cs`
+  - `CameraCaptureApp/Services/Lsi8181MeterWheelService.cs`
+  - `CameraCaptureApp/Forms/MeterWheelControlForm.cs`
+  - `CameraCaptureApp/Forms/MeterWheelControlForm.Designer.cs`
+  - `CameraCaptureApp/Forms/MeterWheelControlForm.resx`
+- `MainForm` now has a `Meter Wheel` button.
+- The meter wheel control window is modeless:
+  - The camera app remains usable while the meter wheel window is open.
+  - Pressing `Meter Wheel` again focuses the existing window instead of opening duplicates.
+- `MeterWheelControlForm` is Designer-editable. Keep UI layout edits in the Designer file so future maintainers can drag controls in Visual Studio.
+- Current meter wheel UI supports:
+  - Card ID selection (`0` to `15`).
+  - Connect / Disconnect.
+  - Live encoder value refresh every `200 ms` while connected.
+  - Encoder clear and custom encoder preset.
+  - Compare value clear and custom compare value.
+  - Auto-increment value input and `Apply`.
+  - Encoder input multiple rate selection in vendor order: `X4`, `X2`, `X1`.
+  - `CMP Out Width` input and `Set`.
+- Current persisted meter wheel settings in `settings.ini`:
+  - `MeterWheelCompareIncrement`
+  - `MeterWheelMultipleRate`
+  - `MeterWheelCmpOutWidth`
+- When opening the meter wheel window, the persisted values are loaded into the UI.
+- When pressing meter wheel `Apply` / `Set` for increment, multiple rate, or CMP out width, the values are saved back through `SettingsService`.
+- When connecting to the meter wheel card, the app applies persisted meter wheel settings immediately:
+  - Encoder input mode is forced to quadrature mode.
+  - Multiple rate uses the saved `X4` / `X2` / `X1` selection.
+  - Compare mode is forced to auto increment.
+  - Compare auto-increment value is applied.
+  - CMP OUT is forced to pulse output through `LSI8181_compare_CMP_OUT_set`.
+  - CMP OUT is forced enabled through `LSI8181_toggle_preset(CardID, 1)`.
+  - Counter starts in compare output mode.
+- Important API correction:
+  - `LSI8181_CO_read` reads the instantaneous physical `CMP_OUT` output state, not whether CMP OUT functionality is enabled.
+  - In pulse mode, `CO_read` may return `0` when no compare pulse is active.
+  - Do not validate CMP OUT enable by requiring `LSI8181_CO_read == 1`; that caused false failures and was removed in commit `9006c8b`.
+- The vendor Compare form's `CMP out` checkbox is not a reliable enable-state display:
+  - The vendor main form reads `LSI8181_CO_read`.
+  - The lines that would update `Compare_Form.CompareOut_CheckBox.Checked` are commented out in the vendor source.
+  - Use actual pulse behavior / wiring or vendor main I/O status as the practical hardware check.
+- Difference between compare outputs:
+  - Compare operation `CMP_OUT` is the main compare output line.
+  - Extension compare `Pulse Width` applies to position-offset compare outputs `CMP0_OUT` through `CMP7_OUT`.
+  - `CMP0_OUT` through `CMP7_OUT` are separate differential physical outputs, not just virtual signals.
+- The original vendor source remains outside this repository at the user-provided reference folder:
+  - `C:\Users\falcomu\Documents\Codex\程式撰寫 專案資料夾\攝影機影像擷取\LSI8181`
+- The installed vendor API/manual reference is also available at:
+  - `C:\Program Files (x86)\JS Automation\LSI8181\API\sw8181.pdf`
+  - `C:\Program Files (x86)\JS Automation\LSI8181\API\x64\LSI8181_64.cs`
+- The last verified build after the meter wheel updates succeeded with `0 warning / 0 error`.
 
 ## Rolling Capture
 
@@ -179,6 +245,9 @@ Important limitation:
 
 - No automated tests.
 - No installer or deployment package.
+- LSI-8181 meter wheel support is now partially implemented, but it still requires real hardware validation.
+- The app depends on `LSI8181_64.dll` and the LSI-8181 driver being available at runtime. The vendor DLL is not committed to this repository.
+- The current meter wheel layer only wraps the needed APIs for basic counter/compare/CMP OUT setup. It does not embed or expose the full vendor test program.
 - Preview responsiveness has improved, but true in-progress line-scan display would require chunk/line-based acquisition events instead of only `EndOfFrame`.
 - `FrameRecorder` stores the latest full frame and, when rolling capture is enabled, a bounded rolling frame list. It does not append all frames/chunks into an unlimited continuous long image.
 - Very large image saves are still expensive. Example user case: `16384 x 50000` 8-bit image is about 819 MB raw data and may encode to roughly 400 MB depending on content/format.
@@ -189,21 +258,31 @@ Important limitation:
 
 ## Recommended Next Steps
 
-1. Test the latest `main` on the remote camera machine after this handoff update.
-2. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
-3. If save speed remains too slow, profile time spent in:
+1. Test the latest `main` on the real LSI-8181/camera machine after this handoff update.
+2. Verify meter wheel card connection behavior with `LSI8181_64.dll` available beside the app executable or in the DLL search path.
+3. Verify physical output wiring:
+   - Main compare output: `CMP_OUT`.
+   - Extension offset outputs: `CMP0_OUT` through `CMP7_OUT`.
+4. Verify actual `CMP_OUT` pulse behavior with the configured `CMP Out Width`; do not rely on the vendor Compare form checkbox alone.
+5. Confirm the persisted meter wheel settings are restored and applied after app restart:
+   - `MeterWheelCompareIncrement`
+   - `MeterWheelMultipleRate`
+   - `MeterWheelCmpOutWidth`
+6. If the camera should be triggered from the meter wheel, connect the camera trigger input to the intended LSI-8181 physical output and test timing on hardware.
+7. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
+8. If save speed remains too slow, profile time spent in:
    - copying frame bytes into the grayscale buffer,
    - WIC encoding,
    - final disk write / antivirus / sync folder overhead.
-4. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
-5. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
+9. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
+10. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
    - Large `Length` values naturally delay UI updates because the app waits for a full frame.
    - Consider `EndOfNLines` or other Sapera line/chunk callbacks if supported.
-6. If full continuous long-image capture is required, implement a recorder queue:
+11. If full continuous long-image capture is required, implement a recorder queue:
    - Background worker owns the full-resolution data path.
    - UI preview remains downscaled and droppable.
    - Capture/export reads from recorder output.
-7. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
+12. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
 
 ## Notes For The Next Person
 
@@ -211,6 +290,10 @@ Important limitation:
 - Do not rely on CCF file edits for internal line rate; CamExpert changed runtime/attached-camera state without updating CCF.
 - Do not set `ExposureStart` trigger source while configuring internal line rate; this previously broke exposure behavior.
 - Keep `CameraSettingsForm` Designer-editable.
+- Do not assume the vendor LSI-8181 program is still embedded. It was intentionally removed in commit `2700831`.
+- Keep LSI-8181 support as a minimal C# service/form that directly wraps only the needed LSI-8181 DLL APIs and persists/applies settings explicitly.
+- Do not use `LSI8181_CO_read == 1` as proof that CMP OUT is enabled. It is an instantaneous output-state readback and may be `0` between pulses.
+- Keep `MeterWheelControlForm` Designer-editable.
 - Treat exposure/gain/length/internal line rate as currently stable behavior and test all four after camera pipeline changes.
 - Preserve the separation between UI preview and full-resolution save data. The save path should continue using `FrameRecorder` snapshots, not the downscaled display bitmap.
 - For save pipeline changes, keep the temporary `.tmp` write then final move behavior to avoid users opening incomplete output files.
