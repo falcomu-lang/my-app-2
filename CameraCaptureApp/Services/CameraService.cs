@@ -2534,7 +2534,7 @@ namespace CameraCaptureApp.Services
                     break;
 
                 case TriggerMode.ExternalTrigger:
-                    if (TryApplyExternalFrameTrigger(notes))
+                    if (TryApplyExternalLineTrigger(notes))
                     {
                         notes.Add("Acquisition trigger external applied");
                         return true;
@@ -2564,37 +2564,41 @@ namespace CameraCaptureApp.Services
             return false;
         }
 
-        private bool TryApplyExternalFrameTrigger(System.Collections.Generic.List<string> notes)
+        private bool TryApplyExternalLineTrigger(System.Collections.Generic.List<string> notes)
         {
             if (_acquisition == null || !_acquisition.Initialized)
             {
                 return false;
             }
 
+            TryEnableLineTriggerWhenSupported(notes);
+
             var disabledInternalLine = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0);
             var disabledInternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0);
-            var disabledExternalLine = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0);
-            var disabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 0);
-            var disabledCameraTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0);
-            var enabledExternalFrame = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE);
+            var disabledExternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0);
+            var enabledCameraTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 1);
+            var enabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 1);
+            var enabledExternalLine = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
             var enabledExternalTriggerFallback = false;
 
-            if (!enabledExternalFrame)
+            if (!enabledExternalLine)
             {
                 enabledExternalTriggerFallback = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_TRIGGER_ENABLE);
             }
 
             notes.Add(
-                "ExternalFrameTrigger board "
+                "ExternalLineTrigger board "
                 + "intLineOff=" + FormatApplyResult(disabledInternalLine, "0")
                 + " intFrameOff=" + FormatApplyResult(disabledInternalFrame, "0")
-                + " extLineOff=" + FormatApplyResult(disabledExternalLine, "0")
-                + " lineTriggerOff=" + FormatApplyResult(disabledLineTrigger, "0")
-                + " camTriggerOff=" + FormatApplyResult(disabledCameraTrigger, "0")
+                + " extFrameOff=" + FormatApplyResult(disabledExternalFrame, "0")
+                + " camTriggerOn=" + FormatApplyResult(enabledCameraTrigger, "1")
+                + " lineTriggerOn=" + FormatApplyResult(enabledLineTrigger, "1")
+                + " lineTriggerMethod=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_METHOD)
+                + " extLineEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE)
                 + " extFrameEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE)
                 + " extTriggerFallback=" + FormatApplyResult(enabledExternalTriggerFallback, "1"));
 
-            return enabledExternalFrame || enabledExternalTriggerFallback;
+            return enabledExternalLine || enabledExternalTriggerFallback;
         }
 
         private bool TryConfigureTriggerSelector(string selector, bool enabled, string source)
