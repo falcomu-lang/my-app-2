@@ -15,7 +15,7 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
 - Current handoff date: `2026-08-17`
-- Latest pushed commit at this handoff update: `0f2c8e0 Auto-connect meter wheel after startup`
+- Latest pushed commit at this handoff update: `9ad1d08 Add meter wheel reverse direction setting`
 
 Latest verified local build command:
 
@@ -102,6 +102,7 @@ Latest local build result: `0 warning / 0 error`
   - Compare value clear and custom compare value.
   - Auto-increment value input and `Apply`.
   - Encoder input multiple rate selection in vendor order: `X4`, `X2`, `X1`.
+  - `Reverse Direction` software setting for reversing meter wheel count direction without rewiring.
   - `CMP Out Width` input and `Set`.
   - `Extension` button below `CMP Out Width`.
 - The extension compare window supports `CMP0` through `CMP7`:
@@ -118,6 +119,7 @@ Latest local build result: `0 warning / 0 error`
   - `MeterWheelCardId`
   - `MeterWheelCompareIncrement`
   - `MeterWheelMultipleRate`
+  - `MeterWheelReverseDirection`
   - `MeterWheelCmpOutWidth`
   - `MeterWheelExtensionCompareMask`
   - `MeterWheelExtensionCompareOffsets`
@@ -128,6 +130,7 @@ Latest local build result: `0 warning / 0 error`
 - When connecting to the meter wheel card, the app applies persisted meter wheel settings immediately:
   - Encoder input mode is forced to quadrature mode.
   - Multiple rate uses the saved `X4` / `X2` / `X1` selection.
+  - Count direction uses the saved `Reverse Direction` setting.
   - Compare mode is forced to auto increment.
   - Compare auto-increment value is applied.
   - CMP OUT is forced to pulse output through `LSI8181_compare_CMP_OUT_set`.
@@ -135,6 +138,11 @@ Latest local build result: `0 warning / 0 error`
   - Extension compare settings for `CMP0` through `CMP7` are applied from `settings.ini`.
   - Counter starts in compare output mode.
 - `MeterWheelCardId` is saved when the user connects from the meter wheel control window.
+- `MeterWheelReverseDirection` is implemented in software by reading and writing the LSI-8181 CIO polarity register:
+  - The app calls `LSI8181_CIO_polarity_read` and `LSI8181_CIO_polarity_set`.
+  - It toggles A phase polarity bit `0` only, preserving the other CIO polarity bits.
+  - Default `false` keeps the original wiring direction.
+  - `true` reverses quadrature count direction so the previous negative direction becomes positive.
 - If the vendor program changes the LSI-8181 hardware state, this app restores its persisted meter wheel settings on the next startup auto-connect or manual connect. It cannot prevent another process with DLL access from changing hardware registers while both programs are running.
 - Important API correction:
   - `LSI8181_CO_read` reads the instantaneous physical `CMP_OUT` output state, not whether CMP OUT functionality is enabled.

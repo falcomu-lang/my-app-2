@@ -23,6 +23,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelMultipleRateTitle;
         private System.Windows.Forms.ComboBox comboMultipleRate;
         private System.Windows.Forms.Button buttonSetMultipleRate;
+        private System.Windows.Forms.CheckBox checkReverseDirection;
         private System.Windows.Forms.Label labelCmpOutWidthTitle;
         private System.Windows.Forms.NumericUpDown numericCmpOutWidth;
         private System.Windows.Forms.Button buttonSetCmpOutWidth;
@@ -62,6 +63,7 @@ namespace CameraCaptureApp.Forms
             this.labelMultipleRateTitle = new System.Windows.Forms.Label();
             this.comboMultipleRate = new System.Windows.Forms.ComboBox();
             this.buttonSetMultipleRate = new System.Windows.Forms.Button();
+            this.checkReverseDirection = new System.Windows.Forms.CheckBox();
             this.labelCmpOutWidthTitle = new System.Windows.Forms.Label();
             this.numericCmpOutWidth = new System.Windows.Forms.NumericUpDown();
             this.buttonSetCmpOutWidth = new System.Windows.Forms.Button();
@@ -342,20 +344,33 @@ namespace CameraCaptureApp.Forms
             this.buttonSetMultipleRate.UseVisualStyleBackColor = false;
             this.buttonSetMultipleRate.Click += new System.EventHandler(this.buttonSetMultipleRate_Click);
             // 
+            // checkReverseDirection
+            // 
+            this.checkReverseDirection.AutoSize = true;
+            this.checkReverseDirection.Enabled = false;
+            this.checkReverseDirection.ForeColor = System.Drawing.Color.White;
+            this.checkReverseDirection.Location = new System.Drawing.Point(122, 302);
+            this.checkReverseDirection.Name = "checkReverseDirection";
+            this.checkReverseDirection.Size = new System.Drawing.Size(136, 23);
+            this.checkReverseDirection.TabIndex = 20;
+            this.checkReverseDirection.Text = "Reverse Direction";
+            this.checkReverseDirection.UseVisualStyleBackColor = true;
+            this.checkReverseDirection.CheckedChanged += new System.EventHandler(this.checkReverseDirection_CheckedChanged);
+            // 
             // labelCmpOutWidthTitle
             // 
             this.labelCmpOutWidthTitle.AutoSize = true;
             this.labelCmpOutWidthTitle.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
             this.labelCmpOutWidthTitle.ForeColor = System.Drawing.Color.White;
-            this.labelCmpOutWidthTitle.Location = new System.Drawing.Point(16, 304);
+            this.labelCmpOutWidthTitle.Location = new System.Drawing.Point(16, 344);
             this.labelCmpOutWidthTitle.Name = "labelCmpOutWidthTitle";
             this.labelCmpOutWidthTitle.Size = new System.Drawing.Size(115, 19);
-            this.labelCmpOutWidthTitle.TabIndex = 20;
+            this.labelCmpOutWidthTitle.TabIndex = 21;
             this.labelCmpOutWidthTitle.Text = "CMP Out Width";
             // 
             // numericCmpOutWidth
             // 
-            this.numericCmpOutWidth.Location = new System.Drawing.Point(122, 300);
+            this.numericCmpOutWidth.Location = new System.Drawing.Point(122, 340);
             this.numericCmpOutWidth.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -363,7 +378,7 @@ namespace CameraCaptureApp.Forms
             0});
             this.numericCmpOutWidth.Name = "numericCmpOutWidth";
             this.numericCmpOutWidth.Size = new System.Drawing.Size(140, 25);
-            this.numericCmpOutWidth.TabIndex = 21;
+            this.numericCmpOutWidth.TabIndex = 22;
             this.numericCmpOutWidth.ThousandsSeparator = true;
             // 
             // buttonSetCmpOutWidth
@@ -372,10 +387,10 @@ namespace CameraCaptureApp.Forms
             this.buttonSetCmpOutWidth.Enabled = false;
             this.buttonSetCmpOutWidth.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonSetCmpOutWidth.ForeColor = System.Drawing.Color.White;
-            this.buttonSetCmpOutWidth.Location = new System.Drawing.Point(272, 298);
+            this.buttonSetCmpOutWidth.Location = new System.Drawing.Point(272, 338);
             this.buttonSetCmpOutWidth.Name = "buttonSetCmpOutWidth";
             this.buttonSetCmpOutWidth.Size = new System.Drawing.Size(64, 30);
-            this.buttonSetCmpOutWidth.TabIndex = 22;
+            this.buttonSetCmpOutWidth.TabIndex = 23;
             this.buttonSetCmpOutWidth.Text = "Set";
             this.buttonSetCmpOutWidth.UseVisualStyleBackColor = false;
             this.buttonSetCmpOutWidth.Click += new System.EventHandler(this.buttonSetCmpOutWidth_Click);
@@ -386,10 +401,10 @@ namespace CameraCaptureApp.Forms
             this.buttonExtensionCompare.Enabled = false;
             this.buttonExtensionCompare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonExtensionCompare.ForeColor = System.Drawing.Color.White;
-            this.buttonExtensionCompare.Location = new System.Drawing.Point(122, 336);
+            this.buttonExtensionCompare.Location = new System.Drawing.Point(122, 376);
             this.buttonExtensionCompare.Name = "buttonExtensionCompare";
             this.buttonExtensionCompare.Size = new System.Drawing.Size(214, 30);
-            this.buttonExtensionCompare.TabIndex = 23;
+            this.buttonExtensionCompare.TabIndex = 24;
             this.buttonExtensionCompare.Text = "Extension";
             this.buttonExtensionCompare.UseVisualStyleBackColor = false;
             this.buttonExtensionCompare.Click += new System.EventHandler(this.buttonExtensionCompare_Click);
@@ -404,11 +419,12 @@ namespace CameraCaptureApp.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(18, 23, 34);
-            this.ClientSize = new System.Drawing.Size(368, 388);
+            this.ClientSize = new System.Drawing.Size(368, 428);
             this.Controls.Add(this.buttonExtensionCompare);
             this.Controls.Add(this.buttonSetCmpOutWidth);
             this.Controls.Add(this.numericCmpOutWidth);
             this.Controls.Add(this.labelCmpOutWidthTitle);
+            this.Controls.Add(this.checkReverseDirection);
             this.Controls.Add(this.buttonSetMultipleRate);
             this.Controls.Add(this.comboMultipleRate);
             this.Controls.Add(this.labelMultipleRateTitle);
@@ -430,7 +446,7 @@ namespace CameraCaptureApp.Forms
             this.Controls.Add(this.labelCard);
             this.Controls.Add(this.comboCardId);
             this.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F);
-            this.MinimumSize = new System.Drawing.Size(386, 435);
+            this.MinimumSize = new System.Drawing.Size(386, 475);
             this.Name = "MeterWheelControlForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Meter Wheel Control";

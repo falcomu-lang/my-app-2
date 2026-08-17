@@ -75,6 +75,7 @@ namespace CameraCaptureApp.Forms
                         GetSelectedMultipleRate(),
                         (int)numericIncrement.Value,
                         (ushort)numericCmpOutWidth.Value,
+                        checkReverseDirection.Checked,
                         CreateExtensionCompareChannelsFromSettings(_settings));
                     SaveMeterWheelSettingsFromUi();
                     timerRefresh.Start();
@@ -119,6 +120,16 @@ namespace CameraCaptureApp.Forms
         private void buttonSetMultipleRate_Click(object sender, EventArgs e)
         {
             SetMultipleRate(GetSelectedMultipleRate());
+            SaveMeterWheelSettingsFromUi();
+        }
+
+        private void checkReverseDirection_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_meterWheelService.IsInitialized)
+            {
+                SetReverseDirection(checkReverseDirection.Checked);
+            }
+
             SaveMeterWheelSettingsFromUi();
         }
 
@@ -214,6 +225,7 @@ namespace CameraCaptureApp.Forms
             buttonSetCompare.Enabled = isConnected;
             buttonApplyIncrement.Enabled = isConnected;
             buttonSetMultipleRate.Enabled = isConnected;
+            checkReverseDirection.Enabled = isConnected;
             buttonSetCmpOutWidth.Enabled = isConnected;
             buttonExtensionCompare.Enabled = isConnected;
 
@@ -240,6 +252,18 @@ namespace CameraCaptureApp.Forms
             try
             {
                 _meterWheelService.SetMultipleRate(multipleRate);
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex);
+            }
+        }
+
+        private void SetReverseDirection(bool reverseDirection)
+        {
+            try
+            {
+                _meterWheelService.SetReverseDirection(reverseDirection);
             }
             catch (Exception ex)
             {
@@ -278,6 +302,7 @@ namespace CameraCaptureApp.Forms
             numericIncrement.Value = ClampToNumericRange(numericIncrement, _settings.MeterWheelCompareIncrement);
             numericCmpOutWidth.Value = ClampToNumericRange(numericCmpOutWidth, _settings.MeterWheelCmpOutWidth);
             comboMultipleRate.SelectedIndex = NormalizeMultipleRateIndex(_settings.MeterWheelMultipleRate);
+            checkReverseDirection.Checked = _settings.MeterWheelReverseDirection;
         }
 
         private void SaveMeterWheelSettingsFromUi()
@@ -285,6 +310,7 @@ namespace CameraCaptureApp.Forms
             _settings.MeterWheelCardId = comboCardId.SelectedIndex;
             _settings.MeterWheelCompareIncrement = (int)numericIncrement.Value;
             _settings.MeterWheelMultipleRate = comboMultipleRate.SelectedIndex;
+            _settings.MeterWheelReverseDirection = checkReverseDirection.Checked;
             _settings.MeterWheelCmpOutWidth = (int)numericCmpOutWidth.Value;
 
             if (_settingsService != null)

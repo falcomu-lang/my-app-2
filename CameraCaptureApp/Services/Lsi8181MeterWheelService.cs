@@ -20,7 +20,7 @@ namespace CameraCaptureApp.Services
 
         public void Open(byte cardId, byte multipleRate, int compareIncrement, ushort cmpOutWidth)
         {
-            Open(cardId, multipleRate, compareIncrement, cmpOutWidth, null);
+            Open(cardId, multipleRate, compareIncrement, cmpOutWidth, false, null);
         }
 
         public void Open(
@@ -28,6 +28,17 @@ namespace CameraCaptureApp.Services
             byte multipleRate,
             int compareIncrement,
             ushort cmpOutWidth,
+            Lsi8181ExtensionCompareChannel[] extensionCompareChannels)
+        {
+            Open(cardId, multipleRate, compareIncrement, cmpOutWidth, false, extensionCompareChannels);
+        }
+
+        public void Open(
+            byte cardId,
+            byte multipleRate,
+            int compareIncrement,
+            ushort cmpOutWidth,
+            bool reverseDirection,
             Lsi8181ExtensionCompareChannel[] extensionCompareChannels)
         {
             var status = Lsi8181Native.LSI8181_initial();
@@ -47,6 +58,8 @@ namespace CameraCaptureApp.Services
                 Lsi8181Native.DebounceTime1Us,
                 multipleRate);
             EnsureSuccess(status, "Set encoder input mode");
+
+            SetReverseDirection(reverseDirection);
 
             status = Lsi8181Native.LSI8181_compare_mode_set(cardId, Lsi8181Native.CompareAutoIncrement);
             EnsureSuccess(status, "Set compare mode to auto increment");
@@ -121,6 +134,23 @@ namespace CameraCaptureApp.Services
                 Lsi8181Native.DebounceTime1Us,
                 multipleRate);
             EnsureSuccess(status, "Set encoder multiple rate");
+        }
+
+        public void SetReverseDirection(bool reverseDirection)
+        {
+            EnsureOpen();
+
+            ushort polarity = 0;
+            var status = Lsi8181Native.LSI8181_CIO_polarity_read(_cardId, ref polarity);
+            EnsureSuccess(status, "Read encoder input polarity");
+
+            var mask = (ushort)(1 << Lsi8181Native.APhasePolarityBit);
+            polarity = reverseDirection
+                ? (ushort)(polarity | mask)
+                : (ushort)(polarity & ~mask);
+
+            status = Lsi8181Native.LSI8181_CIO_polarity_set(_cardId, polarity);
+            EnsureSuccess(status, "Set encoder direction polarity");
         }
 
         public void SetCmpOutWidth(ushort outWidth)

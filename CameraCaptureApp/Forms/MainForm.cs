@@ -154,6 +154,7 @@ namespace CameraCaptureApp.Forms
                     GetMeterWheelMultipleRate(_settings.MeterWheelMultipleRate),
                     _settings.MeterWheelCompareIncrement,
                     (ushort)Math.Max(0, Math.Min(ushort.MaxValue, _settings.MeterWheelCmpOutWidth)),
+                    _settings.MeterWheelReverseDirection,
                     MeterWheelControlForm.CreateExtensionCompareChannelsFromSettings(_settings));
                 labelFooterMessageValue.Text = "Meter wheel connected: Card " + cardId;
             }

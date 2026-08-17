@@ -56,6 +56,7 @@ namespace CameraCaptureApp.Services
             settings.MeterWheelCompareIncrement = GetInt(values, "MeterWheelCompareIncrement", settings.MeterWheelCompareIncrement);
             settings.MeterWheelCardId = GetInt(values, "MeterWheelCardId", settings.MeterWheelCardId);
             settings.MeterWheelMultipleRate = GetInt(values, "MeterWheelMultipleRate", settings.MeterWheelMultipleRate);
+            settings.MeterWheelReverseDirection = GetBool(values, "MeterWheelReverseDirection", settings.MeterWheelReverseDirection);
             settings.MeterWheelCmpOutWidth = GetInt(values, "MeterWheelCmpOutWidth", settings.MeterWheelCmpOutWidth);
             settings.MeterWheelExtensionCompareMask = GetInt(values, "MeterWheelExtensionCompareMask", settings.MeterWheelExtensionCompareMask);
             settings.MeterWheelExtensionCompareOffsets = GetString(values, "MeterWheelExtensionCompareOffsets", settings.MeterWheelExtensionCompareOffsets);
@@ -99,6 +100,7 @@ namespace CameraCaptureApp.Services
                 "MeterWheelCompareIncrement=" + settings.MeterWheelCompareIncrement.ToString(CultureInfo.InvariantCulture),
                 "MeterWheelCardId=" + settings.MeterWheelCardId.ToString(CultureInfo.InvariantCulture),
                 "MeterWheelMultipleRate=" + settings.MeterWheelMultipleRate.ToString(CultureInfo.InvariantCulture),
+                "MeterWheelReverseDirection=" + settings.MeterWheelReverseDirection.ToString(),
                 "MeterWheelCmpOutWidth=" + settings.MeterWheelCmpOutWidth.ToString(CultureInfo.InvariantCulture),
                 "MeterWheelExtensionCompareMask=" + settings.MeterWheelExtensionCompareMask.ToString(CultureInfo.InvariantCulture),
                 "MeterWheelExtensionCompareOffsets=" + settings.MeterWheelExtensionCompareOffsets,

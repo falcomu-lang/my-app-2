@@ -58,6 +58,8 @@ namespace CameraCaptureApp.Models
 
         public int MeterWheelMultipleRate { get; set; }
 
+        public bool MeterWheelReverseDirection { get; set; }
+
         public int MeterWheelCmpOutWidth { get; set; }
 
         public int MeterWheelExtensionCompareMask { get; set; }
@@ -100,6 +102,7 @@ namespace CameraCaptureApp.Models
                 MeterWheelCompareIncrement = 0,
                 MeterWheelCardId = 0,
                 MeterWheelMultipleRate = 0,
+                MeterWheelReverseDirection = false,
                 MeterWheelCmpOutWidth = 0,
                 MeterWheelExtensionCompareMask = 0,
                 MeterWheelExtensionCompareOffsets = "0,0,0,0,0,0,0,0",

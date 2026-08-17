@@ -18,6 +18,7 @@ namespace CameraCaptureApp.Native
         public const byte CmpOutEnabled = 1;
         public const byte CmpOutNormalPolarity = 0;
         public const byte NoGate = 0;
+        public const byte APhasePolarityBit = 0;
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_initial();
@@ -63,6 +64,12 @@ namespace CameraCaptureApp.Native
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_toggle_preset(byte CardID, byte preset);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_CIO_polarity_set(byte CardID, ushort polarity);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_CIO_polarity_read(byte CardID, ref ushort polarity);
 
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_compare_offset_set(byte CardID, byte channel, short offset);
