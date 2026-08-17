@@ -15,7 +15,7 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
 - Current handoff date: `2026-08-17`
-- Latest pushed commit at this handoff update: `9006c8b Remove CMP OUT output-state validation`
+- Latest pushed commit at this handoff update: `0f2c8e0 Auto-connect meter wheel after startup`
 
 Latest verified local build command:
 
@@ -77,11 +77,23 @@ Latest local build result: `0 warning / 0 error`
   - `CameraCaptureApp/Forms/MeterWheelControlForm.cs`
   - `CameraCaptureApp/Forms/MeterWheelControlForm.Designer.cs`
   - `CameraCaptureApp/Forms/MeterWheelControlForm.resx`
+  - `CameraCaptureApp/Forms/MeterWheelExtensionCompareForm.cs`
+  - `CameraCaptureApp/Forms/MeterWheelExtensionCompareForm.Designer.cs`
+  - `CameraCaptureApp/Forms/MeterWheelExtensionCompareForm.resx`
 - `MainForm` now has a `Meter Wheel` button.
+- `MainForm` owns the active `Lsi8181MeterWheelService` instance.
+- After `MainForm` is shown, the app waits `1 second` and attempts to auto-connect the meter wheel using persisted meter wheel settings.
+- Meter wheel auto-connect failure is logged and shown in the footer message; it does not block startup with an error popup.
 - The meter wheel control window is modeless:
   - The camera app remains usable while the meter wheel window is open.
   - Pressing `Meter Wheel` again focuses the existing window instead of opening duplicates.
+  - Closing the meter wheel window does not disconnect the meter wheel card.
+  - The meter wheel card disconnects only when the user presses `Disconnect` in the meter wheel window or when the main application closes.
 - `MeterWheelControlForm` is Designer-editable. Keep UI layout edits in the Designer file so future maintainers can drag controls in Visual Studio.
+- `MeterWheelExtensionCompareForm` is Designer-editable:
+  - It has a public parameterless constructor for Visual Studio Designer.
+  - The runtime constructor receives `Lsi8181MeterWheelService`, `CameraSettings`, and `ISettingsService`.
+  - Do not add custom helper method calls inside `MeterWheelExtensionCompareForm.Designer.cs`; Visual Studio Designer previously failed to load when helper methods such as `ConfigureHeader` were used.
 - Current meter wheel UI supports:
   - Card ID selection (`0` to `15`).
   - Connect / Disconnect.
@@ -91,10 +103,26 @@ Latest local build result: `0 warning / 0 error`
   - Auto-increment value input and `Apply`.
   - Encoder input multiple rate selection in vendor order: `X4`, `X2`, `X1`.
   - `CMP Out Width` input and `Set`.
+  - `Extension` button below `CMP Out Width`.
+- The extension compare window supports `CMP0` through `CMP7`:
+  - Mask.
+  - Offset Compare.
+  - Pulse Width.
+  - Output state.
+  - Live Status refresh every `200 ms`.
+- Extension compare behavior follows the vendor test program:
+  - When a channel's mask is enabled, its manual output state checkbox is cleared and disabled.
+  - `Apply` / `OK` writes all 8 extension channels to hardware.
+  - `Apply` / `OK` also persists extension compare settings to `settings.ini`.
 - Current persisted meter wheel settings in `settings.ini`:
+  - `MeterWheelCardId`
   - `MeterWheelCompareIncrement`
   - `MeterWheelMultipleRate`
   - `MeterWheelCmpOutWidth`
+  - `MeterWheelExtensionCompareMask`
+  - `MeterWheelExtensionCompareOffsets`
+  - `MeterWheelExtensionComparePulseWidths`
+  - `MeterWheelExtensionCompareOutputStates`
 - When opening the meter wheel window, the persisted values are loaded into the UI.
 - When pressing meter wheel `Apply` / `Set` for increment, multiple rate, or CMP out width, the values are saved back through `SettingsService`.
 - When connecting to the meter wheel card, the app applies persisted meter wheel settings immediately:
@@ -104,7 +132,10 @@ Latest local build result: `0 warning / 0 error`
   - Compare auto-increment value is applied.
   - CMP OUT is forced to pulse output through `LSI8181_compare_CMP_OUT_set`.
   - CMP OUT is forced enabled through `LSI8181_toggle_preset(CardID, 1)`.
+  - Extension compare settings for `CMP0` through `CMP7` are applied from `settings.ini`.
   - Counter starts in compare output mode.
+- `MeterWheelCardId` is saved when the user connects from the meter wheel control window.
+- If the vendor program changes the LSI-8181 hardware state, this app restores its persisted meter wheel settings on the next startup auto-connect or manual connect. It cannot prevent another process with DLL access from changing hardware registers while both programs are running.
 - Important API correction:
   - `LSI8181_CO_read` reads the instantaneous physical `CMP_OUT` output state, not whether CMP OUT functionality is enabled.
   - In pulse mode, `CO_read` may return `0` when no compare pulse is active.
@@ -248,6 +279,8 @@ Important limitation:
 - LSI-8181 meter wheel support is now partially implemented, but it still requires real hardware validation.
 - The app depends on `LSI8181_64.dll` and the LSI-8181 driver being available at runtime. The vendor DLL is not committed to this repository.
 - The current meter wheel layer only wraps the needed APIs for basic counter/compare/CMP OUT setup. It does not embed or expose the full vendor test program.
+- The current meter wheel layer also wraps the needed position-offset compare APIs for `CMP0_OUT` through `CMP7_OUT`; it still does not expose every vendor API.
+- The app cannot prevent the vendor LSI-8181 program from changing hardware state if both programs can access the same card. Avoid running both as active controllers at the same time.
 - Preview responsiveness has improved, but true in-progress line-scan display would require chunk/line-based acquisition events instead of only `EndOfFrame`.
 - `FrameRecorder` stores the latest full frame and, when rolling capture is enabled, a bounded rolling frame list. It does not append all frames/chunks into an unlimited continuous long image.
 - Very large image saves are still expensive. Example user case: `16384 x 50000` 8-bit image is about 819 MB raw data and may encode to roughly 400 MB depending on content/format.
@@ -260,29 +293,40 @@ Important limitation:
 
 1. Test the latest `main` on the real LSI-8181/camera machine after this handoff update.
 2. Verify meter wheel card connection behavior with `LSI8181_64.dll` available beside the app executable or in the DLL search path.
-3. Verify physical output wiring:
+3. Verify startup behavior:
+   - Start the app.
+   - Wait at least `1 second`.
+   - Confirm the meter wheel auto-connects to the persisted `MeterWheelCardId`.
+   - Open and close `Meter Wheel Control`; confirm closing the window does not disconnect the card.
+4. Verify physical output wiring:
    - Main compare output: `CMP_OUT`.
    - Extension offset outputs: `CMP0_OUT` through `CMP7_OUT`.
-4. Verify actual `CMP_OUT` pulse behavior with the configured `CMP Out Width`; do not rely on the vendor Compare form checkbox alone.
-5. Confirm the persisted meter wheel settings are restored and applied after app restart:
+5. Verify actual `CMP_OUT` pulse behavior with the configured `CMP Out Width`; do not rely on the vendor Compare form checkbox alone.
+6. Confirm the persisted meter wheel settings are restored and applied after app restart:
+   - `MeterWheelCardId`
    - `MeterWheelCompareIncrement`
    - `MeterWheelMultipleRate`
    - `MeterWheelCmpOutWidth`
-6. If the camera should be triggered from the meter wheel, connect the camera trigger input to the intended LSI-8181 physical output and test timing on hardware.
-7. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
-8. If save speed remains too slow, profile time spent in:
+   - `MeterWheelExtensionCompareMask`
+   - `MeterWheelExtensionCompareOffsets`
+   - `MeterWheelExtensionComparePulseWidths`
+   - `MeterWheelExtensionCompareOutputStates`
+7. Verify extension compare output behavior for `CMP0_OUT` through `CMP7_OUT` on real hardware.
+8. If the camera should be triggered from the meter wheel, connect the camera trigger input to the intended LSI-8181 physical output and test timing on hardware.
+9. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
+10. If save speed remains too slow, profile time spent in:
    - copying frame bytes into the grayscale buffer,
    - WIC encoding,
    - final disk write / antivirus / sync folder overhead.
-9. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
-10. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
+11. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
+12. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
    - Large `Length` values naturally delay UI updates because the app waits for a full frame.
    - Consider `EndOfNLines` or other Sapera line/chunk callbacks if supported.
-11. If full continuous long-image capture is required, implement a recorder queue:
+13. If full continuous long-image capture is required, implement a recorder queue:
    - Background worker owns the full-resolution data path.
    - UI preview remains downscaled and droppable.
    - Capture/export reads from recorder output.
-12. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
+14. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
 
 ## Notes For The Next Person
 
@@ -294,6 +338,12 @@ Important limitation:
 - Keep LSI-8181 support as a minimal C# service/form that directly wraps only the needed LSI-8181 DLL APIs and persists/applies settings explicitly.
 - Do not use `LSI8181_CO_read == 1` as proof that CMP OUT is enabled. It is an instantaneous output-state readback and may be `0` between pulses.
 - Keep `MeterWheelControlForm` Designer-editable.
+- Keep `MeterWheelExtensionCompareForm` Designer-editable.
+- Keep parameterless constructors on Designer-editable forms so Visual Studio can instantiate them.
+- Keep runtime-only dependencies such as `Lsi8181MeterWheelService` out of Designer constructors.
+- Do not add custom helper method calls inside `.Designer.cs` files; Visual Studio Designer can fail to load the form even when MSBuild succeeds.
+- Do not move meter wheel service ownership back into `MeterWheelControlForm`; closing that window must not disconnect the meter wheel.
+- `MainForm` owns the meter wheel service and is responsible for app-start auto-connect and final app-close disposal.
 - Treat exposure/gain/length/internal line rate as currently stable behavior and test all four after camera pipeline changes.
 - Preserve the separation between UI preview and full-resolution save data. The save path should continue using `FrameRecorder` snapshots, not the downscaled display bitmap.
 - For save pipeline changes, keep the temporary `.tmp` write then final move behavior to avoid users opening incomplete output files.
