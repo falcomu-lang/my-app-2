@@ -122,6 +122,93 @@ namespace CameraCaptureApp.Services
             EnsureSuccess(status, "Enable CMP OUT");
         }
 
+        public Lsi8181ExtensionCompareChannel[] ReadExtensionCompareChannels()
+        {
+            EnsureOpen();
+
+            byte mask = 0;
+            var status = Lsi8181Native.LSI8181_compare_offset_mask_read(_cardId, ref mask);
+            EnsureSuccess(status, "Read extension compare mask");
+
+            var channels = new Lsi8181ExtensionCompareChannel[8];
+            for (byte channel = 0; channel < channels.Length; channel++)
+            {
+                short offset = 0;
+                status = Lsi8181Native.LSI8181_compare_offset_read(_cardId, channel, ref offset);
+                EnsureSuccess(status, "Read CMP" + channel + " offset compare");
+
+                ushort pulseWidth = 0;
+                status = Lsi8181Native.LSI8181_compare_offset_out_width_read(_cardId, channel, ref pulseWidth);
+                EnsureSuccess(status, "Read CMP" + channel + " pulse width");
+
+                byte outputState = 0;
+                status = Lsi8181Native.LSI8181_compare_offset_output_point_read(_cardId, channel, ref outputState);
+                EnsureSuccess(status, "Read CMP" + channel + " output state");
+
+                channels[channel] = new Lsi8181ExtensionCompareChannel
+                {
+                    Channel = channel,
+                    Masked = (mask & (1 << channel)) != 0,
+                    OffsetCompare = offset,
+                    PulseWidth = pulseWidth,
+                    OutputState = outputState != 0,
+                    Status = outputState != 0
+                };
+            }
+
+            return channels;
+        }
+
+        public bool[] ReadExtensionCompareStatus()
+        {
+            EnsureOpen();
+
+            var statusValues = new bool[8];
+            for (byte channel = 0; channel < statusValues.Length; channel++)
+            {
+                byte outputState = 0;
+                var status = Lsi8181Native.LSI8181_compare_offset_output_point_read(_cardId, channel, ref outputState);
+                EnsureSuccess(status, "Read CMP" + channel + " status");
+                statusValues[channel] = outputState != 0;
+            }
+
+            return statusValues;
+        }
+
+        public void ApplyExtensionCompareChannels(Lsi8181ExtensionCompareChannel[] channels)
+        {
+            EnsureOpen();
+            if (channels == null || channels.Length != 8)
+            {
+                throw new ArgumentException("Exactly 8 extension compare channels are required.", "channels");
+            }
+
+            byte mask = 0;
+            for (byte channel = 0; channel < channels.Length; channel++)
+            {
+                var channelSettings = channels[channel];
+                var status = Lsi8181Native.LSI8181_compare_offset_set(_cardId, channel, channelSettings.OffsetCompare);
+                EnsureSuccess(status, "Set CMP" + channel + " offset compare");
+
+                status = Lsi8181Native.LSI8181_compare_offset_out_width_set(_cardId, channel, channelSettings.PulseWidth);
+                EnsureSuccess(status, "Set CMP" + channel + " pulse width");
+
+                status = Lsi8181Native.LSI8181_compare_offset_output_point_set(
+                    _cardId,
+                    channel,
+                    channelSettings.OutputState ? (byte)1 : (byte)0);
+                EnsureSuccess(status, "Set CMP" + channel + " output state");
+
+                if (channelSettings.Masked)
+                {
+                    mask = (byte)(mask | (1 << channel));
+                }
+            }
+
+            var maskStatus = Lsi8181Native.LSI8181_compare_offset_mask_set(_cardId, mask);
+            EnsureSuccess(maskStatus, "Set extension compare mask");
+        }
+
         public void Close()
         {
             if (!_initialized)
@@ -161,5 +248,20 @@ namespace CameraCaptureApp.Services
             }
         }
 
+    }
+
+    internal sealed class Lsi8181ExtensionCompareChannel
+    {
+        public byte Channel { get; set; }
+
+        public bool Masked { get; set; }
+
+        public short OffsetCompare { get; set; }
+
+        public ushort PulseWidth { get; set; }
+
+        public bool OutputState { get; set; }
+
+        public bool Status { get; set; }
     }
 }

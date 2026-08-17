@@ -26,6 +26,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelCmpOutWidthTitle;
         private System.Windows.Forms.NumericUpDown numericCmpOutWidth;
         private System.Windows.Forms.Button buttonSetCmpOutWidth;
+        private System.Windows.Forms.Button buttonExtensionCompare;
         private System.Windows.Forms.Timer timerRefresh;
 
         protected override void Dispose(bool disposing)
@@ -64,6 +65,7 @@ namespace CameraCaptureApp.Forms
             this.labelCmpOutWidthTitle = new System.Windows.Forms.Label();
             this.numericCmpOutWidth = new System.Windows.Forms.NumericUpDown();
             this.buttonSetCmpOutWidth = new System.Windows.Forms.Button();
+            this.buttonExtensionCompare = new System.Windows.Forms.Button();
             this.timerRefresh = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.numericEncoder)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericCompare)).BeginInit();
@@ -378,6 +380,20 @@ namespace CameraCaptureApp.Forms
             this.buttonSetCmpOutWidth.UseVisualStyleBackColor = false;
             this.buttonSetCmpOutWidth.Click += new System.EventHandler(this.buttonSetCmpOutWidth_Click);
             // 
+            // buttonExtensionCompare
+            // 
+            this.buttonExtensionCompare.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonExtensionCompare.Enabled = false;
+            this.buttonExtensionCompare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonExtensionCompare.ForeColor = System.Drawing.Color.White;
+            this.buttonExtensionCompare.Location = new System.Drawing.Point(122, 336);
+            this.buttonExtensionCompare.Name = "buttonExtensionCompare";
+            this.buttonExtensionCompare.Size = new System.Drawing.Size(214, 30);
+            this.buttonExtensionCompare.TabIndex = 23;
+            this.buttonExtensionCompare.Text = "Extension";
+            this.buttonExtensionCompare.UseVisualStyleBackColor = false;
+            this.buttonExtensionCompare.Click += new System.EventHandler(this.buttonExtensionCompare_Click);
+            // 
             // timerRefresh
             // 
             this.timerRefresh.Interval = 200;
@@ -388,7 +404,8 @@ namespace CameraCaptureApp.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(18, 23, 34);
-            this.ClientSize = new System.Drawing.Size(368, 350);
+            this.ClientSize = new System.Drawing.Size(368, 388);
+            this.Controls.Add(this.buttonExtensionCompare);
             this.Controls.Add(this.buttonSetCmpOutWidth);
             this.Controls.Add(this.numericCmpOutWidth);
             this.Controls.Add(this.labelCmpOutWidthTitle);
@@ -413,7 +430,7 @@ namespace CameraCaptureApp.Forms
             this.Controls.Add(this.labelCard);
             this.Controls.Add(this.comboCardId);
             this.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F);
-            this.MinimumSize = new System.Drawing.Size(386, 397);
+            this.MinimumSize = new System.Drawing.Size(386, 435);
             this.Name = "MeterWheelControlForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Meter Wheel Control";

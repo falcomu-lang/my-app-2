@@ -11,6 +11,7 @@ namespace CameraCaptureApp.Forms
         private readonly Lsi8181MeterWheelService _meterWheelService = new Lsi8181MeterWheelService();
         private readonly ISettingsService _settingsService;
         private readonly CameraSettings _settings;
+        private MeterWheelExtensionCompareForm _extensionCompareForm;
 
         public MeterWheelControlForm(CameraSettings settings, ISettingsService settingsService)
         {
@@ -25,6 +26,11 @@ namespace CameraCaptureApp.Forms
         {
             timerRefresh.Stop();
             timerRefresh.Dispose();
+            if (_extensionCompareForm != null && !_extensionCompareForm.IsDisposed)
+            {
+                _extensionCompareForm.Close();
+            }
+
             _meterWheelService.Dispose();
             base.OnFormClosed(e);
         }
@@ -97,6 +103,29 @@ namespace CameraCaptureApp.Forms
             SaveMeterWheelSettingsFromUi();
         }
 
+        private void buttonExtensionCompare_Click(object sender, EventArgs e)
+        {
+            if (!_meterWheelService.IsInitialized)
+            {
+                return;
+            }
+
+            if (_extensionCompareForm != null && !_extensionCompareForm.IsDisposed)
+            {
+                _extensionCompareForm.Focus();
+                return;
+            }
+
+            _extensionCompareForm = new MeterWheelExtensionCompareForm(_meterWheelService);
+            _extensionCompareForm.FormClosed += extensionCompareForm_FormClosed;
+            _extensionCompareForm.Show(this);
+        }
+
+        private void extensionCompareForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            _extensionCompareForm = null;
+        }
+
         private void timerRefresh_Tick(object sender, EventArgs e)
         {
             RefreshValues();
@@ -161,6 +190,12 @@ namespace CameraCaptureApp.Forms
             buttonApplyIncrement.Enabled = isConnected;
             buttonSetMultipleRate.Enabled = isConnected;
             buttonSetCmpOutWidth.Enabled = isConnected;
+            buttonExtensionCompare.Enabled = isConnected;
+
+            if (!isConnected && _extensionCompareForm != null && !_extensionCompareForm.IsDisposed)
+            {
+                _extensionCompareForm.Close();
+            }
         }
 
         private void SetCompareIncrement(int value)

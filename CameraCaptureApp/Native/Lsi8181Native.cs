@@ -64,5 +64,29 @@ namespace CameraCaptureApp.Native
         [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
         public static extern uint LSI8181_toggle_preset(byte CardID, byte preset);
 
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_offset_set(byte CardID, byte channel, short offset);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_offset_read(byte CardID, byte channel, ref short offset);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_offset_out_width_set(byte CardID, byte channel, ushort out_width);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_offset_out_width_read(byte CardID, byte channel, ref ushort out_width);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_offset_mask_set(byte CardID, byte mask);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_offset_mask_read(byte CardID, ref byte mask);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_offset_output_point_set(byte CardID, byte point, byte state);
+
+        [DllImport("LSI8181_64.dll", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern uint LSI8181_compare_offset_output_point_read(byte CardID, byte point, ref byte state);
+
     }
 }
