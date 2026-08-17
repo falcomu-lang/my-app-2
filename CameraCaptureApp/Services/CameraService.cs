@@ -1429,7 +1429,7 @@ namespace CameraCaptureApp.Services
                         details,
                         true,
                         new[] { "Line1", "Input1", "CC1", "CameraControl1", "CameraLinkCC1", "CL_CC1", "External", "ExternalLine", "LineTrigger" },
-                        new[] { "LineStart", "FrameStart", "AcquisitionStart", "ExposureStart" });
+                        new[] { "LineStart", "LineTrigger", "AcquisitionLine" });
                     break;
 
                 case TriggerMode.SoftwareTrigger:
@@ -2250,14 +2250,16 @@ namespace CameraCaptureApp.Services
 
                 case TriggerMode.ExternalTrigger:
                     if (TryConfigureTriggerSelector("LineStart", true, "Line1") |
-                        TryConfigureTriggerSelector("FrameStart", true, "Line1") |
-                        TryConfigureTriggerSelector("FrameStart", true, "Input1"))
+                        TryConfigureTriggerSelector("LineTrigger", true, "Line1") |
+                        TryConfigureTriggerSelector("AcquisitionLine", true, "Line1") |
+                        TryConfigureTriggerSelector("LineStart", true, "Input1") |
+                        TryConfigureTriggerSelector("LineStart", true, "CC1"))
                     {
-                        notes.Add("TriggerMode external applied");
+                        notes.Add("TriggerMode external line applied");
                         return true;
                     }
 
-                    notes.Add("TriggerMode external not supported");
+                    notes.Add("TriggerMode external line not supported");
                     return false;
 
                 case TriggerMode.SingleFrame:
@@ -2578,6 +2580,9 @@ namespace CameraCaptureApp.Services
 
             notes.Add(
                 "ExternalLineTrigger board "
+                + "mode=one-pulse-one-line "
+                + "targetLength=" + _settings.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                + " "
                 + "intLineOff=" + FormatApplyResult(disabledInternalLine, "0")
                 + " intFrameOff=" + FormatApplyResult(disabledInternalFrame, "0")
                 + " extFrameOff=" + FormatApplyResult(disabledExternalFrame, "0")
