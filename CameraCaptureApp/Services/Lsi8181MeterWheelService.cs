@@ -20,6 +20,16 @@ namespace CameraCaptureApp.Services
 
         public void Open(byte cardId, byte multipleRate, int compareIncrement, ushort cmpOutWidth)
         {
+            Open(cardId, multipleRate, compareIncrement, cmpOutWidth, null);
+        }
+
+        public void Open(
+            byte cardId,
+            byte multipleRate,
+            int compareIncrement,
+            ushort cmpOutWidth,
+            Lsi8181ExtensionCompareChannel[] extensionCompareChannels)
+        {
             var status = Lsi8181Native.LSI8181_initial();
             EnsureSuccess(status, "Initialize LSI8181");
 
@@ -53,6 +63,11 @@ namespace CameraCaptureApp.Services
 
             status = Lsi8181Native.LSI8181_toggle_preset(cardId, Lsi8181Native.CmpOutEnabled);
             EnsureSuccess(status, "Enable CMP OUT");
+
+            if (extensionCompareChannels != null)
+            {
+                ApplyExtensionCompareChannels(extensionCompareChannels);
+            }
 
             status = Lsi8181Native.LSI8181_counter_start(cardId, Lsi8181Native.CounterCompare);
             EnsureSuccess(status, "Start encoder counter with compare output");

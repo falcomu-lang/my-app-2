@@ -56,6 +56,10 @@ namespace CameraCaptureApp.Services
             settings.MeterWheelCompareIncrement = GetInt(values, "MeterWheelCompareIncrement", settings.MeterWheelCompareIncrement);
             settings.MeterWheelMultipleRate = GetInt(values, "MeterWheelMultipleRate", settings.MeterWheelMultipleRate);
             settings.MeterWheelCmpOutWidth = GetInt(values, "MeterWheelCmpOutWidth", settings.MeterWheelCmpOutWidth);
+            settings.MeterWheelExtensionCompareMask = GetInt(values, "MeterWheelExtensionCompareMask", settings.MeterWheelExtensionCompareMask);
+            settings.MeterWheelExtensionCompareOffsets = GetString(values, "MeterWheelExtensionCompareOffsets", settings.MeterWheelExtensionCompareOffsets);
+            settings.MeterWheelExtensionComparePulseWidths = GetString(values, "MeterWheelExtensionComparePulseWidths", settings.MeterWheelExtensionComparePulseWidths);
+            settings.MeterWheelExtensionCompareOutputStates = GetInt(values, "MeterWheelExtensionCompareOutputStates", settings.MeterWheelExtensionCompareOutputStates);
 
             return settings;
         }
@@ -93,7 +97,11 @@ namespace CameraCaptureApp.Services
                 "ImageSaveFormat=" + settings.ImageSaveFormat.ToString(),
                 "MeterWheelCompareIncrement=" + settings.MeterWheelCompareIncrement.ToString(CultureInfo.InvariantCulture),
                 "MeterWheelMultipleRate=" + settings.MeterWheelMultipleRate.ToString(CultureInfo.InvariantCulture),
-                "MeterWheelCmpOutWidth=" + settings.MeterWheelCmpOutWidth.ToString(CultureInfo.InvariantCulture)
+                "MeterWheelCmpOutWidth=" + settings.MeterWheelCmpOutWidth.ToString(CultureInfo.InvariantCulture),
+                "MeterWheelExtensionCompareMask=" + settings.MeterWheelExtensionCompareMask.ToString(CultureInfo.InvariantCulture),
+                "MeterWheelExtensionCompareOffsets=" + settings.MeterWheelExtensionCompareOffsets,
+                "MeterWheelExtensionComparePulseWidths=" + settings.MeterWheelExtensionComparePulseWidths,
+                "MeterWheelExtensionCompareOutputStates=" + settings.MeterWheelExtensionCompareOutputStates.ToString(CultureInfo.InvariantCulture)
             };
 
             File.WriteAllLines(_settingsFilePath, lines, Encoding.UTF8);

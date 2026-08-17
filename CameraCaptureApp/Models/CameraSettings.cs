@@ -58,6 +58,14 @@ namespace CameraCaptureApp.Models
 
         public int MeterWheelCmpOutWidth { get; set; }
 
+        public int MeterWheelExtensionCompareMask { get; set; }
+
+        public string MeterWheelExtensionCompareOffsets { get; set; }
+
+        public string MeterWheelExtensionComparePulseWidths { get; set; }
+
+        public int MeterWheelExtensionCompareOutputStates { get; set; }
+
         public static CameraSettings CreateDefault()
         {
             return new CameraSettings
@@ -89,7 +97,11 @@ namespace CameraCaptureApp.Models
                 ImageSaveFormat = ImageSaveFormat.Png,
                 MeterWheelCompareIncrement = 0,
                 MeterWheelMultipleRate = 0,
-                MeterWheelCmpOutWidth = 0
+                MeterWheelCmpOutWidth = 0,
+                MeterWheelExtensionCompareMask = 0,
+                MeterWheelExtensionCompareOffsets = "0,0,0,0,0,0,0,0",
+                MeterWheelExtensionComparePulseWidths = "0,0,0,0,0,0,0,0",
+                MeterWheelExtensionCompareOutputStates = 0
             };
         }
 

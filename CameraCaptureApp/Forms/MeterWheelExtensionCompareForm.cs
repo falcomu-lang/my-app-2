@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Forms;
+using CameraCaptureApp.Models;
 using CameraCaptureApp.Services;
 
 namespace CameraCaptureApp.Forms
@@ -7,6 +8,8 @@ namespace CameraCaptureApp.Forms
     internal partial class MeterWheelExtensionCompareForm : Form
     {
         private readonly Lsi8181MeterWheelService _meterWheelService;
+        private readonly CameraSettings _settings;
+        private readonly ISettingsService _settingsService;
         private CheckBox[] _maskChecks;
         private NumericUpDown[] _offsetValues;
         private NumericUpDown[] _pulseWidthValues;
@@ -14,13 +17,18 @@ namespace CameraCaptureApp.Forms
         private CheckBox[] _statusChecks;
         private bool _loading;
 
-        public MeterWheelExtensionCompareForm(Lsi8181MeterWheelService meterWheelService)
+        public MeterWheelExtensionCompareForm(
+            Lsi8181MeterWheelService meterWheelService,
+            CameraSettings settings,
+            ISettingsService settingsService)
         {
             _meterWheelService = meterWheelService ?? throw new ArgumentNullException("meterWheelService");
+            _settings = settings ?? CameraSettings.CreateDefault();
+            _settingsService = settingsService;
 
             InitializeComponent();
             InitializeControlArrays();
-            LoadFromHardware();
+            LoadFromSettings();
             timerRefresh.Start();
         }
 
@@ -63,23 +71,23 @@ namespace CameraCaptureApp.Forms
             };
         }
 
-        private void LoadFromHardware()
+        private void LoadFromSettings()
         {
             try
             {
                 _loading = true;
-                var channels = _meterWheelService.ReadExtensionCompareChannels();
+                var channels = MeterWheelControlForm.CreateExtensionCompareChannelsFromSettings(_settings);
                 for (var index = 0; index < channels.Length; index++)
                 {
                     _maskChecks[index].Checked = channels[index].Masked;
                     _offsetValues[index].Value = channels[index].OffsetCompare;
                     _pulseWidthValues[index].Value = channels[index].PulseWidth;
                     _outputStateChecks[index].Checked = channels[index].OutputState;
-                    _statusChecks[index].Checked = channels[index].Status;
                     UpdateOutputStateEnabled(index);
                 }
 
-                labelStatus.Text = "Loaded";
+                RefreshStatus();
+                labelStatus.Text = "Loaded from settings";
             }
             catch (Exception ex)
             {
@@ -107,6 +115,7 @@ namespace CameraCaptureApp.Forms
             }
 
             _meterWheelService.ApplyExtensionCompareChannels(channels);
+            MeterWheelControlForm.SaveExtensionCompareChannelsToSettings(_settings, channels, _settingsService);
             labelStatus.Text = "Applied " + DateTime.Now.ToString("HH:mm:ss");
             RefreshStatus();
         }

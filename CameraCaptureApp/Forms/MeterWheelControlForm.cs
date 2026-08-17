@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Windows.Forms;
 using CameraCaptureApp.Models;
 using CameraCaptureApp.Native;
@@ -51,7 +52,8 @@ namespace CameraCaptureApp.Forms
                         (byte)comboCardId.SelectedIndex,
                         GetSelectedMultipleRate(),
                         (int)numericIncrement.Value,
-                        (ushort)numericCmpOutWidth.Value);
+                        (ushort)numericCmpOutWidth.Value,
+                        CreateExtensionCompareChannelsFromSettings(_settings));
                     timerRefresh.Start();
                     labelStatus.Text = "Connected";
                 }
@@ -116,7 +118,7 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            _extensionCompareForm = new MeterWheelExtensionCompareForm(_meterWheelService);
+            _extensionCompareForm = new MeterWheelExtensionCompareForm(_meterWheelService, _settings, _settingsService);
             _extensionCompareForm.FormClosed += extensionCompareForm_FormClosed;
             _extensionCompareForm.Show(this);
         }
@@ -284,6 +286,94 @@ namespace CameraCaptureApp.Forms
             }
 
             return value;
+        }
+
+        internal static Lsi8181ExtensionCompareChannel[] CreateExtensionCompareChannelsFromSettings(CameraSettings settings)
+        {
+            var channels = new Lsi8181ExtensionCompareChannel[8];
+            var offsets = ParseIntList(settings.MeterWheelExtensionCompareOffsets, -32768, 32767);
+            var pulseWidths = ParseIntList(settings.MeterWheelExtensionComparePulseWidths, 0, 65535);
+
+            for (var index = 0; index < channels.Length; index++)
+            {
+                channels[index] = new Lsi8181ExtensionCompareChannel
+                {
+                    Channel = (byte)index,
+                    Masked = (settings.MeterWheelExtensionCompareMask & (1 << index)) != 0,
+                    OffsetCompare = (short)offsets[index],
+                    PulseWidth = (ushort)pulseWidths[index],
+                    OutputState = (settings.MeterWheelExtensionCompareOutputStates & (1 << index)) != 0
+                };
+            }
+
+            return channels;
+        }
+
+        internal static void SaveExtensionCompareChannelsToSettings(
+            CameraSettings settings,
+            Lsi8181ExtensionCompareChannel[] channels,
+            ISettingsService settingsService)
+        {
+            var mask = 0;
+            var outputStates = 0;
+            var offsets = new string[8];
+            var pulseWidths = new string[8];
+
+            for (var index = 0; index < 8; index++)
+            {
+                if (channels[index].Masked)
+                {
+                    mask |= 1 << index;
+                }
+
+                if (channels[index].OutputState)
+                {
+                    outputStates |= 1 << index;
+                }
+
+                offsets[index] = channels[index].OffsetCompare.ToString(CultureInfo.InvariantCulture);
+                pulseWidths[index] = channels[index].PulseWidth.ToString(CultureInfo.InvariantCulture);
+            }
+
+            settings.MeterWheelExtensionCompareMask = mask;
+            settings.MeterWheelExtensionCompareOffsets = string.Join(",", offsets);
+            settings.MeterWheelExtensionComparePulseWidths = string.Join(",", pulseWidths);
+            settings.MeterWheelExtensionCompareOutputStates = outputStates;
+
+            if (settingsService != null)
+            {
+                settingsService.Save(settings);
+            }
+        }
+
+        private static int[] ParseIntList(string value, int minimum, int maximum)
+        {
+            var result = new int[8];
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return result;
+            }
+
+            var parts = value.Split(',');
+            for (var index = 0; index < result.Length && index < parts.Length; index++)
+            {
+                int parsed;
+                if (int.TryParse(parts[index].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed))
+                {
+                    if (parsed < minimum)
+                    {
+                        parsed = minimum;
+                    }
+                    else if (parsed > maximum)
+                    {
+                        parsed = maximum;
+                    }
+
+                    result[index] = parsed;
+                }
+            }
+
+            return result;
         }
 
         private void ShowError(Exception ex)
