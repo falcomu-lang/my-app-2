@@ -785,9 +785,14 @@ namespace CameraCaptureApp.Services
             var applied = false;
             var notes = initialNotes ?? new System.Collections.Generic.List<string>();
 
-            if (applyInternalLineRate && TrySetInternalLineRate(notes))
+            var shouldApplyInternalLineRate = applyInternalLineRate && _settings.TriggerMode == TriggerMode.Continuous;
+            if (shouldApplyInternalLineRate && TrySetInternalLineRate(notes))
             {
                 applied = true;
+            }
+            else if (applyInternalLineRate && _settings.TriggerMode != TriggerMode.Continuous)
+            {
+                notes.Add("InternalLineRate acquisition trigger skipped for " + _settings.TriggerMode + " mode");
             }
 
             if (TrySetLengthParameters(notes))
@@ -1190,11 +1195,18 @@ namespace CameraCaptureApp.Services
                 var gainText = decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var lineRateIntegerText = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate)).ToString(System.Globalization.CultureInfo.InvariantCulture);
-                var lineRateResult = TrySetNotebookInternalLineRateFeatures(notebookDevice, lineRateText, lineRateIntegerText, true);
+                var lineRateResult = _settings.TriggerMode == TriggerMode.Continuous
+                    ? TrySetNotebookInternalLineRateFeatures(notebookDevice, lineRateText, lineRateIntegerText, true)
+                    : new NotebookApplyResult
+                    {
+                        Applied = false,
+                        Message = "InternalLineRate early skipped for " + _settings.TriggerMode + " mode"
+                    };
                 var exposureResult = TrySetNotebookExposureFeatures(notebookDevice, exposureText);
                 var gainApplied = TrySetNotebookFeatureValue(notebookDevice, "Gain", gainText);
+                var triggerResult = TrySetNotebookTriggerModeFeatures(notebookDevice, _settings.TriggerMode);
 
-                if (exposureResult.Applied || gainApplied || lineRateResult.Applied)
+                if (exposureResult.Applied || gainApplied || lineRateResult.Applied || triggerResult.Applied)
                 {
                     TryUpdateNotebookFeaturesToDevice(notebookDevice);
                 }
@@ -1205,7 +1217,7 @@ namespace CameraCaptureApp.Services
                     + exposureResult.Message
                     + " Gain=" + FormatApplyResult(gainApplied, gainText)
                     + " " + lineRateResult.Message
-                    + " TriggerMode=skipped");
+                    + " " + triggerResult.Message);
             }
             catch (Exception ex)
             {
@@ -1390,6 +1402,83 @@ namespace CameraCaptureApp.Services
                 var modeApplied = TrySetNotebookEnumFeatureValue(device, "TriggerMode", new[] { "On" });
                 var sourceApplied = TrySetNotebookEnumFeatureValue(device, "TriggerSource", sources);
                 applied = applied || (selectorApplied && modeApplied && sourceApplied);
+            }
+
+            return applied;
+        }
+
+        private static NotebookApplyResult TrySetNotebookTriggerModeFeatures(SapAcqDevice device, TriggerMode triggerMode)
+        {
+            var details = new System.Collections.Generic.List<string>();
+            var applied = false;
+
+            switch (triggerMode)
+            {
+                case TriggerMode.Continuous:
+                    applied = TrySetNotebookTriggerSelectors(
+                        device,
+                        details,
+                        false,
+                        null,
+                        new[] { "FrameStart", "LineStart", "AcquisitionStart", "ExposureStart" });
+                    break;
+
+                case TriggerMode.ExternalTrigger:
+                    applied = TrySetNotebookTriggerSelectors(
+                        device,
+                        details,
+                        true,
+                        new[] { "Line1", "Input1", "CC1", "CameraControl1", "CameraLinkCC1", "CL_CC1", "External", "ExternalLine", "LineTrigger" },
+                        new[] { "LineStart", "FrameStart", "AcquisitionStart", "ExposureStart" });
+                    break;
+
+                case TriggerMode.SoftwareTrigger:
+                    applied = TrySetNotebookTriggerSelectors(
+                        device,
+                        details,
+                        true,
+                        new[] { "Software", "SoftwareTrigger" },
+                        new[] { "FrameStart", "LineStart", "AcquisitionStart" });
+                    break;
+
+                case TriggerMode.SingleFrame:
+                    applied = TrySetNotebookTriggerSelectors(
+                        device,
+                        details,
+                        true,
+                        new[] { "Software", "SoftwareTrigger" },
+                        new[] { "FrameStart", "AcquisitionStart" });
+                    break;
+            }
+
+            return new NotebookApplyResult
+            {
+                Applied = applied,
+                Message = "TriggerMode " + triggerMode + " Features[" + string.Join(",", details.ToArray()) + "]"
+            };
+        }
+
+        private static bool TrySetNotebookTriggerSelectors(SapAcqDevice device, System.Collections.Generic.List<string> details, bool enabled, string[] sources, string[] selectors)
+        {
+            var applied = false;
+            foreach (var selector in selectors)
+            {
+                var selectorApplied = TrySetNotebookEnumFeatureValue(device, "TriggerSelector", new[] { selector });
+                var modeApplied = TrySetNotebookEnumFeatureValue(device, "TriggerMode", new[] { enabled ? "On" : "Off" });
+                var sourceApplied = !enabled || TrySetNotebookEnumFeatureValue(device, "TriggerSource", sources);
+
+                details.Add(
+                    selector
+                    + ":selector=" + FormatApplyResult(selectorApplied, selector)
+                    + " mode=" + FormatApplyResult(modeApplied, enabled ? "On" : "Off")
+                    + (enabled ? " source=" + FormatApplyResult(sourceApplied, sources != null && sources.Length > 0 ? string.Join("/", sources) : "<none>") : string.Empty));
+
+                applied = applied || (selectorApplied && modeApplied && sourceApplied);
+            }
+
+            if (!applied)
+            {
+                details.Add("no writable TriggerSelector/TriggerMode/TriggerSource combination");
             }
 
             return applied;
@@ -2431,6 +2520,11 @@ namespace CameraCaptureApp.Services
                         new[]
                         {
                             new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 1),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 1)
                         }))
                     {
@@ -2440,13 +2534,18 @@ namespace CameraCaptureApp.Services
                     break;
 
                 case TriggerMode.ExternalTrigger:
+                    TryEnableLineTriggerWhenSupported(notes);
                     if (TrySetAcquisitionBoolPattern(
                         notes,
                         new[]
                         {
+                            new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 1),
+                            new ParameterWrite(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 1),
                             new ParameterWrite(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 1),
-                            new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 1)
+                            new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 1),
+                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 1)
                         }))
                     {
                         notes.Add("Acquisition trigger external applied");
@@ -2459,6 +2558,10 @@ namespace CameraCaptureApp.Services
                         notes,
                         new[]
                         {
+                            new ParameterWrite(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0),
+                            new ParameterWrite(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 1),
                             new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 1)
                         }))
