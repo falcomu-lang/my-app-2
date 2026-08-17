@@ -152,28 +152,76 @@ namespace CameraCaptureApp.Forms
             ((System.ComponentModel.ISupportInitialize)(this.numericPulseWidth6)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericPulseWidth7)).BeginInit();
             this.SuspendLayout();
-            ConfigureHeader(this.labelChannelHeader, "Channel", 18, 18, 80);
-            ConfigureHeader(this.labelMaskHeader, "Mask", 112, 18, 60);
-            ConfigureHeader(this.labelOffsetHeader, "Offset Compare", 196, 18, 120);
-            ConfigureHeader(this.labelPulseWidthHeader, "Pulse Width", 338, 18, 100);
-            ConfigureHeader(this.labelOutputHeader, "Output", 466, 18, 72);
-            ConfigureHeader(this.labelStatusHeader, "Status", 558, 18, 70);
-            ConfigureChannelLabel(this.labelCmp0, "CMP0", 48);
-            ConfigureChannelLabel(this.labelCmp1, "CMP1", 78);
-            ConfigureChannelLabel(this.labelCmp2, "CMP2", 108);
-            ConfigureChannelLabel(this.labelCmp3, "CMP3", 138);
-            ConfigureChannelLabel(this.labelCmp4, "CMP4", 168);
-            ConfigureChannelLabel(this.labelCmp5, "CMP5", 198);
-            ConfigureChannelLabel(this.labelCmp6, "CMP6", 228);
-            ConfigureChannelLabel(this.labelCmp7, "CMP7", 258);
-            ConfigureCheckBox(this.checkMask0, 124, 50);
-            ConfigureCheckBox(this.checkMask1, 124, 80);
-            ConfigureCheckBox(this.checkMask2, 124, 110);
-            ConfigureCheckBox(this.checkMask3, 124, 140);
-            ConfigureCheckBox(this.checkMask4, 124, 170);
-            ConfigureCheckBox(this.checkMask5, 124, 200);
-            ConfigureCheckBox(this.checkMask6, 124, 230);
-            ConfigureCheckBox(this.checkMask7, 124, 260);
+            this.labelChannelHeader.AutoSize = false;
+            this.labelChannelHeader.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelChannelHeader.Location = new System.Drawing.Point(18, 18);
+            this.labelChannelHeader.Size = new System.Drawing.Size(80, 22);
+            this.labelChannelHeader.Text = "Channel";
+            this.labelMaskHeader.AutoSize = false;
+            this.labelMaskHeader.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelMaskHeader.Location = new System.Drawing.Point(112, 18);
+            this.labelMaskHeader.Size = new System.Drawing.Size(60, 22);
+            this.labelMaskHeader.Text = "Mask";
+            this.labelOffsetHeader.AutoSize = false;
+            this.labelOffsetHeader.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelOffsetHeader.Location = new System.Drawing.Point(196, 18);
+            this.labelOffsetHeader.Size = new System.Drawing.Size(120, 22);
+            this.labelOffsetHeader.Text = "Offset Compare";
+            this.labelPulseWidthHeader.AutoSize = false;
+            this.labelPulseWidthHeader.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelPulseWidthHeader.Location = new System.Drawing.Point(338, 18);
+            this.labelPulseWidthHeader.Size = new System.Drawing.Size(100, 22);
+            this.labelPulseWidthHeader.Text = "Pulse Width";
+            this.labelOutputHeader.AutoSize = false;
+            this.labelOutputHeader.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelOutputHeader.Location = new System.Drawing.Point(466, 18);
+            this.labelOutputHeader.Size = new System.Drawing.Size(72, 22);
+            this.labelOutputHeader.Text = "Output";
+            this.labelStatusHeader.AutoSize = false;
+            this.labelStatusHeader.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
+            this.labelStatusHeader.Location = new System.Drawing.Point(558, 18);
+            this.labelStatusHeader.Size = new System.Drawing.Size(70, 22);
+            this.labelStatusHeader.Text = "Status";
+            this.labelCmp0.Location = new System.Drawing.Point(18, 52);
+            this.labelCmp0.Size = new System.Drawing.Size(80, 20);
+            this.labelCmp0.Text = "CMP0";
+            this.labelCmp1.Location = new System.Drawing.Point(18, 82);
+            this.labelCmp1.Size = new System.Drawing.Size(80, 20);
+            this.labelCmp1.Text = "CMP1";
+            this.labelCmp2.Location = new System.Drawing.Point(18, 112);
+            this.labelCmp2.Size = new System.Drawing.Size(80, 20);
+            this.labelCmp2.Text = "CMP2";
+            this.labelCmp3.Location = new System.Drawing.Point(18, 142);
+            this.labelCmp3.Size = new System.Drawing.Size(80, 20);
+            this.labelCmp3.Text = "CMP3";
+            this.labelCmp4.Location = new System.Drawing.Point(18, 172);
+            this.labelCmp4.Size = new System.Drawing.Size(80, 20);
+            this.labelCmp4.Text = "CMP4";
+            this.labelCmp5.Location = new System.Drawing.Point(18, 202);
+            this.labelCmp5.Size = new System.Drawing.Size(80, 20);
+            this.labelCmp5.Text = "CMP5";
+            this.labelCmp6.Location = new System.Drawing.Point(18, 232);
+            this.labelCmp6.Size = new System.Drawing.Size(80, 20);
+            this.labelCmp6.Text = "CMP6";
+            this.labelCmp7.Location = new System.Drawing.Point(18, 262);
+            this.labelCmp7.Size = new System.Drawing.Size(80, 20);
+            this.labelCmp7.Text = "CMP7";
+            this.checkMask0.Location = new System.Drawing.Point(124, 52);
+            this.checkMask1.Location = new System.Drawing.Point(124, 82);
+            this.checkMask2.Location = new System.Drawing.Point(124, 112);
+            this.checkMask3.Location = new System.Drawing.Point(124, 142);
+            this.checkMask4.Location = new System.Drawing.Point(124, 172);
+            this.checkMask5.Location = new System.Drawing.Point(124, 202);
+            this.checkMask6.Location = new System.Drawing.Point(124, 232);
+            this.checkMask7.Location = new System.Drawing.Point(124, 262);
+            this.checkMask0.Size = new System.Drawing.Size(22, 22);
+            this.checkMask1.Size = new System.Drawing.Size(22, 22);
+            this.checkMask2.Size = new System.Drawing.Size(22, 22);
+            this.checkMask3.Size = new System.Drawing.Size(22, 22);
+            this.checkMask4.Size = new System.Drawing.Size(22, 22);
+            this.checkMask5.Size = new System.Drawing.Size(22, 22);
+            this.checkMask6.Size = new System.Drawing.Size(22, 22);
+            this.checkMask7.Size = new System.Drawing.Size(22, 22);
             this.checkMask0.CheckedChanged += new System.EventHandler(this.checkMask_CheckedChanged);
             this.checkMask1.CheckedChanged += new System.EventHandler(this.checkMask_CheckedChanged);
             this.checkMask2.CheckedChanged += new System.EventHandler(this.checkMask_CheckedChanged);
@@ -182,38 +230,94 @@ namespace CameraCaptureApp.Forms
             this.checkMask5.CheckedChanged += new System.EventHandler(this.checkMask_CheckedChanged);
             this.checkMask6.CheckedChanged += new System.EventHandler(this.checkMask_CheckedChanged);
             this.checkMask7.CheckedChanged += new System.EventHandler(this.checkMask_CheckedChanged);
-            ConfigureSignedNumeric(this.numericOffset0, 196, 48);
-            ConfigureSignedNumeric(this.numericOffset1, 196, 78);
-            ConfigureSignedNumeric(this.numericOffset2, 196, 108);
-            ConfigureSignedNumeric(this.numericOffset3, 196, 138);
-            ConfigureSignedNumeric(this.numericOffset4, 196, 168);
-            ConfigureSignedNumeric(this.numericOffset5, 196, 198);
-            ConfigureSignedNumeric(this.numericOffset6, 196, 228);
-            ConfigureSignedNumeric(this.numericOffset7, 196, 258);
-            ConfigurePulseNumeric(this.numericPulseWidth0, 338, 48);
-            ConfigurePulseNumeric(this.numericPulseWidth1, 338, 78);
-            ConfigurePulseNumeric(this.numericPulseWidth2, 338, 108);
-            ConfigurePulseNumeric(this.numericPulseWidth3, 338, 138);
-            ConfigurePulseNumeric(this.numericPulseWidth4, 338, 168);
-            ConfigurePulseNumeric(this.numericPulseWidth5, 338, 198);
-            ConfigurePulseNumeric(this.numericPulseWidth6, 338, 228);
-            ConfigurePulseNumeric(this.numericPulseWidth7, 338, 258);
-            ConfigureCheckBox(this.checkOutput0, 486, 50);
-            ConfigureCheckBox(this.checkOutput1, 486, 80);
-            ConfigureCheckBox(this.checkOutput2, 486, 110);
-            ConfigureCheckBox(this.checkOutput3, 486, 140);
-            ConfigureCheckBox(this.checkOutput4, 486, 170);
-            ConfigureCheckBox(this.checkOutput5, 486, 200);
-            ConfigureCheckBox(this.checkOutput6, 486, 230);
-            ConfigureCheckBox(this.checkOutput7, 486, 260);
-            ConfigureCheckBox(this.checkStatus0, 578, 50);
-            ConfigureCheckBox(this.checkStatus1, 578, 80);
-            ConfigureCheckBox(this.checkStatus2, 578, 110);
-            ConfigureCheckBox(this.checkStatus3, 578, 140);
-            ConfigureCheckBox(this.checkStatus4, 578, 170);
-            ConfigureCheckBox(this.checkStatus5, 578, 200);
-            ConfigureCheckBox(this.checkStatus6, 578, 230);
-            ConfigureCheckBox(this.checkStatus7, 578, 260);
+            this.numericOffset0.Location = new System.Drawing.Point(196, 48);
+            this.numericOffset1.Location = new System.Drawing.Point(196, 78);
+            this.numericOffset2.Location = new System.Drawing.Point(196, 108);
+            this.numericOffset3.Location = new System.Drawing.Point(196, 138);
+            this.numericOffset4.Location = new System.Drawing.Point(196, 168);
+            this.numericOffset5.Location = new System.Drawing.Point(196, 198);
+            this.numericOffset6.Location = new System.Drawing.Point(196, 228);
+            this.numericOffset7.Location = new System.Drawing.Point(196, 258);
+            this.numericOffset0.Minimum = -32768;
+            this.numericOffset1.Minimum = -32768;
+            this.numericOffset2.Minimum = -32768;
+            this.numericOffset3.Minimum = -32768;
+            this.numericOffset4.Minimum = -32768;
+            this.numericOffset5.Minimum = -32768;
+            this.numericOffset6.Minimum = -32768;
+            this.numericOffset7.Minimum = -32768;
+            this.numericOffset0.Maximum = 32767;
+            this.numericOffset1.Maximum = 32767;
+            this.numericOffset2.Maximum = 32767;
+            this.numericOffset3.Maximum = 32767;
+            this.numericOffset4.Maximum = 32767;
+            this.numericOffset5.Maximum = 32767;
+            this.numericOffset6.Maximum = 32767;
+            this.numericOffset7.Maximum = 32767;
+            this.numericOffset0.Size = new System.Drawing.Size(108, 25);
+            this.numericOffset1.Size = new System.Drawing.Size(108, 25);
+            this.numericOffset2.Size = new System.Drawing.Size(108, 25);
+            this.numericOffset3.Size = new System.Drawing.Size(108, 25);
+            this.numericOffset4.Size = new System.Drawing.Size(108, 25);
+            this.numericOffset5.Size = new System.Drawing.Size(108, 25);
+            this.numericOffset6.Size = new System.Drawing.Size(108, 25);
+            this.numericOffset7.Size = new System.Drawing.Size(108, 25);
+            this.numericPulseWidth0.Location = new System.Drawing.Point(338, 48);
+            this.numericPulseWidth1.Location = new System.Drawing.Point(338, 78);
+            this.numericPulseWidth2.Location = new System.Drawing.Point(338, 108);
+            this.numericPulseWidth3.Location = new System.Drawing.Point(338, 138);
+            this.numericPulseWidth4.Location = new System.Drawing.Point(338, 168);
+            this.numericPulseWidth5.Location = new System.Drawing.Point(338, 198);
+            this.numericPulseWidth6.Location = new System.Drawing.Point(338, 228);
+            this.numericPulseWidth7.Location = new System.Drawing.Point(338, 258);
+            this.numericPulseWidth0.Maximum = 65535;
+            this.numericPulseWidth1.Maximum = 65535;
+            this.numericPulseWidth2.Maximum = 65535;
+            this.numericPulseWidth3.Maximum = 65535;
+            this.numericPulseWidth4.Maximum = 65535;
+            this.numericPulseWidth5.Maximum = 65535;
+            this.numericPulseWidth6.Maximum = 65535;
+            this.numericPulseWidth7.Maximum = 65535;
+            this.numericPulseWidth0.Size = new System.Drawing.Size(108, 25);
+            this.numericPulseWidth1.Size = new System.Drawing.Size(108, 25);
+            this.numericPulseWidth2.Size = new System.Drawing.Size(108, 25);
+            this.numericPulseWidth3.Size = new System.Drawing.Size(108, 25);
+            this.numericPulseWidth4.Size = new System.Drawing.Size(108, 25);
+            this.numericPulseWidth5.Size = new System.Drawing.Size(108, 25);
+            this.numericPulseWidth6.Size = new System.Drawing.Size(108, 25);
+            this.numericPulseWidth7.Size = new System.Drawing.Size(108, 25);
+            this.checkOutput0.Location = new System.Drawing.Point(486, 52);
+            this.checkOutput1.Location = new System.Drawing.Point(486, 82);
+            this.checkOutput2.Location = new System.Drawing.Point(486, 112);
+            this.checkOutput3.Location = new System.Drawing.Point(486, 142);
+            this.checkOutput4.Location = new System.Drawing.Point(486, 172);
+            this.checkOutput5.Location = new System.Drawing.Point(486, 202);
+            this.checkOutput6.Location = new System.Drawing.Point(486, 232);
+            this.checkOutput7.Location = new System.Drawing.Point(486, 262);
+            this.checkStatus0.Location = new System.Drawing.Point(578, 52);
+            this.checkStatus1.Location = new System.Drawing.Point(578, 82);
+            this.checkStatus2.Location = new System.Drawing.Point(578, 112);
+            this.checkStatus3.Location = new System.Drawing.Point(578, 142);
+            this.checkStatus4.Location = new System.Drawing.Point(578, 172);
+            this.checkStatus5.Location = new System.Drawing.Point(578, 202);
+            this.checkStatus6.Location = new System.Drawing.Point(578, 232);
+            this.checkStatus7.Location = new System.Drawing.Point(578, 262);
+            this.checkOutput0.Size = new System.Drawing.Size(22, 22);
+            this.checkOutput1.Size = new System.Drawing.Size(22, 22);
+            this.checkOutput2.Size = new System.Drawing.Size(22, 22);
+            this.checkOutput3.Size = new System.Drawing.Size(22, 22);
+            this.checkOutput4.Size = new System.Drawing.Size(22, 22);
+            this.checkOutput5.Size = new System.Drawing.Size(22, 22);
+            this.checkOutput6.Size = new System.Drawing.Size(22, 22);
+            this.checkOutput7.Size = new System.Drawing.Size(22, 22);
+            this.checkStatus0.Size = new System.Drawing.Size(22, 22);
+            this.checkStatus1.Size = new System.Drawing.Size(22, 22);
+            this.checkStatus2.Size = new System.Drawing.Size(22, 22);
+            this.checkStatus3.Size = new System.Drawing.Size(22, 22);
+            this.checkStatus4.Size = new System.Drawing.Size(22, 22);
+            this.checkStatus5.Size = new System.Drawing.Size(22, 22);
+            this.checkStatus6.Size = new System.Drawing.Size(22, 22);
+            this.checkStatus7.Size = new System.Drawing.Size(22, 22);
             this.checkStatus0.Enabled = false;
             this.checkStatus1.Enabled = false;
             this.checkStatus2.Enabled = false;
@@ -222,9 +326,24 @@ namespace CameraCaptureApp.Forms
             this.checkStatus5.Enabled = false;
             this.checkStatus6.Enabled = false;
             this.checkStatus7.Enabled = false;
-            ConfigureButton(this.buttonOk, "OK", 318, 306, 72);
-            ConfigureButton(this.buttonCancel, "Cancel", 400, 306, 82);
-            ConfigureButton(this.buttonApply, "Apply", 494, 306, 82);
+            this.buttonOk.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonOk.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonOk.ForeColor = System.Drawing.Color.White;
+            this.buttonOk.Location = new System.Drawing.Point(318, 306);
+            this.buttonOk.Size = new System.Drawing.Size(72, 30);
+            this.buttonOk.Text = "OK";
+            this.buttonCancel.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonCancel.ForeColor = System.Drawing.Color.White;
+            this.buttonCancel.Location = new System.Drawing.Point(400, 306);
+            this.buttonCancel.Size = new System.Drawing.Size(82, 30);
+            this.buttonCancel.Text = "Cancel";
+            this.buttonApply.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
+            this.buttonApply.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonApply.ForeColor = System.Drawing.Color.White;
+            this.buttonApply.Location = new System.Drawing.Point(494, 306);
+            this.buttonApply.Size = new System.Drawing.Size(82, 30);
+            this.buttonApply.Text = "Apply";
             this.buttonOk.Click += new System.EventHandler(this.buttonOk_Click);
             this.buttonCancel.Click += new System.EventHandler(this.buttonCancel_Click);
             this.buttonApply.Click += new System.EventHandler(this.buttonApply_Click);
@@ -275,59 +394,5 @@ namespace CameraCaptureApp.Forms
             this.ResumeLayout(false);
         }
 
-        private static void ConfigureHeader(System.Windows.Forms.Label label, string text, int left, int top, int width)
-        {
-            label.AutoSize = false;
-            label.Font = new System.Drawing.Font("Microsoft JhengHei UI", 9F, System.Drawing.FontStyle.Bold);
-            label.Location = new System.Drawing.Point(left, top);
-            label.Size = new System.Drawing.Size(width, 22);
-            label.Text = text;
-            label.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-        }
-
-        private static void ConfigureChannelLabel(System.Windows.Forms.Label label, string text, int top)
-        {
-            label.AutoSize = false;
-            label.Location = new System.Drawing.Point(18, top + 4);
-            label.Size = new System.Drawing.Size(80, 20);
-            label.Text = text;
-            label.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-        }
-
-        private static void ConfigureCheckBox(System.Windows.Forms.CheckBox checkBox, int left, int top)
-        {
-            checkBox.AutoSize = false;
-            checkBox.Location = new System.Drawing.Point(left, top + 2);
-            checkBox.Size = new System.Drawing.Size(22, 22);
-            checkBox.UseVisualStyleBackColor = true;
-        }
-
-        private static void ConfigureSignedNumeric(System.Windows.Forms.NumericUpDown numeric, int left, int top)
-        {
-            numeric.Location = new System.Drawing.Point(left, top);
-            numeric.Minimum = -32768;
-            numeric.Maximum = 32767;
-            numeric.Size = new System.Drawing.Size(108, 25);
-            numeric.ThousandsSeparator = true;
-        }
-
-        private static void ConfigurePulseNumeric(System.Windows.Forms.NumericUpDown numeric, int left, int top)
-        {
-            numeric.Location = new System.Drawing.Point(left, top);
-            numeric.Maximum = 65535;
-            numeric.Size = new System.Drawing.Size(108, 25);
-            numeric.ThousandsSeparator = true;
-        }
-
-        private static void ConfigureButton(System.Windows.Forms.Button button, string text, int left, int top, int width)
-        {
-            button.BackColor = System.Drawing.Color.FromArgb(84, 120, 196);
-            button.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            button.ForeColor = System.Drawing.Color.White;
-            button.Location = new System.Drawing.Point(left, top);
-            button.Size = new System.Drawing.Size(width, 30);
-            button.Text = text;
-            button.UseVisualStyleBackColor = false;
-        }
     }
 }
