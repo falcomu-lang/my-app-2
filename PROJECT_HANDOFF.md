@@ -15,7 +15,7 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
 - Current handoff date: `2026-08-17`
-- Latest pushed feature commit referenced by this handoff: `1a9e609 Add meter wheel reverse direction setting`
+- Latest pushed feature commit referenced by this handoff: `13ccfa5 Clarify handoff commit reference`
 
 Latest verified local build command:
 
@@ -83,6 +83,7 @@ Latest local build result: `0 warning / 0 error`
 - `MainForm` now has a `Meter Wheel` button.
 - `MainForm` owns the active `Lsi8181MeterWheelService` instance.
 - After `MainForm` is shown, the app waits `1 second` and attempts to auto-connect the meter wheel using persisted meter wheel settings.
+  - The saved `MeterWheelCardId` selects which LSI-8181 card is connected during this startup auto-connect path.
 - Meter wheel auto-connect failure is logged and shown in the footer message; it does not block startup with an error popup.
 - The meter wheel control window is modeless:
   - The camera app remains usable while the meter wheel window is open.
@@ -125,7 +126,7 @@ Latest local build result: `0 warning / 0 error`
   - `MeterWheelExtensionCompareOffsets`
   - `MeterWheelExtensionComparePulseWidths`
   - `MeterWheelExtensionCompareOutputStates`
-- When opening the meter wheel window, the persisted values are loaded into the UI.
+- When opening the meter wheel window, the persisted values are loaded into the UI, including the saved Card ID selection.
 - When pressing meter wheel `Apply` / `Set` for increment, multiple rate, or CMP out width, the values are saved back through `SettingsService`.
 - When connecting to the meter wheel card, the app applies persisted meter wheel settings immediately:
   - Encoder input mode is forced to quadrature mode.
@@ -137,7 +138,10 @@ Latest local build result: `0 warning / 0 error`
   - CMP OUT is forced enabled through `LSI8181_toggle_preset(CardID, 1)`.
   - Extension compare settings for `CMP0` through `CMP7` are applied from `settings.ini`.
   - Counter starts in compare output mode.
-- `MeterWheelCardId` is saved when the user connects from the meter wheel control window.
+- `MeterWheelCardId` is saved when the user connects from the meter wheel control window:
+  - The selected Card ID combo-box index is written to `_settings.MeterWheelCardId`.
+  - `SettingsService.Save()` persists it to `settings.ini`.
+  - The next application startup uses the saved value for the 1-second delayed auto-connect.
 - `MeterWheelReverseDirection` is implemented in software by reading and writing the LSI-8181 CIO polarity register:
   - The app calls `LSI8181_CIO_polarity_read` and `LSI8181_CIO_polarity_set`.
   - It toggles A phase polarity bit `0` only, preserving the other CIO polarity bits.
