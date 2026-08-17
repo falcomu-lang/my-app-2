@@ -2571,34 +2571,23 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
-            TryEnableLineTriggerWhenSupported(notes);
-
             var disabledInternalLine = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0);
             var disabledInternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0);
             var disabledExternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0);
-            var enabledCameraTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 1);
-            var enabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 1);
             var enabledExternalLine = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
-            var enabledExternalTriggerFallback = false;
-
-            if (!enabledExternalLine)
-            {
-                enabledExternalTriggerFallback = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_TRIGGER_ENABLE);
-            }
 
             notes.Add(
                 "ExternalLineTrigger board "
                 + "intLineOff=" + FormatApplyResult(disabledInternalLine, "0")
                 + " intFrameOff=" + FormatApplyResult(disabledInternalFrame, "0")
                 + " extFrameOff=" + FormatApplyResult(disabledExternalFrame, "0")
-                + " camTriggerOn=" + FormatApplyResult(enabledCameraTrigger, "1")
-                + " lineTriggerOn=" + FormatApplyResult(enabledLineTrigger, "1")
+                + " camTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.CAM_TRIGGER_ENABLE)
+                + " lineTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_ENABLE)
                 + " lineTriggerMethod=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_METHOD)
                 + " extLineEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE)
-                + " extFrameEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE)
-                + " extTriggerFallback=" + FormatApplyResult(enabledExternalTriggerFallback, "1"));
+                + " extFrameEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE));
 
-            return enabledExternalLine || enabledExternalTriggerFallback;
+            return enabledExternalLine;
         }
 
         private bool TryConfigureTriggerSelector(string selector, bool enabled, string source)
