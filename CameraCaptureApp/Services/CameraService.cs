@@ -1374,7 +1374,7 @@ namespace CameraCaptureApp.Services
 
         private static bool TrySetNotebookEnumFeatureValue(SapAcqDevice device, string featureName, string[] values)
         {
-            if (!CanWriteNotebookFeature(device, featureName))
+            if (!CanWriteNotebookFeatureStrict(device, featureName))
             {
                 return false;
             }
