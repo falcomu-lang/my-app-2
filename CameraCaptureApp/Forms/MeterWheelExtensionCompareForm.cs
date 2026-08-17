@@ -5,7 +5,7 @@ using CameraCaptureApp.Services;
 
 namespace CameraCaptureApp.Forms
 {
-    internal partial class MeterWheelExtensionCompareForm : Form
+    public partial class MeterWheelExtensionCompareForm : Form
     {
         private readonly Lsi8181MeterWheelService _meterWheelService;
         private readonly CameraSettings _settings;
@@ -17,7 +17,13 @@ namespace CameraCaptureApp.Forms
         private CheckBox[] _statusChecks;
         private bool _loading;
 
-        public MeterWheelExtensionCompareForm(
+        public MeterWheelExtensionCompareForm()
+        {
+            InitializeComponent();
+            InitializeControlArrays();
+        }
+
+        internal MeterWheelExtensionCompareForm(
             Lsi8181MeterWheelService meterWheelService,
             CameraSettings settings,
             ISettingsService settingsService)
