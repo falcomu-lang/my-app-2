@@ -138,6 +138,13 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
+            if (_settings.TriggerMode == TriggerMode.ExternalTrigger && !IsExternalLineTriggerArmed())
+            {
+                _status.ScanStateText = "Trigger not armed";
+                _status.LastMessage = "External Trigger is not armed: EXT_LINE_TRIGGER_ENABLE did not read back as 1. Preview was not started to avoid free-run acquisition.";
+                return false;
+            }
+
             if (_transfer.Grab())
             {
                 _status.IsPreviewing = true;
@@ -148,6 +155,17 @@ namespace CameraCaptureApp.Services
 
             _status.LastMessage = "Preview could not be started.";
             return false;
+        }
+
+        private bool IsExternalLineTriggerArmed()
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return false;
+            }
+
+            var extLineTriggerEnabled = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
+            return extLineTriggerEnabled.HasValue && extLineTriggerEnabled.Value == 1;
         }
 
         public void StopPreview()
@@ -1495,18 +1513,7 @@ namespace CameraCaptureApp.Services
                 "LineExposureTime",
                 "AcquisitionExposureTime",
                 "ShutterTime",
-                "ShutterDuration",
-                "TriggerWidth",
-                "TriggerDuration",
-                "CamTriggerDuration",
-                "CAM_TRIGGER_DURATION",
-                "StrobeDuration",
-                "StrobePulseWidth",
-                "PulseWidth",
-                "PulseDuration",
-                "LINE_INTEGRATE_DURATION",
-                "LineIntegrateDuration",
-                "LineIntegrationDuration"
+                "ShutterDuration"
             };
 
             var details = new System.Collections.Generic.List<string>();
