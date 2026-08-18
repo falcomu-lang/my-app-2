@@ -855,12 +855,12 @@ namespace CameraCaptureApp.Services
             var applied = false;
             var notes = initialNotes ?? new System.Collections.Generic.List<string>();
 
-            var shouldApplyInternalLineRate = applyInternalLineRate && _settings.TriggerMode == TriggerMode.Continuous;
+            var shouldApplyInternalLineRate = false;
             if (shouldApplyInternalLineRate && TrySetInternalLineRate(notes))
             {
                 applied = true;
             }
-            else if (applyInternalLineRate && _settings.TriggerMode != TriggerMode.Continuous)
+            else if (applyInternalLineRate)
             {
                 notes.Add("InternalLineRate acquisition trigger skipped for " + _settings.TriggerMode + " mode");
             }
@@ -871,7 +871,11 @@ namespace CameraCaptureApp.Services
                 applied = true;
             }
 
-            if (TryApplyAcquisitionTriggerMode(notes))
+            if (_settings.TriggerMode == TriggerMode.Continuous)
+            {
+                notes.Add("Acquisition trigger writes skipped for continuous mode; camfile free-run settings are preserved.");
+            }
+            else if (TryApplyAcquisitionTriggerMode(notes))
             {
                 applied = true;
             }
