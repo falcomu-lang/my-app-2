@@ -2643,6 +2643,9 @@ namespace CameraCaptureApp.Services
             var disabledInternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0);
             var disabledExternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0);
             var disabledShaftEncoder = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0);
+            var disabledCameraTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0);
+            var disabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 0);
+            var disabledExternalTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0);
             var enabledExternalLine = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
 
             notes.Add(
@@ -2654,6 +2657,9 @@ namespace CameraCaptureApp.Services
                 + " intFrameOff=" + FormatApplyResult(disabledInternalFrame, "0")
                 + " extFrameOff=" + FormatApplyResult(disabledExternalFrame, "0")
                 + " shaftEncoderOff=" + FormatApplyResult(disabledShaftEncoder, "0")
+                + " camTriggerOff=" + FormatApplyResult(disabledCameraTrigger, "0")
+                + " lineTriggerOff=" + FormatApplyResult(disabledLineTrigger, "0")
+                + " extTriggerOff=" + FormatApplyResult(disabledExternalTrigger, "0")
                 + " sourceWrite=skipped"
                 + " detectionWrite=skipped"
                 + " camTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.CAM_TRIGGER_ENABLE)
