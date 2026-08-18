@@ -26,7 +26,6 @@ namespace CameraCaptureApp.Services
         private SapAcqToBuf _transfer;
         private DateTime _lastPreviewFrameUtc;
         private int _pendingExternalTriggerEvents;
-        private bool _externalTriggerEventsConfigured;
         private bool _deviceFeaturesAvailable;
         private string _acqDevicePathSummary;
         private string _acqDeviceProbeSummary;
@@ -173,7 +172,6 @@ namespace CameraCaptureApp.Services
 
         private void ConfigureExternalTriggerEvents()
         {
-            _externalTriggerEventsConfigured = false;
             if (_acquisition == null)
             {
                 return;
@@ -188,11 +186,9 @@ namespace CameraCaptureApp.Services
                     SapAcquisition.AcqEventType.ExternalTriggerTooSlow |
                     SapAcquisition.AcqEventType.ExtLineTriggerTooSlow |
                     SapAcquisition.AcqEventType.LineTriggerTooFast;
-                _externalTriggerEventsConfigured = true;
             }
             catch
             {
-                _externalTriggerEventsConfigured = false;
             }
         }
 
@@ -595,13 +591,6 @@ namespace CameraCaptureApp.Services
             _status.LastMessage = argsNotify.Trash
                 ? "Frame landed in trash buffer."
                 : "Frame received from Sapera.";
-
-            if (!argsNotify.Trash && _settings.TriggerMode == TriggerMode.ExternalTrigger && _externalTriggerEventsConfigured && _pendingExternalTriggerEvents <= 0)
-            {
-                _status.ScanStateText = "Waiting trigger";
-                _status.LastMessage = "Free-run frame ignored: no Sapera external trigger event was received.";
-                return;
-            }
 
             if (!argsNotify.Trash)
             {
@@ -2654,8 +2643,6 @@ namespace CameraCaptureApp.Services
             var disabledInternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0);
             var disabledExternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0);
             var disabledShaftEncoder = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0);
-            var sourceApplied = TrySetAcquisitionSourceZero(notes, SapAcquisition.Prm.EXT_LINE_TRIGGER_SOURCE, SapAcquisition.Cap.EXT_LINE_TRIGGER_SOURCE);
-            var detectionApplied = TrySetAcquisitionFirstCapabilityBit(notes, SapAcquisition.Prm.EXT_LINE_TRIGGER_DETECTION, SapAcquisition.Cap.EXT_LINE_TRIGGER_DETECTION);
             var enabledExternalLine = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
 
             notes.Add(
@@ -2667,8 +2654,8 @@ namespace CameraCaptureApp.Services
                 + " intFrameOff=" + FormatApplyResult(disabledInternalFrame, "0")
                 + " extFrameOff=" + FormatApplyResult(disabledExternalFrame, "0")
                 + " shaftEncoderOff=" + FormatApplyResult(disabledShaftEncoder, "0")
-                + " source0=" + FormatApplyResult(sourceApplied, "0")
-                + " detectionAuto=" + FormatApplyResult(detectionApplied, "first-supported")
+                + " sourceWrite=skipped"
+                + " detectionWrite=skipped"
                 + " camTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.CAM_TRIGGER_ENABLE)
                 + " lineTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_ENABLE)
                 + " lineTriggerMethod=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_METHOD)
