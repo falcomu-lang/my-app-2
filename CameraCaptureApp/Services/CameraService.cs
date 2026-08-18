@@ -2583,6 +2583,10 @@ namespace CameraCaptureApp.Services
             var disabledInternalLine = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0);
             var disabledInternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0);
             var disabledExternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0);
+            var disabledShaftEncoder = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0);
+            var sourceApplied = TrySetAcquisitionSourceZero(notes, SapAcquisition.Prm.EXT_LINE_TRIGGER_SOURCE, SapAcquisition.Cap.EXT_LINE_TRIGGER_SOURCE);
+            var detectionApplied = TrySetAcquisitionFirstCapabilityBit(notes, SapAcquisition.Prm.EXT_LINE_TRIGGER_DETECTION, SapAcquisition.Cap.EXT_LINE_TRIGGER_DETECTION);
+            var levelApplied = TrySetAcquisitionFirstCapabilityBit(notes, SapAcquisition.Prm.EXT_LINE_TRIGGER_LEVEL, SapAcquisition.Cap.EXT_LINE_TRIGGER_LEVEL);
             var enabledExternalLine = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
 
             notes.Add(
@@ -2593,13 +2597,73 @@ namespace CameraCaptureApp.Services
                 + "intLineOff=" + FormatApplyResult(disabledInternalLine, "0")
                 + " intFrameOff=" + FormatApplyResult(disabledInternalFrame, "0")
                 + " extFrameOff=" + FormatApplyResult(disabledExternalFrame, "0")
+                + " shaftEncoderOff=" + FormatApplyResult(disabledShaftEncoder, "0")
+                + " source0=" + FormatApplyResult(sourceApplied, "0")
+                + " detectionAuto=" + FormatApplyResult(detectionApplied, "first-supported")
+                + " levelAuto=" + FormatApplyResult(levelApplied, "first-supported")
                 + " camTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.CAM_TRIGGER_ENABLE)
                 + " lineTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_ENABLE)
                 + " lineTriggerMethod=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_METHOD)
                 + " extLineEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE)
+                + " extLineSource=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_SOURCE)
+                + " extLineDetection=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_DETECTION)
+                + " extLineLevel=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_LEVEL)
+                + " shaftEncoder=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE)
                 + " extFrameEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE));
 
             return enabledExternalLine;
+        }
+
+        private bool TrySetAcquisitionSourceZero(System.Collections.Generic.List<string> notes, SapAcquisition.Prm parameter, SapAcquisition.Cap capability)
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return false;
+            }
+
+            try
+            {
+                int sourceCount;
+                if (_acquisition.GetCapability(capability, out sourceCount) && sourceCount > 0)
+                {
+                    return TrySetAcquisitionIntParameter(notes, 0, parameter);
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private bool TrySetAcquisitionFirstCapabilityBit(System.Collections.Generic.List<string> notes, SapAcquisition.Prm parameter, SapAcquisition.Cap capability)
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return false;
+            }
+
+            try
+            {
+                int capabilityBits;
+                if (!_acquisition.GetCapability(capability, out capabilityBits))
+                {
+                    return false;
+                }
+
+                for (var bit = 1; bit != 0 && bit > 0; bit <<= 1)
+                {
+                    if ((capabilityBits & bit) != 0)
+                    {
+                        return TrySetAcquisitionIntParameter(notes, bit, parameter);
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
         }
 
         private bool TryConfigureTriggerSelector(string selector, bool enabled, string source)
