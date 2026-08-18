@@ -2644,8 +2644,9 @@ namespace CameraCaptureApp.Services
             var disabledExternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0);
             var disabledShaftEncoder = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0);
             var disabledCameraTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0);
-            var disabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 0);
             var disabledExternalTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0);
+            var lineTriggerMethodApplied = TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_METHOD, SapAcquisition.Val.LINE_TRIGGER_METHOD_1);
+            var enabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 1);
             var enabledExternalLine = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
 
             notes.Add(
@@ -2658,8 +2659,9 @@ namespace CameraCaptureApp.Services
                 + " extFrameOff=" + FormatApplyResult(disabledExternalFrame, "0")
                 + " shaftEncoderOff=" + FormatApplyResult(disabledShaftEncoder, "0")
                 + " camTriggerOff=" + FormatApplyResult(disabledCameraTrigger, "0")
-                + " lineTriggerOff=" + FormatApplyResult(disabledLineTrigger, "0")
                 + " extTriggerOff=" + FormatApplyResult(disabledExternalTrigger, "0")
+                + " lineTriggerMethod1=" + FormatApplyResult(lineTriggerMethodApplied, "LINE_TRIGGER_METHOD_1")
+                + " lineTriggerOn=" + FormatApplyResult(enabledLineTrigger, "1")
                 + " sourceWrite=skipped"
                 + " detectionWrite=skipped"
                 + " camTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.CAM_TRIGGER_ENABLE)
@@ -2672,6 +2674,23 @@ namespace CameraCaptureApp.Services
                 + " extFrameEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE));
 
             return enabledExternalLine;
+        }
+
+        private bool TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm parameter, SapAcquisition.Val value)
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return false;
+            }
+
+            try
+            {
+                return _acquisition.SetParameter(parameter, value, true);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private bool TrySetAcquisitionSourceZero(System.Collections.Generic.List<string> notes, SapAcquisition.Prm parameter, SapAcquisition.Cap capability)
