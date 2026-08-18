@@ -2768,6 +2768,11 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
+            if (!IsAcquisitionParameterAvailable(parameter))
+            {
+                return false;
+            }
+
             try
             {
                 return _acquisition.SetParameter(parameter, value, true);
@@ -2911,6 +2916,11 @@ namespace CameraCaptureApp.Services
 
                 foreach (var parameter in parameters)
                 {
+                    if (!IsAcquisitionParameterAvailable(parameter))
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         if (_acquisition.SetParameter(parameter, value, true))
@@ -2944,6 +2954,11 @@ namespace CameraCaptureApp.Services
         private bool TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm parameter, int value)
         {
             if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return false;
+            }
+
+            if (!IsAcquisitionParameterAvailable(parameter))
             {
                 return false;
             }
