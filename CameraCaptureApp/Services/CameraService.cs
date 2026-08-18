@@ -2501,6 +2501,17 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var requestedExposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
+            if (_settings.TriggerMode == TriggerMode.ExternalTrigger)
+            {
+                notes.Add(
+                    "LineIntegrate exposure skipped for external trigger; official line-integration method 3 keeps duration=40 "
+                    + "enable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE)
+                    + " method=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_METHOD)
+                    + " requested=" + requestedExposureValue
+                    + " duration=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_DURATION));
+                return false;
+            }
+
             if (_settings.InternalLineRate > 0)
             {
                 var disabledLineIntegrate = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 0);
@@ -2645,8 +2656,13 @@ namespace CameraCaptureApp.Services
             var disabledShaftEncoder = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0);
             var disabledCameraTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0);
             var disabledExternalTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0);
-            var lineTriggerMethodApplied = TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_METHOD, SapAcquisition.Val.LINE_TRIGGER_METHOD_1);
-            var enabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 1);
+            var disabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 0);
+            var lineIntegrateMethodApplied = TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_METHOD, SapAcquisition.Val.LINE_INTEGRATE_METHOD_3);
+            var lineIntegrateDurationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, 40);
+            var pulse0HighApplied = TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_PULSE0_POLARITY, SapAcquisition.Val.ACTIVE_HIGH);
+            var pulse1LowApplied = TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_PULSE1_POLARITY, SapAcquisition.Val.ACTIVE_LOW);
+            var cc1Pulse1Applied = TrySetCc1ToPulse1();
+            var lineIntegrateEnabled = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 1);
             var enabledExternalLine = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
 
             notes.Add(
@@ -2660,13 +2676,24 @@ namespace CameraCaptureApp.Services
                 + " shaftEncoderOff=" + FormatApplyResult(disabledShaftEncoder, "0")
                 + " camTriggerOff=" + FormatApplyResult(disabledCameraTrigger, "0")
                 + " extTriggerOff=" + FormatApplyResult(disabledExternalTrigger, "0")
-                + " lineTriggerMethod1=" + FormatApplyResult(lineTriggerMethodApplied, "LINE_TRIGGER_METHOD_1")
-                + " lineTriggerOn=" + FormatApplyResult(enabledLineTrigger, "1")
+                + " lineTriggerOff=" + FormatApplyResult(disabledLineTrigger, "0")
+                + " lineIntegrateMethod3=" + FormatApplyResult(lineIntegrateMethodApplied, "LINE_INTEGRATE_METHOD_3")
+                + " lineIntegrateDuration40=" + FormatApplyResult(lineIntegrateDurationApplied, "40")
+                + " pulse0High=" + FormatApplyResult(pulse0HighApplied, "ACTIVE_HIGH")
+                + " pulse1Low=" + FormatApplyResult(pulse1LowApplied, "ACTIVE_LOW")
+                + " cc1Pulse1=" + FormatApplyResult(cc1Pulse1Applied, "SIGNAL_NAME_PULSE1")
+                + " lineIntegrateOn=" + FormatApplyResult(lineIntegrateEnabled, "1")
                 + " sourceWrite=skipped"
                 + " detectionWrite=skipped"
                 + " camTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.CAM_TRIGGER_ENABLE)
                 + " lineTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_ENABLE)
                 + " lineTriggerMethod=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_METHOD)
+                + " lineIntegrate=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE)
+                + " lineIntegrateMethod=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_METHOD)
+                + " lineIntegrateDuration=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_DURATION)
+                + " pulse0Polarity=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_PULSE0_POLARITY)
+                + " pulse1Polarity=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_PULSE1_POLARITY)
+                + " cc1Control=" + ReadCc1Control()
                 + " extLineEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE)
                 + " extLineSource=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_SOURCE)
                 + " extLineDetection=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_DETECTION)
@@ -2674,6 +2701,54 @@ namespace CameraCaptureApp.Services
                 + " extFrameEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE));
 
             return enabledExternalLine;
+        }
+
+        private bool TrySetCc1ToPulse1()
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return false;
+            }
+
+            try
+            {
+                var controls = _acquisition.CamIoControl;
+                if (controls == null || controls.Length == 0 || controls[0] == null)
+                {
+                    return false;
+                }
+
+                controls[0].Value = Convert.ToInt32(SapAcquisition.Val.SIGNAL_NAME_PULSE1);
+                _acquisition.CamIoControl = controls;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private string ReadCc1Control()
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return "<unavailable>";
+            }
+
+            try
+            {
+                var controls = _acquisition.CamIoControl;
+                if (controls == null || controls.Length == 0 || controls[0] == null)
+                {
+                    return "<unavailable>";
+                }
+
+                return controls[0].Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch (Exception ex)
+            {
+                return "<error: " + ex.Message + ">";
+            }
         }
 
         private bool TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm parameter, SapAcquisition.Val value)
