@@ -855,7 +855,7 @@ namespace CameraCaptureApp.Services
             var applied = false;
             var notes = initialNotes ?? new System.Collections.Generic.List<string>();
 
-            var shouldApplyInternalLineRate = false;
+            var shouldApplyInternalLineRate = applyInternalLineRate && _settings.TriggerMode == TriggerMode.Continuous;
             if (shouldApplyInternalLineRate && TrySetInternalLineRate(notes))
             {
                 applied = true;
