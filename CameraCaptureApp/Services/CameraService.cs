@@ -2501,6 +2501,15 @@ namespace CameraCaptureApp.Services
         private bool TrySetExposureParameters(System.Collections.Generic.List<string> notes)
         {
             var requestedExposureValue = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime));
+            if (_settings.TriggerMode == TriggerMode.Continuous)
+            {
+                notes.Add(
+                    "LineIntegrate exposure skipped for continuous mode "
+                    + "requested=" + requestedExposureValue
+                    + " note=free-run keeps exposure on camera-side features/CCF and does not write line integration parameters");
+                return false;
+            }
+
             if (_settings.TriggerMode == TriggerMode.ExternalTrigger)
             {
                 notes.Add(
