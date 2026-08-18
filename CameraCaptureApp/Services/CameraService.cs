@@ -1442,12 +1442,19 @@ namespace CameraCaptureApp.Services
                     break;
 
                 case TriggerMode.ExternalTrigger:
-                    applied = TrySetNotebookTriggerSelectors(
+                    var disabledFrameSelectors = TrySetNotebookTriggerSelectors(
+                        device,
+                        details,
+                        false,
+                        null,
+                        new[] { "FrameStart", "AcquisitionStart", "ExposureStart" });
+                    var enabledLineSelectors = TrySetNotebookTriggerSelectors(
                         device,
                         details,
                         true,
                         new[] { "Line1", "Input1", "CC1", "CameraControl1", "CameraLinkCC1", "CL_CC1", "External", "ExternalLine", "LineTrigger" },
                         new[] { "LineStart", "LineTrigger", "AcquisitionLine" });
+                    applied = disabledFrameSelectors || enabledLineSelectors;
                     break;
 
                 case TriggerMode.SoftwareTrigger:
@@ -2586,7 +2593,6 @@ namespace CameraCaptureApp.Services
             var disabledShaftEncoder = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0);
             var sourceApplied = TrySetAcquisitionSourceZero(notes, SapAcquisition.Prm.EXT_LINE_TRIGGER_SOURCE, SapAcquisition.Cap.EXT_LINE_TRIGGER_SOURCE);
             var detectionApplied = TrySetAcquisitionFirstCapabilityBit(notes, SapAcquisition.Prm.EXT_LINE_TRIGGER_DETECTION, SapAcquisition.Cap.EXT_LINE_TRIGGER_DETECTION);
-            var levelApplied = TrySetAcquisitionFirstCapabilityBit(notes, SapAcquisition.Prm.EXT_LINE_TRIGGER_LEVEL, SapAcquisition.Cap.EXT_LINE_TRIGGER_LEVEL);
             var enabledExternalLine = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
 
             notes.Add(
@@ -2600,14 +2606,12 @@ namespace CameraCaptureApp.Services
                 + " shaftEncoderOff=" + FormatApplyResult(disabledShaftEncoder, "0")
                 + " source0=" + FormatApplyResult(sourceApplied, "0")
                 + " detectionAuto=" + FormatApplyResult(detectionApplied, "first-supported")
-                + " levelAuto=" + FormatApplyResult(levelApplied, "first-supported")
                 + " camTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.CAM_TRIGGER_ENABLE)
                 + " lineTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_ENABLE)
                 + " lineTriggerMethod=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_TRIGGER_METHOD)
                 + " extLineEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE)
                 + " extLineSource=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_SOURCE)
                 + " extLineDetection=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_DETECTION)
-                + " extLineLevel=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_LINE_TRIGGER_LEVEL)
                 + " shaftEncoder=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE)
                 + " extFrameEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE));
 
