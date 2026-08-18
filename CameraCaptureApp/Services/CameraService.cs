@@ -26,6 +26,7 @@ namespace CameraCaptureApp.Services
         private SapAcqToBuf _transfer;
         private DateTime _lastPreviewFrameUtc;
         private int _pendingExternalTriggerEvents;
+        private bool _externalTriggerEventsConfigured;
         private bool _deviceFeaturesAvailable;
         private string _acqDevicePathSummary;
         private string _acqDeviceProbeSummary;
@@ -172,7 +173,8 @@ namespace CameraCaptureApp.Services
 
         private void ConfigureExternalTriggerEvents()
         {
-            if (_acquisition == null || !_acquisition.Initialized)
+            _externalTriggerEventsConfigured = false;
+            if (_acquisition == null)
             {
                 return;
             }
@@ -186,9 +188,11 @@ namespace CameraCaptureApp.Services
                     SapAcquisition.AcqEventType.ExternalTriggerTooSlow |
                     SapAcquisition.AcqEventType.ExtLineTriggerTooSlow |
                     SapAcquisition.AcqEventType.LineTriggerTooFast;
+                _externalTriggerEventsConfigured = true;
             }
             catch
             {
+                _externalTriggerEventsConfigured = false;
             }
         }
 
@@ -592,7 +596,7 @@ namespace CameraCaptureApp.Services
                 ? "Frame landed in trash buffer."
                 : "Frame received from Sapera.";
 
-            if (!argsNotify.Trash && _settings.TriggerMode == TriggerMode.ExternalTrigger && _pendingExternalTriggerEvents <= 0)
+            if (!argsNotify.Trash && _settings.TriggerMode == TriggerMode.ExternalTrigger && _externalTriggerEventsConfigured && _pendingExternalTriggerEvents <= 0)
             {
                 _status.ScanStateText = "Waiting trigger";
                 _status.LastMessage = "Free-run frame ignored: no Sapera external trigger event was received.";
@@ -798,6 +802,7 @@ namespace CameraCaptureApp.Services
             _acquisition.SignalNotifyContext = this;
             _acquisition.AcqNotify += OnAcqNotify;
             _acquisition.AcqNotifyContext = this;
+            ConfigureExternalTriggerEvents();
 
             if (!_acquisition.Create())
             {
@@ -805,7 +810,6 @@ namespace CameraCaptureApp.Services
             }
 
             ApplyWritableCameraSettings(false, offlineNotes, true);
-            ConfigureExternalTriggerEvents();
 
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
