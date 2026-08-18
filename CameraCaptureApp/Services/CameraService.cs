@@ -2583,8 +2583,6 @@ namespace CameraCaptureApp.Services
                             new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0),
                             new ParameterWrite(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, useInternalLineTrigger ? 1 : 0)
                         }))
