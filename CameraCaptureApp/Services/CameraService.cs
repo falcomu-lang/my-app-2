@@ -25,6 +25,7 @@ namespace CameraCaptureApp.Services
         private SapBuffer _buffers;
         private SapAcqToBuf _transfer;
         private DateTime _lastPreviewFrameUtc;
+        private int _pendingExternalTriggerEvents;
         private bool _deviceFeaturesAvailable;
         private string _acqDevicePathSummary;
         private string _acqDeviceProbeSummary;
@@ -145,6 +146,7 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
+            _pendingExternalTriggerEvents = 0;
             if (_transfer.Grab())
             {
                 _status.IsPreviewing = true;
@@ -166,6 +168,28 @@ namespace CameraCaptureApp.Services
 
             var extLineTriggerEnabled = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
             return extLineTriggerEnabled.HasValue && extLineTriggerEnabled.Value == 1;
+        }
+
+        private void ConfigureExternalTriggerEvents()
+        {
+            if (_acquisition == null || !_acquisition.Initialized)
+            {
+                return;
+            }
+
+            try
+            {
+                _acquisition.EventType =
+                    SapAcquisition.AcqEventType.ExternalTrigger |
+                    SapAcquisition.AcqEventType.ExternalTrigger2 |
+                    SapAcquisition.AcqEventType.ExternalTriggerIgnored |
+                    SapAcquisition.AcqEventType.ExternalTriggerTooSlow |
+                    SapAcquisition.AcqEventType.ExtLineTriggerTooSlow |
+                    SapAcquisition.AcqEventType.LineTriggerTooFast;
+            }
+            catch
+            {
+            }
         }
 
         public void StopPreview()
@@ -554,6 +578,7 @@ namespace CameraCaptureApp.Services
             if (_acquisition != null)
             {
                 _acquisition.SignalNotify -= OnSignalNotify;
+                _acquisition.AcqNotify -= OnAcqNotify;
                 _acquisition.Dispose();
                 _acquisition = null;
             }
@@ -567,9 +592,40 @@ namespace CameraCaptureApp.Services
                 ? "Frame landed in trash buffer."
                 : "Frame received from Sapera.";
 
+            if (!argsNotify.Trash && _settings.TriggerMode == TriggerMode.ExternalTrigger && _pendingExternalTriggerEvents <= 0)
+            {
+                _status.ScanStateText = "Waiting trigger";
+                _status.LastMessage = "Free-run frame ignored: no Sapera external trigger event was received.";
+                return;
+            }
+
             if (!argsNotify.Trash)
             {
+                if (_settings.TriggerMode == TriggerMode.ExternalTrigger && _pendingExternalTriggerEvents > 0)
+                {
+                    _pendingExternalTriggerEvents--;
+                }
+
                 PublishPreviewFrame();
+            }
+        }
+
+        private void OnAcqNotify(object sender, SapAcqNotifyEventArgs argsNotify)
+        {
+            if (argsNotify.EventType == SapAcquisition.AcqEventType.ExternalTrigger ||
+                argsNotify.EventType == SapAcquisition.AcqEventType.ExternalTrigger2)
+            {
+                _pendingExternalTriggerEvents++;
+                _status.LastMessage = "External trigger event received from Sapera.";
+                return;
+            }
+
+            if (argsNotify.EventType == SapAcquisition.AcqEventType.ExternalTriggerIgnored ||
+                argsNotify.EventType == SapAcquisition.AcqEventType.ExternalTriggerTooSlow ||
+                argsNotify.EventType == SapAcquisition.AcqEventType.ExtLineTriggerTooSlow ||
+                argsNotify.EventType == SapAcquisition.AcqEventType.LineTriggerTooFast)
+            {
+                _status.LastMessage = "External trigger timing event: " + argsNotify.EventType;
             }
         }
 
@@ -740,6 +796,8 @@ namespace CameraCaptureApp.Services
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             _acquisition.SignalNotify += OnSignalNotify;
             _acquisition.SignalNotifyContext = this;
+            _acquisition.AcqNotify += OnAcqNotify;
+            _acquisition.AcqNotifyContext = this;
 
             if (!_acquisition.Create())
             {
@@ -747,6 +805,7 @@ namespace CameraCaptureApp.Services
             }
 
             ApplyWritableCameraSettings(false, offlineNotes, true);
+            ConfigureExternalTriggerEvents();
 
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
