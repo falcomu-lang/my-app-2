@@ -47,6 +47,8 @@ namespace CameraCaptureApp.Services
 
         public event EventHandler<CameraFrameEventArgs> FrameReady;
 
+        public event EventHandler ExternalTriggerReceived;
+
         public CameraSettings CurrentSettings
         {
             get { return _settings.Clone(); }
@@ -612,6 +614,12 @@ namespace CameraCaptureApp.Services
             {
                 _pendingExternalTriggerEvents++;
                 _status.LastMessage = "External trigger event received from Sapera.";
+                var handler = ExternalTriggerReceived;
+                if (handler != null)
+                {
+                    handler(this, EventArgs.Empty);
+                }
+
                 return;
             }
 

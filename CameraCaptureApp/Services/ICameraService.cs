@@ -6,6 +6,8 @@ namespace CameraCaptureApp.Services
     {
         event System.EventHandler<CameraFrameEventArgs> FrameReady;
 
+        event System.EventHandler ExternalTriggerReceived;
+
         CameraSettings CurrentSettings { get; }
 
         CameraStatus Status { get; }

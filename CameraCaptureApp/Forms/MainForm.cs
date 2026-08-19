@@ -55,6 +55,7 @@ namespace CameraCaptureApp.Forms
             panelViewerHost.Controls.Add(_cameraDisplayControl);
 
             _cameraService.FrameReady += CameraService_FrameReady;
+            _cameraService.ExternalTriggerReceived += CameraService_ExternalTriggerReceived;
 
             ApplySettingsToUi();
             UpdateStatus();
@@ -540,6 +541,7 @@ namespace CameraCaptureApp.Forms
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             _cameraService.FrameReady -= CameraService_FrameReady;
+            _cameraService.ExternalTriggerReceived -= CameraService_ExternalTriggerReceived;
             _cameraDisplayControl.SaveSnapshotRequested -= CameraDisplayControl_SaveSnapshotRequested;
             _statusRefreshTimer.Stop();
             _statusRefreshTimer.Dispose();
@@ -603,6 +605,52 @@ namespace CameraCaptureApp.Forms
             if (Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 1) == 0)
             {
                 BeginInvoke(new Action(ProcessPendingPreviewFrameAsync));
+            }
+        }
+
+        private void CameraService_ExternalTriggerReceived(object sender, EventArgs e)
+        {
+            if (IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+
+            try
+            {
+                BeginInvoke(new Action(ApplyMeterWheelCompareOnExternalTrigger));
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        private void ApplyMeterWheelCompareOnExternalTrigger()
+        {
+            if (_settings == null ||
+                !_settings.ExternalFrameTriggerOneFrame ||
+                !_settings.ExternalFrameTriggerOneFrameCompareFromEncoder)
+            {
+                return;
+            }
+
+            if (!_meterWheelService.IsInitialized)
+            {
+                labelFooterMessageValue.Text = "External trigger received, but meter wheel is not connected.";
+                return;
+            }
+
+            try
+            {
+                _meterWheelService.SetCompare(_settings.MeterWheelCompareValue);
+                labelFooterMessageValue.Text = "External trigger applied Compare Set: " + _settings.MeterWheelCompareValue;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("External trigger compare set failed.", ex);
+                labelFooterMessageValue.Text = "External trigger Compare Set failed: " + ex.Message;
             }
         }
 
