@@ -96,6 +96,11 @@ namespace CameraCaptureApp.Forms
             SetEncoderValue(0);
         }
 
+        private void numericEncoder_ValueChanged(object sender, EventArgs e)
+        {
+            SaveMeterWheelSettingsFromUi();
+        }
+
         private void buttonSetEncoder_Click(object sender, EventArgs e)
         {
             SetEncoderValue((int)numericEncoder.Value);
@@ -104,6 +109,11 @@ namespace CameraCaptureApp.Forms
         private void buttonClearCompare_Click(object sender, EventArgs e)
         {
             SetCompareValue(0);
+        }
+
+        private void numericCompare_ValueChanged(object sender, EventArgs e)
+        {
+            SaveMeterWheelSettingsFromUi();
         }
 
         private void buttonSetCompare_Click(object sender, EventArgs e)
@@ -300,6 +310,8 @@ namespace CameraCaptureApp.Forms
         {
             comboCardId.SelectedIndex = NormalizeCardId(_settings.MeterWheelCardId);
             numericIncrement.Value = ClampToNumericRange(numericIncrement, _settings.MeterWheelCompareIncrement);
+            numericEncoder.Value = ClampToNumericRange(numericEncoder, _settings.MeterWheelEncoderValue);
+            numericCompare.Value = ClampToNumericRange(numericCompare, _settings.MeterWheelCompareValue);
             numericCmpOutWidth.Value = ClampToNumericRange(numericCmpOutWidth, _settings.MeterWheelCmpOutWidth);
             comboMultipleRate.SelectedIndex = NormalizeMultipleRateIndex(_settings.MeterWheelMultipleRate);
             checkReverseDirection.Checked = _settings.MeterWheelReverseDirection;
@@ -309,6 +321,8 @@ namespace CameraCaptureApp.Forms
         {
             _settings.MeterWheelCardId = comboCardId.SelectedIndex;
             _settings.MeterWheelCompareIncrement = (int)numericIncrement.Value;
+            _settings.MeterWheelEncoderValue = (int)numericEncoder.Value;
+            _settings.MeterWheelCompareValue = (int)numericCompare.Value;
             _settings.MeterWheelMultipleRate = comboMultipleRate.SelectedIndex;
             _settings.MeterWheelReverseDirection = checkReverseDirection.Checked;
             _settings.MeterWheelCmpOutWidth = (int)numericCmpOutWidth.Value;

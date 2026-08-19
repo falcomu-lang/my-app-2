@@ -56,6 +56,10 @@ namespace CameraCaptureApp.Models
 
         public int MeterWheelCompareIncrement { get; set; }
 
+        public int MeterWheelEncoderValue { get; set; }
+
+        public int MeterWheelCompareValue { get; set; }
+
         public int MeterWheelCardId { get; set; }
 
         public int MeterWheelMultipleRate { get; set; }
@@ -103,6 +107,8 @@ namespace CameraCaptureApp.Models
                 FileNamePattern = "capture_{yyyyMMdd_HHmmss}",
                 ImageSaveFormat = ImageSaveFormat.Png,
                 MeterWheelCompareIncrement = 0,
+                MeterWheelEncoderValue = 0,
+                MeterWheelCompareValue = 0,
                 MeterWheelCardId = 0,
                 MeterWheelMultipleRate = 0,
                 MeterWheelReverseDirection = false,

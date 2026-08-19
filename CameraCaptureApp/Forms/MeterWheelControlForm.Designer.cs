@@ -186,6 +186,7 @@ namespace CameraCaptureApp.Forms
             this.numericEncoder.Size = new System.Drawing.Size(170, 25);
             this.numericEncoder.TabIndex = 7;
             this.numericEncoder.ThousandsSeparator = true;
+            this.numericEncoder.ValueChanged += new System.EventHandler(this.numericEncoder_ValueChanged);
             // 
             // buttonSetEncoder
             // 
@@ -252,6 +253,7 @@ namespace CameraCaptureApp.Forms
             this.numericCompare.Size = new System.Drawing.Size(170, 25);
             this.numericCompare.TabIndex = 12;
             this.numericCompare.ThousandsSeparator = true;
+            this.numericCompare.ValueChanged += new System.EventHandler(this.numericCompare_ValueChanged);
             // 
             // buttonSetCompare
             // 
