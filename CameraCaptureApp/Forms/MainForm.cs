@@ -217,8 +217,7 @@ namespace CameraCaptureApp.Forms
         {
             if (_cameraService.CaptureFrame())
             {
-                Interlocked.Increment(ref _pendingSnapshotSaveCount);
-                labelFooterMessageValue.Text = "Capture requested. Waiting for the next frame to save...";
+                labelFooterMessageValue.Text = "Capture requested.";
             }
 
             UpdateStatus();
