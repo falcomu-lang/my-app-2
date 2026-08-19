@@ -855,6 +855,16 @@ namespace CameraCaptureApp.Services
             var applied = false;
             var notes = initialNotes ?? new System.Collections.Generic.List<string>();
 
+            var shouldApplyInternalLineRate = applyInternalLineRate && _settings.TriggerMode == TriggerMode.Continuous;
+            if (shouldApplyInternalLineRate && TrySetInternalLineRate(notes))
+            {
+                applied = true;
+            }
+            else if (applyInternalLineRate)
+            {
+                notes.Add("InternalLineRate acquisition trigger skipped for " + _settings.TriggerMode + " mode");
+            }
+
             if (TrySetLengthParameters(notes))
             {
                 _status.FrameHeight = _settings.Length;
