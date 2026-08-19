@@ -331,6 +331,7 @@ namespace CameraCaptureApp.Forms
             this.comboMultipleRate.Name = "comboMultipleRate";
             this.comboMultipleRate.Size = new System.Drawing.Size(140, 25);
             this.comboMultipleRate.TabIndex = 18;
+            this.comboMultipleRate.SelectedIndexChanged += new System.EventHandler(this.comboMultipleRate_SelectedIndexChanged);
             // 
             // buttonSetMultipleRate
             // 
@@ -382,6 +383,7 @@ namespace CameraCaptureApp.Forms
             this.numericCmpOutWidth.Size = new System.Drawing.Size(140, 25);
             this.numericCmpOutWidth.TabIndex = 22;
             this.numericCmpOutWidth.ThousandsSeparator = true;
+            this.numericCmpOutWidth.ValueChanged += new System.EventHandler(this.numericCmpOutWidth_ValueChanged);
             // 
             // buttonSetCmpOutWidth
             // 

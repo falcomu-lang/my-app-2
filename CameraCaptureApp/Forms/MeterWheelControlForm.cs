@@ -138,6 +138,11 @@ namespace CameraCaptureApp.Forms
             SaveMeterWheelSettingsFromUi();
         }
 
+        private void comboMultipleRate_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            SaveMeterWheelSettingsFromUi();
+        }
+
         private void checkReverseDirection_CheckedChanged(object sender, EventArgs e)
         {
             if (_meterWheelService.IsInitialized)
@@ -151,6 +156,11 @@ namespace CameraCaptureApp.Forms
         private void buttonSetCmpOutWidth_Click(object sender, EventArgs e)
         {
             SetCmpOutWidth((ushort)numericCmpOutWidth.Value);
+            SaveMeterWheelSettingsFromUi();
+        }
+
+        private void numericCmpOutWidth_ValueChanged(object sender, EventArgs e)
+        {
             SaveMeterWheelSettingsFromUi();
         }
 
