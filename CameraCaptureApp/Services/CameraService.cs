@@ -855,16 +855,6 @@ namespace CameraCaptureApp.Services
             var applied = false;
             var notes = initialNotes ?? new System.Collections.Generic.List<string>();
 
-            var shouldApplyInternalLineRate = applyInternalLineRate && _settings.TriggerMode == TriggerMode.Continuous;
-            if (shouldApplyInternalLineRate && TrySetInternalLineRate(notes))
-            {
-                applied = true;
-            }
-            else if (applyInternalLineRate)
-            {
-                notes.Add("InternalLineRate acquisition trigger skipped for " + _settings.TriggerMode + " mode");
-            }
-
             if (TrySetLengthParameters(notes))
             {
                 _status.FrameHeight = _settings.Length;
@@ -873,10 +863,7 @@ namespace CameraCaptureApp.Services
 
             if (_settings.TriggerMode == TriggerMode.Continuous)
             {
-                if (TryApplyFreerunLineSyncSource(notes))
-                {
-                    applied = true;
-                }
+                notes.Add("FreeRun line sync source kept at None; acquisition trigger parameters were not changed.");
             }
             else if (TryApplyAcquisitionTriggerMode(notes))
             {
@@ -2638,16 +2625,8 @@ namespace CameraCaptureApp.Services
 
         private bool TryApplyFreerunLineSyncSource(System.Collections.Generic.List<string> notes)
         {
-            if (_acquisition == null || !_acquisition.Initialized)
-            {
-                return false;
-            }
-
-            var disabledExternalLine = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0);
-            notes.Add(
-                "FreeRun line sync source set to None "
-                + "extLineOff=" + FormatApplyResult(disabledExternalLine, "0"));
-            return disabledExternalLine;
+            notes.Add("FreeRun line sync source set to None");
+            return true;
         }
 
         private bool TryApplyExternalLineTrigger(System.Collections.Generic.List<string> notes)
