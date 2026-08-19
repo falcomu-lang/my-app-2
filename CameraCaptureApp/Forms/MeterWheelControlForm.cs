@@ -13,6 +13,7 @@ namespace CameraCaptureApp.Forms
         private readonly ISettingsService _settingsService;
         private CameraSettings _settings;
         private readonly bool _ownsMeterWheelService;
+        private bool _loadingSettingsToUi;
         private MeterWheelExtensionCompareForm _extensionCompareForm;
 
         public MeterWheelControlForm()
@@ -43,7 +44,9 @@ namespace CameraCaptureApp.Forms
 
         internal void UpdateSettings(CameraSettings settings)
         {
+            SaveMeterWheelSettingsFromUi();
             _settings = settings == null ? CameraSettings.CreateDefault() : settings;
+            SaveMeterWheelSettingsFromUi();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -323,17 +326,30 @@ namespace CameraCaptureApp.Forms
 
         private void LoadMeterWheelSettingsToUi()
         {
-            comboCardId.SelectedIndex = NormalizeCardId(_settings.MeterWheelCardId);
-            numericIncrement.Value = ClampToNumericRange(numericIncrement, _settings.MeterWheelCompareIncrement);
-            numericEncoder.Value = ClampToNumericRange(numericEncoder, _settings.MeterWheelEncoderValue);
-            numericCompare.Value = ClampToNumericRange(numericCompare, _settings.MeterWheelCompareValue);
-            numericCmpOutWidth.Value = ClampToNumericRange(numericCmpOutWidth, _settings.MeterWheelCmpOutWidth);
-            comboMultipleRate.SelectedIndex = NormalizeMultipleRateIndex(_settings.MeterWheelMultipleRate);
-            checkReverseDirection.Checked = _settings.MeterWheelReverseDirection;
+            _loadingSettingsToUi = true;
+            try
+            {
+                comboCardId.SelectedIndex = NormalizeCardId(_settings.MeterWheelCardId);
+                numericIncrement.Value = ClampToNumericRange(numericIncrement, _settings.MeterWheelCompareIncrement);
+                numericEncoder.Value = ClampToNumericRange(numericEncoder, _settings.MeterWheelEncoderValue);
+                numericCompare.Value = ClampToNumericRange(numericCompare, _settings.MeterWheelCompareValue);
+                numericCmpOutWidth.Value = ClampToNumericRange(numericCmpOutWidth, _settings.MeterWheelCmpOutWidth);
+                comboMultipleRate.SelectedIndex = NormalizeMultipleRateIndex(_settings.MeterWheelMultipleRate);
+                checkReverseDirection.Checked = _settings.MeterWheelReverseDirection;
+            }
+            finally
+            {
+                _loadingSettingsToUi = false;
+            }
         }
 
         private void SaveMeterWheelSettingsFromUi()
         {
+            if (_loadingSettingsToUi)
+            {
+                return;
+            }
+
             _settings.MeterWheelCardId = comboCardId.SelectedIndex;
             _settings.MeterWheelCompareIncrement = (int)numericIncrement.Value;
             _settings.MeterWheelEncoderValue = (int)numericEncoder.Value;
