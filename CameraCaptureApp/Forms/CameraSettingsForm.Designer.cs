@@ -40,6 +40,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelTriggerNote;
         private System.Windows.Forms.CheckBox checkBoxExternalFrameTriggerOneFrame;
         private System.Windows.Forms.CheckBox checkBoxExternalFrameTriggerOneFrameCompareFromEncoder;
+        private System.Windows.Forms.CheckBox checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger;
         private System.Windows.Forms.Label labelImageSaveFormat;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
@@ -103,6 +104,7 @@ namespace CameraCaptureApp.Forms
             this.labelTriggerNote = new System.Windows.Forms.Label();
             this.checkBoxExternalFrameTriggerOneFrame = new System.Windows.Forms.CheckBox();
             this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder = new System.Windows.Forms.CheckBox();
+            this.checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger = new System.Windows.Forms.CheckBox();
             this.comboBoxTriggerMode = new System.Windows.Forms.ComboBox();
             this.tabPageSaving = new System.Windows.Forms.TabPage();
             this.labelImageSaveFormat = new System.Windows.Forms.Label();
@@ -471,6 +473,7 @@ namespace CameraCaptureApp.Forms
             this.tabPageTrigger.Controls.Add(this.comboBoxTriggerMode);
             this.tabPageTrigger.Controls.Add(this.checkBoxExternalFrameTriggerOneFrame);
             this.tabPageTrigger.Controls.Add(this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder);
+            this.tabPageTrigger.Controls.Add(this.checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger);
             this.tabPageTrigger.Controls.Add(this.labelTriggerNote);
             this.tabPageTrigger.Location = new System.Drawing.Point(4, 26);
             this.tabPageTrigger.Name = "tabPageTrigger";
@@ -528,7 +531,18 @@ namespace CameraCaptureApp.Forms
             this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.TabIndex = 6;
             this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Text = "Compare Set follows current encoder value";
             this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.UseVisualStyleBackColor = true;
-            this.labelTriggerNote.Location = new System.Drawing.Point(32, 175);
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.CheckedChanged += new System.EventHandler(this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder_CheckedChanged);
+            // 
+            // checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger
+            // 
+            this.checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.AutoSize = true;
+            this.checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Location = new System.Drawing.Point(73, 170);
+            this.checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Name = "checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger";
+            this.checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Size = new System.Drawing.Size(320, 20);
+            this.checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.TabIndex = 7;
+            this.checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Text = "Also apply Encoder Set on external trigger";
+            this.checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.UseVisualStyleBackColor = true;
+            this.labelTriggerNote.Location = new System.Drawing.Point(32, 210);
             // 
             // tabPageSaving
             // 

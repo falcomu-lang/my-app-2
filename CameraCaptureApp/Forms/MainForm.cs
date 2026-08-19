@@ -617,7 +617,7 @@ namespace CameraCaptureApp.Forms
 
             try
             {
-                BeginInvoke(new Action(ApplyMeterWheelCompareOnExternalTrigger));
+                BeginInvoke(new Action(ApplyMeterWheelActionsOnExternalTrigger));
             }
             catch (ObjectDisposedException)
             {
@@ -627,9 +627,10 @@ namespace CameraCaptureApp.Forms
             }
         }
 
-        private void ApplyMeterWheelCompareOnExternalTrigger()
+        private void ApplyMeterWheelActionsOnExternalTrigger()
         {
             if (_settings == null ||
+                _settings.TriggerMode != TriggerMode.ExternalTrigger ||
                 !_settings.ExternalFrameTriggerOneFrame ||
                 !_settings.ExternalFrameTriggerOneFrameCompareFromEncoder)
             {
@@ -645,12 +646,22 @@ namespace CameraCaptureApp.Forms
             try
             {
                 _meterWheelService.SetCompare(_settings.MeterWheelCompareValue);
+                if (_settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger)
+                {
+                    _meterWheelService.SetEncoder(_settings.MeterWheelEncoderValue);
+                    labelFooterMessageValue.Text = "External trigger applied Compare Set: "
+                        + _settings.MeterWheelCompareValue
+                        + ", Encoder Set: "
+                        + _settings.MeterWheelEncoderValue;
+                    return;
+                }
+
                 labelFooterMessageValue.Text = "External trigger applied Compare Set: " + _settings.MeterWheelCompareValue;
             }
             catch (Exception ex)
             {
-                AppLogger.Log("External trigger compare set failed.", ex);
-                labelFooterMessageValue.Text = "External trigger Compare Set failed: " + ex.Message;
+                AppLogger.Log("External trigger meter wheel action failed.", ex);
+                labelFooterMessageValue.Text = "External trigger meter wheel action failed: " + ex.Message;
             }
         }
 

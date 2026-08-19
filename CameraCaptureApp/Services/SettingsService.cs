@@ -50,6 +50,7 @@ namespace CameraCaptureApp.Services
             settings.TriggerMode = GetTriggerMode(values, "TriggerMode", settings.TriggerMode);
             settings.ExternalFrameTriggerOneFrame = GetBool(values, "ExternalFrameTriggerOneFrame", settings.ExternalFrameTriggerOneFrame);
             settings.ExternalFrameTriggerOneFrameCompareFromEncoder = GetBool(values, "ExternalFrameTriggerOneFrameCompareFromEncoder", settings.ExternalFrameTriggerOneFrameCompareFromEncoder);
+            settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger = GetBool(values, "ExternalFrameTriggerOneFrameSetEncoderOnTrigger", settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger);
             settings.AutoConnect = GetBool(values, "AutoConnect", settings.AutoConnect);
             settings.AutoSave = GetBool(values, "AutoSave", settings.AutoSave);
             settings.SaveFolder = GetString(values, "SaveFolder", settings.SaveFolder);
@@ -98,6 +99,7 @@ namespace CameraCaptureApp.Services
                 "TriggerMode=" + settings.TriggerMode.ToString(),
                 "ExternalFrameTriggerOneFrame=" + settings.ExternalFrameTriggerOneFrame.ToString(),
                 "ExternalFrameTriggerOneFrameCompareFromEncoder=" + settings.ExternalFrameTriggerOneFrameCompareFromEncoder.ToString(),
+                "ExternalFrameTriggerOneFrameSetEncoderOnTrigger=" + settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger.ToString(),
                 "AutoConnect=" + settings.AutoConnect.ToString(),
                 "AutoSave=" + settings.AutoSave.ToString(),
                 "SaveFolder=" + settings.SaveFolder,

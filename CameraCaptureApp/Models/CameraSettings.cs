@@ -46,6 +46,8 @@ namespace CameraCaptureApp.Models
 
         public bool ExternalFrameTriggerOneFrameCompareFromEncoder { get; set; }
 
+        public bool ExternalFrameTriggerOneFrameSetEncoderOnTrigger { get; set; }
+
         public bool AutoConnect { get; set; }
 
         public bool AutoSave { get; set; }
@@ -104,6 +106,7 @@ namespace CameraCaptureApp.Models
                 TriggerMode = TriggerMode.Continuous,
                 ExternalFrameTriggerOneFrame = false,
                 ExternalFrameTriggerOneFrameCompareFromEncoder = false,
+                ExternalFrameTriggerOneFrameSetEncoderOnTrigger = false,
                 AutoConnect = false,
                 AutoSave = false,
                 SaveFolder = string.Empty,

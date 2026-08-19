@@ -78,6 +78,7 @@ namespace CameraCaptureApp.Forms
             comboBoxTriggerMode.SelectedIndex = triggerIndex >= 0 && triggerIndex < comboBoxTriggerMode.Items.Count ? triggerIndex : 0;
             checkBoxExternalFrameTriggerOneFrame.Checked = Settings.ExternalFrameTriggerOneFrame;
             checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked = Settings.ExternalFrameTriggerOneFrameCompareFromEncoder;
+            checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Checked = Settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger;
             UpdateTriggerModeControls();
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
             comboBoxImageSaveFormat.SelectedIndex = GetImageSaveFormatIndex(Settings.ImageSaveFormat);
@@ -278,6 +279,8 @@ namespace CameraCaptureApp.Forms
             Settings.ExternalFrameTriggerOneFrame = checkBoxExternalFrameTriggerOneFrame.Checked;
             Settings.ExternalFrameTriggerOneFrameCompareFromEncoder = checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled &&
                 checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked;
+            Settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger = checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Enabled &&
+                checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Checked;
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
             Settings.ImageSaveFormat = GetImageSaveFormatFromIndex(comboBoxImageSaveFormat.SelectedIndex);
         }
@@ -292,10 +295,16 @@ namespace CameraCaptureApp.Forms
             UpdateTriggerModeControls();
         }
 
+        private void checkBoxExternalFrameTriggerOneFrameCompareFromEncoder_CheckedChanged(object sender, EventArgs e)
+        {
+            UpdateTriggerModeControls();
+        }
+
         private void UpdateTriggerModeControls()
         {
             var triggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
             var canUseExternalFrameTrigger = triggerMode == TriggerMode.Continuous || triggerMode == TriggerMode.ExternalTrigger;
+            var canUseCompareSetOnTrigger = triggerMode == TriggerMode.ExternalTrigger;
 
             checkBoxExternalFrameTriggerOneFrame.Enabled = canUseExternalFrameTrigger;
             if (!canUseExternalFrameTrigger)
@@ -304,10 +313,18 @@ namespace CameraCaptureApp.Forms
             }
 
             checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled =
-                canUseExternalFrameTrigger && checkBoxExternalFrameTriggerOneFrame.Checked;
+                canUseCompareSetOnTrigger && checkBoxExternalFrameTriggerOneFrame.Checked;
             if (!checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled)
             {
                 checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked = false;
+            }
+
+            checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Enabled =
+                checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled &&
+                checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked;
+            if (!checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Enabled)
+            {
+                checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Checked = false;
             }
         }
 
