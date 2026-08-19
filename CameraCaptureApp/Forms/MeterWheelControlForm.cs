@@ -11,7 +11,7 @@ namespace CameraCaptureApp.Forms
     {
         private readonly Lsi8181MeterWheelService _meterWheelService;
         private readonly ISettingsService _settingsService;
-        private readonly CameraSettings _settings;
+        private CameraSettings _settings;
         private readonly bool _ownsMeterWheelService;
         private MeterWheelExtensionCompareForm _extensionCompareForm;
 
@@ -39,6 +39,11 @@ namespace CameraCaptureApp.Forms
             }
 
             RefreshValues();
+        }
+
+        internal void UpdateSettings(CameraSettings settings)
+        {
+            _settings = settings == null ? CameraSettings.CreateDefault() : settings;
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -118,6 +123,21 @@ namespace CameraCaptureApp.Forms
 
         private void buttonSetCompare_Click(object sender, EventArgs e)
         {
+            if (_settings != null && _settings.ExternalFrameTriggerOneFrameCompareFromEncoder && _meterWheelService.IsInitialized)
+            {
+                int encoderValue;
+                try
+                {
+                    encoderValue = _meterWheelService.ReadEncoder();
+                    numericCompare.Value = ClampToNumericRange(numericCompare, encoderValue);
+                }
+                catch (Exception ex)
+                {
+                    ShowError(ex);
+                    return;
+                }
+            }
+
             SetCompareValue((int)numericCompare.Value);
         }
 

@@ -89,6 +89,10 @@ namespace CameraCaptureApp.Forms
                 _settings = form.Settings.Clone();
                 _settingsService.Save(_settings);
                 _cameraService.ApplySettings(_settings);
+                if (_meterWheelControlForm != null && !_meterWheelControlForm.IsDisposed)
+                {
+                    _meterWheelControlForm.UpdateSettings(_settings);
+                }
                 ApplySettingsToUi();
                 UpdateStatus();
             }
@@ -122,6 +126,7 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
+            _meterWheelControlForm.UpdateSettings(_settings);
             _meterWheelControlForm.Activate();
         }
 
@@ -185,6 +190,10 @@ namespace CameraCaptureApp.Forms
             {
                 _settings = _cameraService.CurrentSettings;
                 _settingsService.Save(_settings);
+                if (_meterWheelControlForm != null && !_meterWheelControlForm.IsDisposed)
+                {
+                    _meterWheelControlForm.UpdateSettings(_settings);
+                }
                 ApplySettingsToUi();
             }
             UpdateStatus();

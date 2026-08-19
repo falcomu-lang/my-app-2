@@ -77,6 +77,8 @@ namespace CameraCaptureApp.Forms
             var triggerIndex = (int)Settings.TriggerMode;
             comboBoxTriggerMode.SelectedIndex = triggerIndex >= 0 && triggerIndex < comboBoxTriggerMode.Items.Count ? triggerIndex : 0;
             checkBoxExternalFrameTriggerOneFrame.Checked = Settings.ExternalFrameTriggerOneFrame;
+            checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked = Settings.ExternalFrameTriggerOneFrameCompareFromEncoder;
+            UpdateTriggerModeControls();
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
             comboBoxImageSaveFormat.SelectedIndex = GetImageSaveFormatIndex(Settings.ImageSaveFormat);
             labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
@@ -274,8 +276,37 @@ namespace CameraCaptureApp.Forms
             Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
             Settings.ExternalFrameTriggerOneFrame = checkBoxExternalFrameTriggerOneFrame.Checked;
+            Settings.ExternalFrameTriggerOneFrameCompareFromEncoder = checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled &&
+                checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked;
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
             Settings.ImageSaveFormat = GetImageSaveFormatFromIndex(comboBoxImageSaveFormat.SelectedIndex);
+        }
+
+        private void comboBoxTriggerMode_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateTriggerModeControls();
+        }
+
+        private void checkBoxExternalFrameTriggerOneFrame_CheckedChanged(object sender, EventArgs e)
+        {
+            UpdateTriggerModeControls();
+        }
+
+        private void UpdateTriggerModeControls()
+        {
+            var externalTriggerMode = comboBoxTriggerMode.SelectedIndex == (int)TriggerMode.ExternalTrigger;
+            checkBoxExternalFrameTriggerOneFrame.Enabled = externalTriggerMode;
+            if (!externalTriggerMode)
+            {
+                checkBoxExternalFrameTriggerOneFrame.Checked = false;
+            }
+
+            checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled =
+                externalTriggerMode && checkBoxExternalFrameTriggerOneFrame.Checked;
+            if (!checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled)
+            {
+                checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked = false;
+            }
         }
 
         private static int GetImageSaveFormatIndex(ImageSaveFormat saveFormat)

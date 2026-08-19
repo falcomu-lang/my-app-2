@@ -39,6 +39,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.Label labelTriggerMode;
         private System.Windows.Forms.Label labelTriggerNote;
         private System.Windows.Forms.CheckBox checkBoxExternalFrameTriggerOneFrame;
+        private System.Windows.Forms.CheckBox checkBoxExternalFrameTriggerOneFrameCompareFromEncoder;
         private System.Windows.Forms.Label labelImageSaveFormat;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
@@ -101,6 +102,7 @@ namespace CameraCaptureApp.Forms
             this.labelTriggerMode = new System.Windows.Forms.Label();
             this.labelTriggerNote = new System.Windows.Forms.Label();
             this.checkBoxExternalFrameTriggerOneFrame = new System.Windows.Forms.CheckBox();
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder = new System.Windows.Forms.CheckBox();
             this.comboBoxTriggerMode = new System.Windows.Forms.ComboBox();
             this.tabPageSaving = new System.Windows.Forms.TabPage();
             this.labelImageSaveFormat = new System.Windows.Forms.Label();
@@ -468,6 +470,7 @@ namespace CameraCaptureApp.Forms
             this.tabPageTrigger.Controls.Add(this.labelTriggerMode);
             this.tabPageTrigger.Controls.Add(this.comboBoxTriggerMode);
             this.tabPageTrigger.Controls.Add(this.checkBoxExternalFrameTriggerOneFrame);
+            this.tabPageTrigger.Controls.Add(this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder);
             this.tabPageTrigger.Controls.Add(this.labelTriggerNote);
             this.tabPageTrigger.Location = new System.Drawing.Point(4, 26);
             this.tabPageTrigger.Name = "tabPageTrigger";
@@ -500,7 +503,10 @@ namespace CameraCaptureApp.Forms
             this.comboBoxTriggerMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxTriggerMode.FormattingEnabled = true;
             this.comboBoxTriggerMode.Location = new System.Drawing.Point(35, 57);
+            this.comboBoxTriggerMode.Name = "comboBoxTriggerMode";
             this.comboBoxTriggerMode.Size = new System.Drawing.Size(220, 24);
+            this.comboBoxTriggerMode.TabIndex = 0;
+            this.comboBoxTriggerMode.SelectedIndexChanged += new System.EventHandler(this.comboBoxTriggerMode_SelectedIndexChanged);
             // 
             // checkBoxExternalFrameTriggerOneFrame
             // 
@@ -511,6 +517,17 @@ namespace CameraCaptureApp.Forms
             this.checkBoxExternalFrameTriggerOneFrame.TabIndex = 5;
             this.checkBoxExternalFrameTriggerOneFrame.Text = "External Trigger One Frame";
             this.checkBoxExternalFrameTriggerOneFrame.UseVisualStyleBackColor = true;
+            this.checkBoxExternalFrameTriggerOneFrame.CheckedChanged += new System.EventHandler(this.checkBoxExternalFrameTriggerOneFrame_CheckedChanged);
+            // 
+            // checkBoxExternalFrameTriggerOneFrameCompareFromEncoder
+            // 
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.AutoSize = true;
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Location = new System.Drawing.Point(54, 118);
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Name = "checkBoxExternalFrameTriggerOneFrameCompareFromEncoder";
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Size = new System.Drawing.Size(304, 20);
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.TabIndex = 6;
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Text = "Compare Set follows current encoder value";
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.UseVisualStyleBackColor = true;
             // 
             // tabPageSaving
             // 
