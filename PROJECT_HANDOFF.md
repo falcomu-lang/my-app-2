@@ -15,7 +15,7 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
 - Current handoff date: `2026-08-17`
-- Latest pushed feature commit referenced by this handoff: `13ccfa5 Clarify handoff commit reference`
+- Latest pushed feature commit referenced by this handoff: `6d82860 Restore continuous internal line rate`
 
 Latest verified local build command:
 
@@ -232,6 +232,39 @@ Latest local build result: `0 warning / 0 error`
 - Length is currently working for the user's setup.
 - It is routed through Sapera acquisition parameter logic using `SapAcquisition.Prm.CROP_HEIGHT` where supported by the loaded CCF / camera path.
 
+### External Trigger / Meter Wheel Line Scan
+
+- The external trigger work is still under active tuning.
+- The intended user flow is:
+  1. Meter wheel rotates and outputs TTL pulses.
+  2. Each pulse triggers one line.
+  3. The app continues collecting lines until the requested image length is reached.
+  4. Only then should the image be displayed as a completed frame.
+- The most useful user-confirmed UI mapping from CamExpert is:
+  - `Board -> Advanced control -> Line Sync Source = External Line Trigger`
+  - `Line integration method setting = Method 3`
+  - `Camera Control Method Selected = Method 3`
+  - `Exposure = 40`
+  - `Integration pulse #0 = High`
+  - `Integration pulse #1 = Low`
+  - `CC1 = Pulse #1`
+  - `Attached camera -> I/O controls -> Trigger mode = On`
+- The user also confirmed the freerun switch-back rule:
+  - `Board -> Advanced control -> Line Sync Source = None`
+  - This is the required setting to return to freerun mode in the official program.
+- The current Sapera names that matter for this path are:
+  - `CIRACQ_PRM_EXT_LINE_TRIGGER_ENABLE`
+  - `CIRACQ_PRM_LINE_INTEGRATE_METHOD`
+  - `CORACQ_PRM_LINE_INTEGRATE_ENABLE`
+  - `CORACQ_ORM_CAM_IO_CONTROL`
+  - `TriggerMode`
+- Treat `Line Sync Source = None` as the explicit freerun state, not just "external trigger disabled".
+- Current behavior to remember:
+  - Free-run / continuous mode must keep its internal line rate path intact.
+  - External-trigger writes must not leak into free-run, or Sapera starts showing warning dialogs and the app can fall back into unexpected continuous acquisition behavior.
+  - Some Sapera writes can fail with `parameter invalid value`, `parameter not available`, or `outofrange` if the camera / board is not in the right state.
+- The current code path was adjusted several times to avoid unavailable acquisition writes and to preserve continuous mode. Treat external-trigger changes carefully and verify on real hardware after each edit.
+
 ## Diagnostics Still Present
 
 Important diagnostic outputs:
@@ -293,6 +326,7 @@ Important limitation:
 - The current meter wheel layer only wraps the needed APIs for basic counter/compare/CMP OUT setup. It does not embed or expose the full vendor test program.
 - The current meter wheel layer also wraps the needed position-offset compare APIs for `CMP0_OUT` through `CMP7_OUT`; it still does not expose every vendor API.
 - The app cannot prevent the vendor LSI-8181 program from changing hardware state if both programs can access the same card. Avoid running both as active controllers at the same time.
+- External-trigger support is not yet considered finished. The current goal is line-by-line triggering from the meter wheel output, not a full-frame software trigger.
 - Preview responsiveness has improved, but true in-progress line-scan display would require chunk/line-based acquisition events instead of only `EndOfFrame`.
 - `FrameRecorder` stores the latest full frame and, when rolling capture is enabled, a bounded rolling frame list. It does not append all frames/chunks into an unlimited continuous long image.
 - Very large image saves are still expensive. Example user case: `16384 x 50000` 8-bit image is about 819 MB raw data and may encode to roughly 400 MB depending on content/format.
@@ -304,17 +338,28 @@ Important limitation:
 ## Recommended Next Steps
 
 1. Test the latest `main` on the real LSI-8181/camera machine after this handoff update.
-2. Verify meter wheel card connection behavior with `LSI8181_64.dll` available beside the app executable or in the DLL search path.
-3. Verify startup behavior:
+2. Verify the meter wheel and camera wiring before chasing software bugs:
+   - meter wheel TTL output
+   - camera trigger input
+   - expected physical output from the LSI-8181 card
+3. Confirm the desired capture mode on hardware:
+   - one pulse equals one line
+   - the app keeps stacking lines until the requested image length is reached
+   - display happens only after the full line count is collected
+4. Verify the current free-run path still works after the external-trigger changes:
+   - continuous mode should not inherit external-trigger parameters
+   - no Sapera warning dialogs should appear in normal free-run
+5. Verify meter wheel card connection behavior with `LSI8181_64.dll` available beside the app executable or in the DLL search path.
+6. Verify startup behavior:
    - Start the app.
    - Wait at least `1 second`.
    - Confirm the meter wheel auto-connects to the persisted `MeterWheelCardId`.
    - Open and close `Meter Wheel Control`; confirm closing the window does not disconnect the card.
-4. Verify physical output wiring:
+7. Verify physical output wiring:
    - Main compare output: `CMP_OUT`.
    - Extension offset outputs: `CMP0_OUT` through `CMP7_OUT`.
-5. Verify actual `CMP_OUT` pulse behavior with the configured `CMP Out Width`; do not rely on the vendor Compare form checkbox alone.
-6. Confirm the persisted meter wheel settings are restored and applied after app restart:
+8. Verify actual `CMP_OUT` pulse behavior with the configured `CMP Out Width`; do not rely on the vendor Compare form checkbox alone.
+9. Confirm the persisted meter wheel settings are restored and applied after app restart:
    - `MeterWheelCardId`
    - `MeterWheelCompareIncrement`
    - `MeterWheelMultipleRate`
@@ -323,22 +368,21 @@ Important limitation:
    - `MeterWheelExtensionCompareOffsets`
    - `MeterWheelExtensionComparePulseWidths`
    - `MeterWheelExtensionCompareOutputStates`
-7. Verify extension compare output behavior for `CMP0_OUT` through `CMP7_OUT` on real hardware.
-8. If the camera should be triggered from the meter wheel, connect the camera trigger input to the intended LSI-8181 physical output and test timing on hardware.
-9. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
-10. If save speed remains too slow, profile time spent in:
+10. Verify extension compare output behavior for `CMP0_OUT` through `CMP7_OUT` on real hardware.
+11. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
+12. If save speed remains too slow, profile time spent in:
    - copying frame bytes into the grayscale buffer,
    - WIC encoding,
    - final disk write / antivirus / sync folder overhead.
-11. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
-12. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
+13. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
+14. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
    - Large `Length` values naturally delay UI updates because the app waits for a full frame.
    - Consider `EndOfNLines` or other Sapera line/chunk callbacks if supported.
-13. If full continuous long-image capture is required, implement a recorder queue:
+15. If full continuous long-image capture is required, implement a recorder queue:
    - Background worker owns the full-resolution data path.
    - UI preview remains downscaled and droppable.
    - Capture/export reads from recorder output.
-14. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
+16. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
 
 ## Notes For The Next Person
 
