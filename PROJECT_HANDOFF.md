@@ -15,7 +15,7 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
 - Current handoff date: `2026-08-17`
-- Latest pushed feature commit referenced by this handoff: `6d82860 Restore continuous internal line rate`
+- Latest pushed feature commit referenced by this handoff: `28f9ae7 Persist meter wheel entry values`
 
 Latest verified local build command:
 
@@ -57,6 +57,22 @@ Latest local build result: `0 warning / 0 error`
   - `Gain`
   - `Length`
   - `Internal Line Rate`
+
+### Trigger Page Updates
+
+- A new checkbox has been added under `Camera Settings -> Trigger`:
+  - `External Trigger One Frame`
+- This option maps to Sapera acquisition parameter `CORACQ_PRM_EXT_FRAME_TRIGGER_ENABLE`.
+- The option is intentionally independent from `Trigger Mode`:
+  - It can be used with `Continuous`.
+  - It can be used with `ExternalTrigger`.
+- The app persists this setting in `settings.ini` as `ExternalFrameTriggerOneFrame`.
+- The `External Trigger` preview-arm check now considers both:
+  - `EXT_LINE_TRIGGER_ENABLE`
+  - `EXT_FRAME_TRIGGER_ENABLE`
+- Important behavior note:
+  - This checkbox only toggles the external frame trigger enable state.
+  - It does not replace the existing line trigger mode or internal line rate behavior.
 
 ## LSI-8181 Meter Wheel Status
 
@@ -126,8 +142,12 @@ Latest local build result: `0 warning / 0 error`
   - `MeterWheelExtensionCompareOffsets`
   - `MeterWheelExtensionComparePulseWidths`
   - `MeterWheelExtensionCompareOutputStates`
+  - `MeterWheelEncoderValue`
+  - `MeterWheelCompareValue`
 - When opening the meter wheel window, the persisted values are loaded into the UI, including the saved Card ID selection.
 - When pressing meter wheel `Apply` / `Set` for increment, multiple rate, or CMP out width, the values are saved back through `SettingsService`.
+- The encoder and compare custom numeric entry fields now persist as settings values, but they are not automatically pushed to hardware when the form opens.
+- The `Set` buttons remain the only path that writes those entry values to the meter wheel card.
 - When connecting to the meter wheel card, the app applies persisted meter wheel settings immediately:
   - Encoder input mode is forced to quadrature mode.
   - Multiple rate uses the saved `X4` / `X2` / `X1` selection.
@@ -166,6 +186,7 @@ Latest local build result: `0 warning / 0 error`
   - `C:\Program Files (x86)\JS Automation\LSI8181\API\sw8181.pdf`
   - `C:\Program Files (x86)\JS Automation\LSI8181\API\x64\LSI8181_64.cs`
 - The last verified build after the meter wheel updates succeeded with `0 warning / 0 error`.
+- The last verified build after the trigger-page and meter-wheel entry-value updates also succeeded with `0 warning / 0 error`.
 
 ## Rolling Capture
 
