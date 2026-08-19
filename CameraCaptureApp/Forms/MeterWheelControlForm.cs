@@ -123,21 +123,6 @@ namespace CameraCaptureApp.Forms
 
         private void buttonSetCompare_Click(object sender, EventArgs e)
         {
-            if (_settings != null && _settings.ExternalFrameTriggerOneFrameCompareFromEncoder && _meterWheelService.IsInitialized)
-            {
-                int encoderValue;
-                try
-                {
-                    encoderValue = _meterWheelService.ReadEncoder();
-                    numericCompare.Value = ClampToNumericRange(numericCompare, encoderValue);
-                }
-                catch (Exception ex)
-                {
-                    ShowError(ex);
-                    return;
-                }
-            }
-
             SetCompareValue((int)numericCompare.Value);
         }
 

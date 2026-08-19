@@ -522,12 +522,13 @@ namespace CameraCaptureApp.Forms
             // checkBoxExternalFrameTriggerOneFrameCompareFromEncoder
             // 
             this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.AutoSize = true;
-            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Location = new System.Drawing.Point(54, 118);
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Location = new System.Drawing.Point(54, 142);
             this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Name = "checkBoxExternalFrameTriggerOneFrameCompareFromEncoder";
-            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Size = new System.Drawing.Size(304, 20);
+            this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Size = new System.Drawing.Size(332, 20);
             this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.TabIndex = 6;
             this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Text = "Compare Set follows current encoder value";
             this.checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.UseVisualStyleBackColor = true;
+            this.labelTriggerNote.Location = new System.Drawing.Point(32, 175);
             // 
             // tabPageSaving
             // 

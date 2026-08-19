@@ -294,15 +294,17 @@ namespace CameraCaptureApp.Forms
 
         private void UpdateTriggerModeControls()
         {
-            var externalTriggerMode = comboBoxTriggerMode.SelectedIndex == (int)TriggerMode.ExternalTrigger;
-            checkBoxExternalFrameTriggerOneFrame.Enabled = externalTriggerMode;
-            if (!externalTriggerMode)
+            var triggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
+            var canUseExternalFrameTrigger = triggerMode == TriggerMode.Continuous || triggerMode == TriggerMode.ExternalTrigger;
+
+            checkBoxExternalFrameTriggerOneFrame.Enabled = canUseExternalFrameTrigger;
+            if (!canUseExternalFrameTrigger)
             {
                 checkBoxExternalFrameTriggerOneFrame.Checked = false;
             }
 
             checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled =
-                externalTriggerMode && checkBoxExternalFrameTriggerOneFrame.Checked;
+                canUseExternalFrameTrigger && checkBoxExternalFrameTriggerOneFrame.Checked;
             if (!checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled)
             {
                 checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked = false;
