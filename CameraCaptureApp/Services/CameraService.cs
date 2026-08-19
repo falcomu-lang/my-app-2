@@ -2643,32 +2643,11 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
-            var disabledLineIntegrate = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 0);
             var disabledExternalLine = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0);
-            var disabledExternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0);
-            var disabledExternalTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0);
-            var disabledShaftEncoder = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0);
-            var disabledCameraTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0);
-            var disabledFrameTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0);
-
             notes.Add(
                 "FreeRun line sync source set to None "
-                + "lineIntegrateOff=" + FormatApplyResult(disabledLineIntegrate, "0")
-                + " extLineOff=" + FormatApplyResult(disabledExternalLine, "0")
-                + " extFrameOff=" + FormatApplyResult(disabledExternalFrame, "0")
-                + " extTriggerOff=" + FormatApplyResult(disabledExternalTrigger, "0")
-                + " shaftEncoderOff=" + FormatApplyResult(disabledShaftEncoder, "0")
-                + " camTriggerOff=" + FormatApplyResult(disabledCameraTrigger, "0")
-                + " intFrameOff=" + FormatApplyResult(disabledFrameTrigger, "0")
-                + " intLineRateRequested=" + _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture));
-
-            return disabledLineIntegrate
-                || disabledExternalLine
-                || disabledExternalFrame
-                || disabledExternalTrigger
-                || disabledShaftEncoder
-                || disabledCameraTrigger
-                || disabledFrameTrigger;
+                + "extLineOff=" + FormatApplyResult(disabledExternalLine, "0"));
+            return disabledExternalLine;
         }
 
         private bool TryApplyExternalLineTrigger(System.Collections.Generic.List<string> notes)
