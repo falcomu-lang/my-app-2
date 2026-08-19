@@ -38,6 +38,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.ComboBox comboBoxRollingCaptureDirection;
         private System.Windows.Forms.Label labelTriggerMode;
         private System.Windows.Forms.Label labelTriggerNote;
+        private System.Windows.Forms.CheckBox checkBoxExternalFrameTriggerOneFrame;
         private System.Windows.Forms.Label labelImageSaveFormat;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
@@ -99,6 +100,7 @@ namespace CameraCaptureApp.Forms
             this.tabPageTrigger = new System.Windows.Forms.TabPage();
             this.labelTriggerMode = new System.Windows.Forms.Label();
             this.labelTriggerNote = new System.Windows.Forms.Label();
+            this.checkBoxExternalFrameTriggerOneFrame = new System.Windows.Forms.CheckBox();
             this.comboBoxTriggerMode = new System.Windows.Forms.ComboBox();
             this.tabPageSaving = new System.Windows.Forms.TabPage();
             this.labelImageSaveFormat = new System.Windows.Forms.Label();
@@ -465,6 +467,7 @@ namespace CameraCaptureApp.Forms
             // 
             this.tabPageTrigger.Controls.Add(this.labelTriggerMode);
             this.tabPageTrigger.Controls.Add(this.comboBoxTriggerMode);
+            this.tabPageTrigger.Controls.Add(this.checkBoxExternalFrameTriggerOneFrame);
             this.tabPageTrigger.Controls.Add(this.labelTriggerNote);
             this.tabPageTrigger.Location = new System.Drawing.Point(4, 26);
             this.tabPageTrigger.Name = "tabPageTrigger";
@@ -486,7 +489,7 @@ namespace CameraCaptureApp.Forms
             // labelTriggerNote
             // 
             this.labelTriggerNote.AutoSize = true;
-            this.labelTriggerNote.Location = new System.Drawing.Point(32, 103);
+            this.labelTriggerNote.Location = new System.Drawing.Point(32, 130);
             this.labelTriggerNote.Name = "labelTriggerNote";
             this.labelTriggerNote.Size = new System.Drawing.Size(584, 16);
             this.labelTriggerNote.TabIndex = 3;
@@ -498,6 +501,16 @@ namespace CameraCaptureApp.Forms
             this.comboBoxTriggerMode.FormattingEnabled = true;
             this.comboBoxTriggerMode.Location = new System.Drawing.Point(35, 57);
             this.comboBoxTriggerMode.Size = new System.Drawing.Size(220, 24);
+            // 
+            // checkBoxExternalFrameTriggerOneFrame
+            // 
+            this.checkBoxExternalFrameTriggerOneFrame.AutoSize = true;
+            this.checkBoxExternalFrameTriggerOneFrame.Location = new System.Drawing.Point(35, 90);
+            this.checkBoxExternalFrameTriggerOneFrame.Name = "checkBoxExternalFrameTriggerOneFrame";
+            this.checkBoxExternalFrameTriggerOneFrame.Size = new System.Drawing.Size(187, 20);
+            this.checkBoxExternalFrameTriggerOneFrame.TabIndex = 5;
+            this.checkBoxExternalFrameTriggerOneFrame.Text = "External Trigger One Frame";
+            this.checkBoxExternalFrameTriggerOneFrame.UseVisualStyleBackColor = true;
             // 
             // tabPageSaving
             // 

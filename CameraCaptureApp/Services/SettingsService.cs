@@ -48,6 +48,7 @@ namespace CameraCaptureApp.Services
             settings.FrameRate = GetDecimal(values, "FrameRate", settings.FrameRate);
             settings.PixelFormat = GetString(values, "PixelFormat", settings.PixelFormat);
             settings.TriggerMode = GetTriggerMode(values, "TriggerMode", settings.TriggerMode);
+            settings.ExternalFrameTriggerOneFrame = GetBool(values, "ExternalFrameTriggerOneFrame", settings.ExternalFrameTriggerOneFrame);
             settings.AutoConnect = GetBool(values, "AutoConnect", settings.AutoConnect);
             settings.AutoSave = GetBool(values, "AutoSave", settings.AutoSave);
             settings.SaveFolder = GetString(values, "SaveFolder", settings.SaveFolder);
@@ -92,6 +93,7 @@ namespace CameraCaptureApp.Services
                 "FrameRate=" + settings.FrameRate.ToString(CultureInfo.InvariantCulture),
                 "PixelFormat=" + settings.PixelFormat,
                 "TriggerMode=" + settings.TriggerMode.ToString(),
+                "ExternalFrameTriggerOneFrame=" + settings.ExternalFrameTriggerOneFrame.ToString(),
                 "AutoConnect=" + settings.AutoConnect.ToString(),
                 "AutoSave=" + settings.AutoSave.ToString(),
                 "SaveFolder=" + settings.SaveFolder,

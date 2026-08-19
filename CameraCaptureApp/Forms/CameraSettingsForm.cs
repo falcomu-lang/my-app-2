@@ -76,6 +76,7 @@ namespace CameraCaptureApp.Forms
             numericInternalLineRate.Value = Settings.InternalLineRate > 0 ? Settings.InternalLineRate : 1;
             var triggerIndex = (int)Settings.TriggerMode;
             comboBoxTriggerMode.SelectedIndex = triggerIndex >= 0 && triggerIndex < comboBoxTriggerMode.Items.Count ? triggerIndex : 0;
+            checkBoxExternalFrameTriggerOneFrame.Checked = Settings.ExternalFrameTriggerOneFrame;
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
             comboBoxImageSaveFormat.SelectedIndex = GetImageSaveFormatIndex(Settings.ImageSaveFormat);
             labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
@@ -272,6 +273,7 @@ namespace CameraCaptureApp.Forms
             Settings.RollingCaptureDirection = (RollingCaptureDirection)Math.Max(0, comboBoxRollingCaptureDirection.SelectedIndex);
             Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
+            Settings.ExternalFrameTriggerOneFrame = checkBoxExternalFrameTriggerOneFrame.Checked;
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
             Settings.ImageSaveFormat = GetImageSaveFormatFromIndex(comboBoxImageSaveFormat.SelectedIndex);
         }
