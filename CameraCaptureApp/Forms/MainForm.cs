@@ -235,6 +235,27 @@ namespace CameraCaptureApp.Forms
 
         private async void SaveLatestRecordedFrameIfRequestedAsync()
         {
+            if (IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                try
+                {
+                    BeginInvoke(new Action(SaveLatestRecordedFrameIfRequestedAsync));
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                return;
+            }
+
             if (Interlocked.CompareExchange(ref _pendingSnapshotSaveCount, 0, 0) <= 0)
             {
                 return;
