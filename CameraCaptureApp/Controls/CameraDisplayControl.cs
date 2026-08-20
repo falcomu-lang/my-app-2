@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CameraCaptureApp.Models;
+using CameraCaptureApp.Services;
 
 namespace CameraCaptureApp.Controls
 {
@@ -34,10 +35,17 @@ namespace CameraCaptureApp.Controls
         private bool _tileRefreshPending;
         private float _zoom = 1f;
         private PointF _imageOffset = PointF.Empty;
+        private bool _grayWaveformSelectionActive;
+        private Bitmap _grayWaveformSelectionSource;
+        private Point? _grayWaveformSelectionStart;
+        private Point? _grayWaveformSelectionEnd;
+        private bool _grayWaveformDragging;
 
         public event EventHandler SaveSnapshotRequested;
 
         public event EventHandler GrayWaveformRequested;
+
+        public event EventHandler<GrayWaveformSelectionEventArgs> GrayWaveformSelectionCompleted;
 
         public CameraDisplayControl()
         {
@@ -77,6 +85,50 @@ namespace CameraCaptureApp.Controls
         {
             get { return buttonGrayWaveform.Enabled; }
             set { buttonGrayWaveform.Enabled = value; }
+        }
+
+        public bool BeginGrayWaveformSelection()
+        {
+            if (_grayWaveformSelectionActive)
+            {
+                return false;
+            }
+
+            var snapshot = CaptureCurrentImageSnapshot();
+            if (snapshot == null)
+            {
+                StatusText = "No image is available for waveform selection.";
+                return false;
+            }
+
+            lock (_imageLock)
+            {
+                ClearGrayWaveformSelectionUnsafe();
+                _grayWaveformSelectionSource = snapshot;
+                _grayWaveformSelectionActive = true;
+                _grayWaveformSelectionStart = null;
+                _grayWaveformSelectionEnd = null;
+                _grayWaveformDragging = false;
+                _zoom = 1f;
+                _imageOffset = PointF.Empty;
+            }
+
+            OverlayText = "Waveform selection mode";
+            StatusText = "Drag a line on the image.";
+            viewerPanel.Cursor = Cursors.Cross;
+            viewerPanel.Invalidate();
+            return true;
+        }
+
+        public void CancelGrayWaveformSelection()
+        {
+            lock (_imageLock)
+            {
+                ClearGrayWaveformSelectionUnsafe();
+            }
+
+            viewerPanel.Cursor = Cursors.Default;
+            viewerPanel.Invalidate();
         }
 
         public async Task LoadImageFromFileAsync(string filePath, CancellationToken cancellationToken)
@@ -261,14 +313,22 @@ namespace CameraCaptureApp.Controls
 
             Bitmap bitmap;
             LargeImageSource largeImageSource;
+            Bitmap waveformSource;
             float zoom;
             PointF offset;
+            Point? selectionStart;
+            Point? selectionEnd;
+            bool selectionActive;
             lock (_imageLock)
             {
                 bitmap = _sourceBitmap;
                 largeImageSource = _largeImageSource;
+                waveformSource = _grayWaveformSelectionSource;
                 zoom = _zoom;
                 offset = _imageOffset;
+                selectionStart = _grayWaveformSelectionStart;
+                selectionEnd = _grayWaveformSelectionEnd;
+                selectionActive = _grayWaveformSelectionActive;
             }
 
             if (zoom <= 0f)
@@ -276,7 +336,14 @@ namespace CameraCaptureApp.Controls
                 return;
             }
 
-            if (bitmap != null)
+            if (selectionActive && waveformSource != null)
+            {
+                var drawWidth = waveformSource.Width * zoom;
+                var drawHeight = waveformSource.Height * zoom;
+                e.Graphics.InterpolationMode = InterpolationMode.Low;
+                e.Graphics.DrawImage(waveformSource, offset.X, offset.Y, drawWidth, drawHeight);
+            }
+            else if (bitmap != null)
             {
                 var drawWidth = bitmap.Width * zoom;
                 var drawHeight = bitmap.Height * zoom;
@@ -316,10 +383,42 @@ namespace CameraCaptureApp.Controls
 
             if (largeImageSource == null)
             {
+                if (!selectionActive)
+                {
+                    return;
+                }
+            }
+
+            if (!selectionActive)
+            {
+                DrawLargeImage(e.Graphics, largeImageSource, zoom, offset);
+            }
+
+            if (selectionActive && waveformSource != null)
+            {
+                DrawGrayWaveformSelectionOverlay(e.Graphics, selectionStart, selectionEnd);
+            }
+        }
+
+        private void DrawGrayWaveformSelectionOverlay(Graphics graphics, Point? selectionStart, Point? selectionEnd)
+        {
+            if (!selectionStart.HasValue || !selectionEnd.HasValue)
+            {
                 return;
             }
 
-            DrawLargeImage(e.Graphics, largeImageSource, zoom, offset);
+            var imageBounds = GetCurrentImageBoundsUnsafe();
+            if (imageBounds.Width <= 0 || imageBounds.Height <= 0)
+            {
+                return;
+            }
+
+            var p1 = ImageToClient(selectionStart.Value, imageBounds, GetCurrentImageSizeUnsafe());
+            var p2 = ImageToClient(selectionEnd.Value, imageBounds, GetCurrentImageSizeUnsafe());
+            using (var pen = new Pen(Color.Yellow, 2f))
+            {
+                graphics.DrawLine(pen, p1, p2);
+            }
         }
 
         private void DrawLargeImage(Graphics graphics, LargeImageSource source, float zoom, PointF offset)
@@ -499,6 +598,11 @@ namespace CameraCaptureApp.Controls
 
         private void viewerPanel_MouseDown(object sender, MouseEventArgs e)
         {
+            if (TryStartGrayWaveformSelectionDrag(e))
+            {
+                return;
+            }
+
             lock (_imageLock)
             {
                 if (e.Button != MouseButtons.Left ||
@@ -515,6 +619,11 @@ namespace CameraCaptureApp.Controls
 
         private void viewerPanel_MouseMove(object sender, MouseEventArgs e)
         {
+            if (TryUpdateGrayWaveformSelectionDrag(e))
+            {
+                return;
+            }
+
             if (!_isPanning)
             {
                 return;
@@ -535,6 +644,11 @@ namespace CameraCaptureApp.Controls
 
         private void viewerPanel_MouseUp(object sender, MouseEventArgs e)
         {
+            if (TryFinishGrayWaveformSelectionDrag(e))
+            {
+                return;
+            }
+
             _isPanning = false;
             viewerPanel.Cursor = Cursors.Default;
         }
@@ -698,6 +812,8 @@ namespace CameraCaptureApp.Controls
                 _largeImageSource.Dispose();
                 _largeImageSource = null;
             }
+
+            ClearGrayWaveformSelectionUnsafe();
         }
 
         private void DisposeRollingPreviewFrames()
@@ -764,6 +880,238 @@ namespace CameraCaptureApp.Controls
             }
 
             return zoom;
+        }
+
+        public Bitmap CaptureCurrentImageSnapshot()
+        {
+            lock (_imageLock)
+            {
+                if (_grayWaveformSelectionActive && _grayWaveformSelectionSource != null)
+                {
+                    return (Bitmap)_grayWaveformSelectionSource.Clone();
+                }
+
+                if (_sourceBitmap != null)
+                {
+                    return (Bitmap)_sourceBitmap.Clone();
+                }
+
+                if (_largeImageSource != null)
+                {
+                    return _largeImageSource.CreateSnapshotBitmap();
+                }
+            }
+
+            return null;
+        }
+
+        private bool TryStartGrayWaveformSelectionDrag(MouseEventArgs e)
+        {
+            lock (_imageLock)
+            {
+                if (!_grayWaveformSelectionActive || e.Button != MouseButtons.Left || _grayWaveformSelectionSource == null)
+                {
+                    return false;
+                }
+
+                var imageBounds = GetCurrentImageBoundsUnsafe();
+                if (!imageBounds.Contains(e.Location))
+                {
+                    return false;
+                }
+
+                _grayWaveformDragging = true;
+                _grayWaveformSelectionStart = ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe());
+                _grayWaveformSelectionEnd = _grayWaveformSelectionStart;
+                viewerPanel.Invalidate();
+                return true;
+            }
+        }
+
+        private bool TryUpdateGrayWaveformSelectionDrag(MouseEventArgs e)
+        {
+            lock (_imageLock)
+            {
+                if (!_grayWaveformSelectionActive || !_grayWaveformDragging || _grayWaveformSelectionSource == null)
+                {
+                    return false;
+                }
+
+                var imageBounds = GetCurrentImageBoundsUnsafe();
+                _grayWaveformSelectionEnd = ClampToImage(ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe()), GetCurrentImageSizeUnsafe());
+                viewerPanel.Invalidate();
+                return true;
+            }
+        }
+
+        private bool TryFinishGrayWaveformSelectionDrag(MouseEventArgs e)
+        {
+            GrayWaveformSelectionEventArgs args = null;
+            lock (_imageLock)
+            {
+                if (!_grayWaveformSelectionActive || !_grayWaveformDragging || _grayWaveformSelectionSource == null)
+                {
+                    return false;
+                }
+
+                var imageBounds = GetCurrentImageBoundsUnsafe();
+                _grayWaveformSelectionEnd = ClampToImage(ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe()), GetCurrentImageSizeUnsafe());
+                _grayWaveformDragging = false;
+                var start = _grayWaveformSelectionStart ?? Point.Empty;
+                var end = _grayWaveformSelectionEnd ?? start;
+                var linePoints = BuildLinePoints(start, end);
+                if (linePoints.Length < 2)
+                {
+                    return true;
+                }
+
+                args = new GrayWaveformSelectionEventArgs((Bitmap)_grayWaveformSelectionSource.Clone(), start, end, linePoints);
+            }
+
+            if (args != null)
+            {
+                var handler = GrayWaveformSelectionCompleted;
+                if (handler != null)
+                {
+                    handler(this, args);
+                }
+            }
+
+            return true;
+        }
+
+        private void ClearGrayWaveformSelectionUnsafe()
+        {
+            if (_grayWaveformSelectionSource != null)
+            {
+                _grayWaveformSelectionSource.Dispose();
+                _grayWaveformSelectionSource = null;
+            }
+
+            _grayWaveformSelectionActive = false;
+            _grayWaveformSelectionStart = null;
+            _grayWaveformSelectionEnd = null;
+            _grayWaveformDragging = false;
+        }
+
+        private Rectangle GetCurrentImageBoundsUnsafe()
+        {
+            var size = GetCurrentImageSizeUnsafe();
+            var bounds = GetDestinationRectangle();
+            if (size.Width <= 0 || size.Height <= 0 || bounds.Width <= 0 || bounds.Height <= 0)
+            {
+                return Rectangle.Empty;
+            }
+
+            var scaleX = bounds.Width / (float)size.Width;
+            var scaleY = bounds.Height / (float)size.Height;
+            var zoom = Math.Min(scaleX, scaleY);
+            var drawWidth = size.Width * zoom;
+            var drawHeight = size.Height * zoom;
+            return new Rectangle(
+                bounds.X + ((bounds.Width - (int)Math.Round(drawWidth)) / 2),
+                bounds.Y + ((bounds.Height - (int)Math.Round(drawHeight)) / 2),
+                Math.Max(1, (int)Math.Round(drawWidth)),
+                Math.Max(1, (int)Math.Round(drawHeight)));
+        }
+
+        private Size GetCurrentImageSizeUnsafe()
+        {
+            if (_grayWaveformSelectionActive && _grayWaveformSelectionSource != null)
+            {
+                return _grayWaveformSelectionSource.Size;
+            }
+
+            if (_sourceBitmap != null)
+            {
+                return _sourceBitmap.Size;
+            }
+
+            if (_rollingPreviewFrames.Count > 0)
+            {
+                return new Size(_rollingPreviewFrameWidth, _rollingPreviewFrameHeight * _rollingPreviewFrameCount);
+            }
+
+            if (_largeImageSource != null)
+            {
+                return new Size(_largeImageSource.Width, _largeImageSource.Height);
+            }
+
+            return Size.Empty;
+        }
+
+        private static Point[] BuildLinePoints(Point start, Point end)
+        {
+            var points = new List<Point>();
+            var x0 = start.X;
+            var y0 = start.Y;
+            var x1 = end.X;
+            var y1 = end.Y;
+            var dx = Math.Abs(x1 - x0);
+            var sx = x0 < x1 ? 1 : -1;
+            var dy = -Math.Abs(y1 - y0);
+            var sy = y0 < y1 ? 1 : -1;
+            var err = dx + dy;
+
+            while (true)
+            {
+                points.Add(new Point(x0, y0));
+                if (x0 == x1 && y0 == y1)
+                {
+                    break;
+                }
+
+                var e2 = 2 * err;
+                if (e2 >= dy)
+                {
+                    err += dy;
+                    x0 += sx;
+                }
+
+                if (e2 <= dx)
+                {
+                    err += dx;
+                    y0 += sy;
+                }
+            }
+
+            return points.ToArray();
+        }
+
+        private static Point ClientToImage(Point point, Rectangle imageBounds, Size imageSize)
+        {
+            if (imageBounds.Width <= 0 || imageBounds.Height <= 0 || imageSize.Width <= 0 || imageSize.Height <= 0)
+            {
+                return Point.Empty;
+            }
+
+            var x = (point.X - imageBounds.Left) * imageSize.Width / (float)imageBounds.Width;
+            var y = (point.Y - imageBounds.Top) * imageSize.Height / (float)imageBounds.Height;
+            return new Point((int)Math.Round(x), (int)Math.Round(y));
+        }
+
+        private static Point ImageToClient(Point point, Rectangle imageBounds, Size imageSize)
+        {
+            if (imageBounds.Width <= 0 || imageBounds.Height <= 0 || imageSize.Width <= 0 || imageSize.Height <= 0)
+            {
+                return Point.Empty;
+            }
+
+            var x = imageBounds.Left + (point.X * imageBounds.Width / (float)imageSize.Width);
+            var y = imageBounds.Top + (point.Y * imageBounds.Height / (float)imageSize.Height);
+            return new Point((int)Math.Round(x), (int)Math.Round(y));
+        }
+
+        private static Point ClampToImage(Point point, Size imageSize)
+        {
+            if (imageSize.Width <= 0 || imageSize.Height <= 0)
+            {
+                return Point.Empty;
+            }
+
+            return new Point(
+                Math.Max(0, Math.Min(imageSize.Width - 1, point.X)),
+                Math.Max(0, Math.Min(imageSize.Height - 1, point.Y)));
         }
     }
 }

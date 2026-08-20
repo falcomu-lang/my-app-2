@@ -212,6 +212,15 @@ namespace CameraCaptureApp.Controls
             }
         }
 
+        public Bitmap CreateSnapshotBitmap()
+        {
+            lock (_sync)
+            {
+                ThrowIfDisposed();
+                return ConvertToBitmap(_frame);
+            }
+        }
+
         private void InitializePreviewLevels()
         {
             AddPreviewLevel(512);

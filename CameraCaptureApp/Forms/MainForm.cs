@@ -53,6 +53,7 @@ namespace CameraCaptureApp.Forms
             _cameraDisplayControl.Dock = DockStyle.Fill;
             _cameraDisplayControl.SaveSnapshotRequested += CameraDisplayControl_SaveSnapshotRequested;
             _cameraDisplayControl.GrayWaveformRequested += CameraDisplayControl_GrayWaveformRequested;
+            _cameraDisplayControl.GrayWaveformSelectionCompleted += CameraDisplayControl_GrayWaveformSelectionCompleted;
             panelViewerHost.Controls.Add(_cameraDisplayControl);
 
             _cameraService.FrameReady += CameraService_FrameReady;
@@ -392,41 +393,58 @@ namespace CameraCaptureApp.Forms
         private void CameraDisplayControl_GrayWaveformRequested(object sender, EventArgs e)
         {
             var status = _cameraService.Status;
-            if (status == null || status.IsPreviewing)
+            if (status != null && status.IsPreviewing)
             {
                 labelFooterMessageValue.Text = "Stop preview before getting gray waveform.";
                 return;
             }
 
-            using (var snapshot = _frameRecorder.SnapshotLatest())
+            if (!_cameraDisplayControl.BeginGrayWaveformSelection())
             {
-                if (snapshot == null)
+                labelFooterMessageValue.Text = "No image is available for waveform selection.";
+            }
+        }
+
+        private void CameraDisplayControl_GrayWaveformSelectionCompleted(object sender, GrayWaveformSelectionEventArgs e)
+        {
+            if (e == null || e.Snapshot == null || e.LinePoints == null || e.LinePoints.Length < 2)
+            {
+                if (e != null && e.Snapshot != null)
                 {
-                    labelFooterMessageValue.Text = "No recorded image is available for waveform.";
+                    e.Snapshot.Dispose();
+                }
+
+                labelFooterMessageValue.Text = "Gray waveform selection was invalid.";
+                return;
+            }
+
+            using (e.Snapshot)
+            using (var confirm = new GrayWaveformConfirmForm(
+                "Start: " + e.StartPoint.X + ", " + e.StartPoint.Y + "\r\n" +
+                "End: " + e.EndPoint.X + ", " + e.EndPoint.Y + "\r\n" +
+                "Length: " + e.LinePoints.Length + " pixels"))
+            {
+                var result = confirm.ShowDialog(this);
+                if (result == DialogResult.Retry)
+                {
+                    _cameraDisplayControl.BeginGrayWaveformSelection();
                     return;
                 }
 
-                using (var selector = new GrayScaleWaveformSelectForm(snapshot))
+                if (result != DialogResult.OK || !confirm.IsConfirmSelected)
                 {
-                    if (selector.ShowDialog(this) != DialogResult.OK)
-                    {
-                        labelFooterMessageValue.Text = "Gray waveform selection cancelled.";
-                        return;
-                    }
+                    _cameraDisplayControl.CancelGrayWaveformSelection();
+                    labelFooterMessageValue.Text = "Gray waveform selection cancelled.";
+                    return;
+                }
 
-                    var line = selector.SelectedLine;
-                    if (line == null || line.Length < 2)
-                    {
-                        labelFooterMessageValue.Text = "Gray waveform selection was invalid.";
-                        return;
-                    }
-
-                    using (var waveform = new GrayScaleWaveformForm(snapshot, line))
-                    {
-                        waveform.ShowDialog(this);
-                    }
+                using (var waveform = new GrayScaleWaveformForm(e.Snapshot, e.LinePoints))
+                {
+                    waveform.ShowDialog(this);
                 }
             }
+
+            _cameraDisplayControl.CancelGrayWaveformSelection();
         }
 
         private async Task<string> RunQueuedSnapshotSaveAsync(SaveProgressForm progressForm, Func<string> saveAction)
@@ -911,7 +929,7 @@ namespace CameraCaptureApp.Forms
             buttonCapture.Enabled = isConnected && !isPreviewing;
             buttonLoadImage.Enabled = !isPreviewing;
             _cameraDisplayControl.SaveSnapshotButtonEnabled = isConnected && (!isPreviewing || _settings.RollingCaptureEnabled);
-            _cameraDisplayControl.GrayWaveformButtonEnabled = isConnected && !isPreviewing;
+            _cameraDisplayControl.GrayWaveformButtonEnabled = !isPreviewing;
         }
 
         private void CancelPendingImageLoad()

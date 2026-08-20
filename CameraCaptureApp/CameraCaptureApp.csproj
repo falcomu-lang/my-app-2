@@ -67,6 +67,12 @@
     <Compile Include="Forms\CameraSettingsForm.Designer.cs">
       <DependentUpon>CameraSettingsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\GrayWaveformConfirmForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\GrayWaveformConfirmForm.Designer.cs">
+      <DependentUpon>GrayWaveformConfirmForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\GrayScaleWaveformForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -118,6 +124,7 @@
     <Compile Include="Services\CameraService.cs" />
     <Compile Include="Services\CameraFrameEventArgs.cs" />
     <Compile Include="Services\FrameRecorder.cs" />
+    <Compile Include="Services\GrayWaveformSelectionEventArgs.cs" />
     <Compile Include="Services\ICameraService.cs" />
     <Compile Include="Services\ISettingsService.cs" />
     <Compile Include="Services\Lsi8181MeterWheelService.cs" />
