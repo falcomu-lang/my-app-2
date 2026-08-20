@@ -5,30 +5,31 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Windows.Forms;
+using CameraCaptureApp.Services;
 
 namespace CameraCaptureApp.Forms
 {
     public partial class GrayScaleWaveformForm : Form
     {
-        private readonly Bitmap _image;
+        private readonly IGrayPixelSource _pixelSource;
         private readonly Point[] _linePoints;
         private readonly int[] _grayValues;
         private readonly int _minGray;
         private readonly int _maxGray;
 
-        public GrayScaleWaveformForm(Bitmap image, Point[] linePoints)
+        public GrayScaleWaveformForm(IGrayPixelSource pixelSource, Point[] linePoints)
         {
-            _image = image != null ? (Bitmap)image.Clone() : null;
+            _pixelSource = pixelSource;
             _linePoints = linePoints ?? new Point[0];
             InitializeComponent();
-            if (_image == null || _linePoints.Length == 0)
+            if (_pixelSource == null || _linePoints.Length == 0)
             {
                 buttonClose.Text = "關閉";
                 labelInfo.Text = "No waveform data.";
                 return;
             }
 
-            _grayValues = SampleGrayValues(_image, _linePoints);
+            _grayValues = SampleGrayValues(_pixelSource, _linePoints);
             _minGray = _grayValues.Min();
             _maxGray = _grayValues.Max();
             labelInfo.Text = "Points: " + _grayValues.Length + " | Gray range: " + _minGray + " - " + _maxGray;
@@ -37,10 +38,7 @@ namespace CameraCaptureApp.Forms
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            if (_image != null)
-            {
-                _image.Dispose();
-            }
+            _pixelSource?.Dispose();
 
             base.OnFormClosed(e);
         }
@@ -112,23 +110,15 @@ namespace CameraCaptureApp.Forms
             }
         }
 
-        private static int[] SampleGrayValues(Bitmap image, Point[] linePoints)
+        private static int[] SampleGrayValues(IGrayPixelSource pixelSource, Point[] linePoints)
         {
             var result = new int[linePoints.Length];
             for (var i = 0; i < linePoints.Length; i++)
             {
-                result[i] = GetGrayAt(image, linePoints[i]);
+                result[i] = pixelSource.GetGrayAt(linePoints[i].X, linePoints[i].Y);
             }
 
             return result;
-        }
-
-        private static int GetGrayAt(Bitmap bitmap, Point point)
-        {
-            var x = Math.Max(0, Math.Min(bitmap.Width - 1, point.X));
-            var y = Math.Max(0, Math.Min(bitmap.Height - 1, point.Y));
-            var pixel = bitmap.GetPixel(x, y);
-            return (pixel.R + pixel.G + pixel.B) / 3;
         }
 
         private void buttonClose_Click(object sender, EventArgs e)

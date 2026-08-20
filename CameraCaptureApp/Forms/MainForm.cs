@@ -407,18 +407,17 @@ namespace CameraCaptureApp.Forms
 
         private void CameraDisplayControl_GrayWaveformSelectionCompleted(object sender, GrayWaveformSelectionEventArgs e)
         {
-            if (e == null || e.Snapshot == null || e.LinePoints == null || e.LinePoints.Length < 2)
+            if (e == null || e.PixelSource == null || e.LinePoints == null || e.LinePoints.Length < 2)
             {
-                if (e != null && e.Snapshot != null)
+                if (e != null && e.PixelSource != null)
                 {
-                    e.Snapshot.Dispose();
+                    e.PixelSource.Dispose();
                 }
 
                 labelFooterMessageValue.Text = "Gray waveform selection was invalid.";
                 return;
             }
 
-            using (e.Snapshot)
             using (var confirm = new GrayWaveformConfirmForm(
                 "Start: " + e.StartPoint.X + ", " + e.StartPoint.Y + "\r\n" +
                 "End: " + e.EndPoint.X + ", " + e.EndPoint.Y + "\r\n" +
@@ -438,7 +437,7 @@ namespace CameraCaptureApp.Forms
                     return;
                 }
 
-                using (var waveform = new GrayScaleWaveformForm(e.Snapshot, e.LinePoints))
+                using (var waveform = new GrayScaleWaveformForm(e.PixelSource, e.LinePoints))
                 {
                     waveform.ShowDialog(this);
                 }

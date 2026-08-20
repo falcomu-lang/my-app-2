@@ -36,7 +36,7 @@ namespace CameraCaptureApp.Controls
         private float _zoom = 1f;
         private PointF _imageOffset = PointF.Empty;
         private bool _grayWaveformSelectionActive;
-        private Bitmap _grayWaveformSelectionSource;
+        private IGrayPixelSource _grayWaveformSelectionSource;
         private Point? _grayWaveformSelectionStart;
         private Point? _grayWaveformSelectionEnd;
         private bool _grayWaveformDragging;
@@ -94,7 +94,7 @@ namespace CameraCaptureApp.Controls
                 return false;
             }
 
-            var snapshot = CaptureCurrentImageSnapshot();
+            var snapshot = CreateCurrentGrayPixelSource();
             if (snapshot == null)
             {
                 StatusText = "No image is available for waveform selection.";
@@ -118,6 +118,24 @@ namespace CameraCaptureApp.Controls
             viewerPanel.Cursor = Cursors.Cross;
             viewerPanel.Invalidate();
             return true;
+        }
+
+        private IGrayPixelSource CreateCurrentGrayPixelSource()
+        {
+            lock (_imageLock)
+            {
+                if (_sourceBitmap != null)
+                {
+                    return new BitmapGrayPixelSource((Bitmap)_sourceBitmap.Clone());
+                }
+
+                if (_largeImageSource != null)
+                {
+                    return new LargeImageGrayPixelSource(_largeImageSource);
+                }
+            }
+
+            return null;
         }
 
         public void CancelGrayWaveformSelection()
@@ -313,7 +331,7 @@ namespace CameraCaptureApp.Controls
 
             Bitmap bitmap;
             LargeImageSource largeImageSource;
-            Bitmap waveformSource;
+            IGrayPixelSource waveformSource;
             float zoom;
             PointF offset;
             Point? selectionStart;
@@ -336,14 +354,7 @@ namespace CameraCaptureApp.Controls
                 return;
             }
 
-            if (selectionActive && waveformSource != null)
-            {
-                var drawWidth = waveformSource.Width * zoom;
-                var drawHeight = waveformSource.Height * zoom;
-                e.Graphics.InterpolationMode = InterpolationMode.Low;
-                e.Graphics.DrawImage(waveformSource, offset.X, offset.Y, drawWidth, drawHeight);
-            }
-            else if (bitmap != null)
+            if (!selectionActive && bitmap != null)
             {
                 var drawWidth = bitmap.Width * zoom;
                 var drawHeight = bitmap.Height * zoom;
@@ -884,24 +895,6 @@ namespace CameraCaptureApp.Controls
 
         public Bitmap CaptureCurrentImageSnapshot()
         {
-            lock (_imageLock)
-            {
-                if (_grayWaveformSelectionActive && _grayWaveformSelectionSource != null)
-                {
-                    return (Bitmap)_grayWaveformSelectionSource.Clone();
-                }
-
-                if (_sourceBitmap != null)
-                {
-                    return (Bitmap)_sourceBitmap.Clone();
-                }
-
-                if (_largeImageSource != null)
-                {
-                    return _largeImageSource.CreateSnapshotBitmap();
-                }
-            }
-
             return null;
         }
 
@@ -965,7 +958,7 @@ namespace CameraCaptureApp.Controls
                     return true;
                 }
 
-                args = new GrayWaveformSelectionEventArgs((Bitmap)_grayWaveformSelectionSource.Clone(), start, end, linePoints);
+                args = new GrayWaveformSelectionEventArgs(_grayWaveformSelectionSource, start, end, linePoints);
             }
 
             if (args != null)
@@ -1019,7 +1012,7 @@ namespace CameraCaptureApp.Controls
         {
             if (_grayWaveformSelectionActive && _grayWaveformSelectionSource != null)
             {
-                return _grayWaveformSelectionSource.Size;
+                return new Size(_grayWaveformSelectionSource.Width, _grayWaveformSelectionSource.Height);
             }
 
             if (_sourceBitmap != null)
@@ -1112,6 +1105,56 @@ namespace CameraCaptureApp.Controls
             return new Point(
                 Math.Max(0, Math.Min(imageSize.Width - 1, point.X)),
                 Math.Max(0, Math.Min(imageSize.Height - 1, point.Y)));
+        }
+
+        private sealed class BitmapGrayPixelSource : IGrayPixelSource
+        {
+            private readonly Bitmap _bitmap;
+
+            public BitmapGrayPixelSource(Bitmap bitmap)
+            {
+                _bitmap = bitmap;
+            }
+
+            public int Width { get { return _bitmap.Width; } }
+
+            public int Height { get { return _bitmap.Height; } }
+
+            public int GetGrayAt(int x, int y)
+            {
+                x = Math.Max(0, Math.Min(_bitmap.Width - 1, x));
+                y = Math.Max(0, Math.Min(_bitmap.Height - 1, y));
+                var pixel = _bitmap.GetPixel(x, y);
+                return (pixel.R + pixel.G + pixel.B) / 3;
+            }
+
+            public void Dispose()
+            {
+                _bitmap.Dispose();
+            }
+        }
+
+        private sealed class LargeImageGrayPixelSource : IGrayPixelSource
+        {
+            private readonly LargeImageSource _source;
+
+            public LargeImageGrayPixelSource(LargeImageSource source)
+            {
+                _source = source;
+            }
+
+            public int Width { get { return _source.Width; } }
+
+            public int Height { get { return _source.Height; } }
+
+            public int GetGrayAt(int x, int y)
+            {
+                return _source.GetGrayAt(x, y);
+            }
+
+            public void Dispose()
+            {
+            }
         }
     }
 }

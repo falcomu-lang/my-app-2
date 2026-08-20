@@ -1,19 +1,20 @@
 using System;
 using System.Drawing;
+using CameraCaptureApp.Services;
 
 namespace CameraCaptureApp.Services
 {
     public sealed class GrayWaveformSelectionEventArgs : EventArgs
     {
-        public GrayWaveformSelectionEventArgs(Bitmap snapshot, Point startPoint, Point endPoint, Point[] linePoints)
+        public GrayWaveformSelectionEventArgs(IGrayPixelSource pixelSource, Point startPoint, Point endPoint, Point[] linePoints)
         {
-            Snapshot = snapshot;
+            PixelSource = pixelSource;
             StartPoint = startPoint;
             EndPoint = endPoint;
             LinePoints = linePoints ?? new Point[0];
         }
 
-        public Bitmap Snapshot { get; private set; }
+        public IGrayPixelSource PixelSource { get; private set; }
 
         public Point StartPoint { get; private set; }
 

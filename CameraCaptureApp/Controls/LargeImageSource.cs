@@ -217,7 +217,33 @@ namespace CameraCaptureApp.Controls
             lock (_sync)
             {
                 ThrowIfDisposed();
-                return ConvertToBitmap(_frame);
+                return GetBestPreview(0f).Bitmap;
+            }
+        }
+
+        public int GetGrayAt(int x, int y)
+        {
+            lock (_sync)
+            {
+                ThrowIfDisposed();
+                if (x < 0 || y < 0 || x >= Width || y >= Height)
+                {
+                    return 0;
+                }
+
+                var tileX = (x / TileSourceSize) * TileSourceSize;
+                var tileY = (y / TileSourceSize) * TileSourceSize;
+                var tileRect = new Rectangle(tileX, tileY, Math.Min(TileSourceSize, Width - tileX), Math.Min(TileSourceSize, Height - tileY));
+                var key = CreateTileKey(tileRect);
+                Bitmap tile;
+                if (!_tileCache.TryGetValue(key, out tile))
+                {
+                    tile = CreateTileBitmap(tileRect);
+                }
+
+                var localX = x - tileRect.X;
+                var localY = y - tileRect.Y;
+                return ReadGrayFromBitmap(tile, localX, localY);
             }
         }
 
@@ -335,6 +361,37 @@ namespace CameraCaptureApp.Controls
             }
 
             return bitmap;
+        }
+
+        private static int ReadGrayFromBitmap(Bitmap bitmap, int x, int y)
+        {
+            if (bitmap == null)
+            {
+                return 0;
+            }
+
+            x = Math.Max(0, Math.Min(bitmap.Width - 1, x));
+            y = Math.Max(0, Math.Min(bitmap.Height - 1, y));
+
+            if (bitmap.PixelFormat == PixelFormat.Format8bppIndexed)
+            {
+                var data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, bitmap.PixelFormat);
+                try
+                {
+                    var value = Marshal.ReadByte(data.Scan0, y * data.Stride + x);
+                    return value;
+                }
+                finally
+                {
+                    bitmap.UnlockBits(data);
+                }
+            }
+
+            using (var clone = bitmap.Clone(new Rectangle(x, y, 1, 1), bitmap.PixelFormat))
+            {
+                var pixel = clone.GetPixel(0, 0);
+                return (pixel.R + pixel.G + pixel.B) / 3;
+            }
         }
 
         internal sealed class PreviewBitmap : IDisposable
