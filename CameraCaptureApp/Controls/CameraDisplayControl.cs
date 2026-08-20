@@ -89,12 +89,24 @@ namespace CameraCaptureApp.Controls
 
         public bool BeginGrayWaveformSelection()
         {
+            return BeginGrayWaveformSelection(null);
+        }
+
+        public bool BeginGrayWaveformSelection(Bitmap cameraPixelSource)
+        {
             if (_grayWaveformSelectionActive)
             {
+                if (cameraPixelSource != null)
+                {
+                    cameraPixelSource.Dispose();
+                }
+
                 return false;
             }
 
-            var snapshot = CreateCurrentGrayPixelSource();
+            var snapshot = cameraPixelSource == null
+                ? CreateCurrentGrayPixelSource()
+                : new BitmapGrayPixelSource(cameraPixelSource);
             if (snapshot == null)
             {
                 StatusText = "No image is available for waveform selection.";
@@ -116,6 +128,17 @@ namespace CameraCaptureApp.Controls
             viewerPanel.Cursor = Cursors.Cross;
             viewerPanel.Invalidate();
             return true;
+        }
+
+        public bool IsDisplayingPreviewBitmap
+        {
+            get
+            {
+                lock (_imageLock)
+                {
+                    return _sourceBitmap != null;
+                }
+            }
         }
 
         private IGrayPixelSource CreateCurrentGrayPixelSource()
@@ -423,7 +446,7 @@ namespace CameraCaptureApp.Controls
                 return;
             }
 
-            var imageBounds = GetCurrentImageBoundsUnsafe();
+            var imageBounds = GetCurrentDisplayImageBoundsUnsafe();
             if (imageBounds.Width <= 0 || imageBounds.Height <= 0)
             {
                 return;
@@ -912,7 +935,7 @@ namespace CameraCaptureApp.Controls
                     return false;
                 }
 
-                var imageBounds = GetCurrentImageBoundsUnsafe();
+                var imageBounds = GetCurrentDisplayImageBoundsUnsafe();
                 if (!imageBounds.Contains(e.Location))
                 {
                     return false;
@@ -935,7 +958,7 @@ namespace CameraCaptureApp.Controls
                     return false;
                 }
 
-                var imageBounds = GetCurrentImageBoundsUnsafe();
+                var imageBounds = GetCurrentDisplayImageBoundsUnsafe();
                 _grayWaveformSelectionEnd = ClampToImage(ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe()), GetCurrentImageSizeUnsafe());
                 viewerPanel.Invalidate();
                 return true;
@@ -952,7 +975,7 @@ namespace CameraCaptureApp.Controls
                     return false;
                 }
 
-                var imageBounds = GetCurrentImageBoundsUnsafe();
+                var imageBounds = GetCurrentDisplayImageBoundsUnsafe();
                 _grayWaveformSelectionEnd = ClampToImage(ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe()), GetCurrentImageSizeUnsafe());
                 _grayWaveformDragging = false;
                 var start = _grayWaveformSelectionStart ?? Point.Empty;
@@ -994,7 +1017,16 @@ namespace CameraCaptureApp.Controls
 
         private Rectangle GetCurrentImageBoundsUnsafe()
         {
-            var size = GetCurrentImageSizeUnsafe();
+            return GetImageBoundsUnsafe(GetCurrentImageSizeUnsafe());
+        }
+
+        private Rectangle GetCurrentDisplayImageBoundsUnsafe()
+        {
+            return GetImageBoundsUnsafe(GetCurrentDisplayImageSizeUnsafe());
+        }
+
+        private Rectangle GetImageBoundsUnsafe(Size size)
+        {
             var bounds = GetDestinationRectangle();
             if (size.Width <= 0 || size.Height <= 0 || bounds.Width <= 0 || bounds.Height <= 0)
             {
@@ -1020,6 +1052,26 @@ namespace CameraCaptureApp.Controls
                 return new Size(_grayWaveformSelectionSource.Width, _grayWaveformSelectionSource.Height);
             }
 
+            if (_sourceBitmap != null)
+            {
+                return _sourceBitmap.Size;
+            }
+
+            if (_rollingPreviewFrames.Count > 0)
+            {
+                return new Size(_rollingPreviewFrameWidth, _rollingPreviewFrameHeight * _rollingPreviewFrameCount);
+            }
+
+            if (_largeImageSource != null)
+            {
+                return new Size(_largeImageSource.Width, _largeImageSource.Height);
+            }
+
+            return Size.Empty;
+        }
+
+        private Size GetCurrentDisplayImageSizeUnsafe()
+        {
             if (_sourceBitmap != null)
             {
                 return _sourceBitmap.Size;

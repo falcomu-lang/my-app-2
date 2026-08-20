@@ -399,7 +399,13 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            if (!_cameraDisplayControl.BeginGrayWaveformSelection())
+            Bitmap cameraPixelSource = null;
+            if (_cameraDisplayControl.IsDisplayingPreviewBitmap)
+            {
+                cameraPixelSource = _frameRecorder.SnapshotLatest();
+            }
+
+            if (!_cameraDisplayControl.BeginGrayWaveformSelection(cameraPixelSource))
             {
                 labelFooterMessageValue.Text = "No image is available for waveform selection.";
             }
