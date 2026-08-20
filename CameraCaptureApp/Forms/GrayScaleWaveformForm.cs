@@ -16,6 +16,7 @@ namespace CameraCaptureApp.Forms
         private readonly int[] _grayValues;
         private readonly int _minGray;
         private readonly int _maxGray;
+        private readonly Font _axisLabelFont;
         private float _viewXMin;
         private float _viewXMax;
         private float _viewYMin;
@@ -29,6 +30,7 @@ namespace CameraCaptureApp.Forms
             _pixelSource = pixelSource;
             _linePoints = linePoints ?? new Point[0];
             InitializeComponent();
+            _axisLabelFont = new Font(Font.FontFamily, Math.Max(7f, Font.Size - 1f));
             panelChart.MouseWheel += panelChart_MouseWheel;
             if (_pixelSource == null || _linePoints.Length == 0)
             {
@@ -47,6 +49,7 @@ namespace CameraCaptureApp.Forms
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            _axisLabelFont?.Dispose();
             _pixelSource?.Dispose();
 
             base.OnFormClosed(e);
@@ -68,8 +71,7 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            var bounds = panelChart.ClientRectangle;
-            bounds.Inflate(-28, -28);
+            var bounds = GetChartBounds();
             if (bounds.Width <= 0 || bounds.Height <= 0)
             {
                 return;
@@ -82,7 +84,9 @@ namespace CameraCaptureApp.Forms
 
         private void DrawAxes(Graphics graphics, Rectangle bounds)
         {
-            using (var pen = new Pen(Color.FromArgb(90, 100, 120), 1f))
+            DrawHorizontalGridLines(graphics, bounds);
+
+            using (var pen = new Pen(Color.FromArgb(120, 135, 155), 1f))
             {
                 graphics.DrawRectangle(pen, bounds);
                 graphics.DrawLine(pen, bounds.Left, bounds.Bottom, bounds.Right, bounds.Bottom);
@@ -91,10 +95,42 @@ namespace CameraCaptureApp.Forms
 
             using (var brush = new SolidBrush(Color.Gainsboro))
             {
-                graphics.DrawString(((int)Math.Round(_viewYMax)).ToString(), Font, brush, bounds.Left - 26, bounds.Top - 7);
-                graphics.DrawString(((int)Math.Round(_viewYMin)).ToString(), Font, brush, bounds.Left - 18, bounds.Bottom - 13);
                 graphics.DrawString(((int)Math.Round(_viewXMin)).ToString(), Font, brush, bounds.Left, bounds.Bottom + 5);
                 graphics.DrawString(((int)Math.Round(_viewXMax)).ToString(), Font, brush, bounds.Right - 42, bounds.Bottom + 5);
+            }
+        }
+
+        private void DrawHorizontalGridLines(Graphics graphics, Rectangle bounds)
+        {
+            using (var gridPen = new Pen(Color.FromArgb(42, 120, 135, 155), 1f))
+            using (var majorPen = new Pen(Color.FromArgb(70, 150, 165, 185), 1f))
+            using (var brush = new SolidBrush(Color.FromArgb(170, 210, 215, 225)))
+            {
+                if (_viewYMin <= 0f && _viewYMax >= 0f)
+                {
+                    var y = ValueToChartY(0f, bounds);
+                    graphics.DrawString("0", _axisLabelFont, brush, bounds.Left - 24, y - 7f);
+                }
+
+                for (var gray = 16; gray <= 255; gray += 16)
+                {
+                    if (gray < _viewYMin || gray > _viewYMax)
+                    {
+                        continue;
+                    }
+
+                    var y = ValueToChartY(gray, bounds);
+                    var pen = gray % 64 == 0 || gray == 255 ? majorPen : gridPen;
+                    graphics.DrawLine(pen, bounds.Left, y, bounds.Right, y);
+                    graphics.DrawString(gray.ToString(), _axisLabelFont, brush, bounds.Left - 34, y - 7f);
+                }
+
+                if (_viewYMin <= 255f && _viewYMax >= 255f)
+                {
+                    var y = ValueToChartY(255f, bounds);
+                    graphics.DrawLine(majorPen, bounds.Left, y, bounds.Right, y);
+                    graphics.DrawString("255", _axisLabelFont, brush, bounds.Left - 34, y - 7f);
+                }
             }
         }
 
@@ -211,7 +247,7 @@ namespace CameraCaptureApp.Forms
         private Rectangle GetChartBounds()
         {
             var bounds = panelChart.ClientRectangle;
-            bounds.Inflate(-28, -28);
+            bounds.Inflate(-42, -28);
             return bounds;
         }
 

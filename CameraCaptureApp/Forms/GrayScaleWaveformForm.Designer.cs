@@ -5,7 +5,7 @@ namespace CameraCaptureApp.Forms
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.Label labelTitle;
         private System.Windows.Forms.Label labelInfo;
-        private System.Windows.Forms.Panel panelChart;
+        private DoubleBufferedPanel panelChart;
         private System.Windows.Forms.Button buttonClose;
 
         protected override void Dispose(bool disposing)
@@ -22,7 +22,7 @@ namespace CameraCaptureApp.Forms
         {
             this.labelTitle = new System.Windows.Forms.Label();
             this.labelInfo = new System.Windows.Forms.Label();
-            this.panelChart = new System.Windows.Forms.Panel();
+            this.panelChart = new CameraCaptureApp.Forms.GrayScaleWaveformForm.DoubleBufferedPanel();
             this.buttonClose = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
@@ -87,6 +87,15 @@ namespace CameraCaptureApp.Forms
             this.Text = "灰階波形";
             this.ResumeLayout(false);
             this.PerformLayout();
+        }
+
+        private class DoubleBufferedPanel : System.Windows.Forms.Panel
+        {
+            public DoubleBufferedPanel()
+            {
+                this.DoubleBuffered = true;
+                this.ResizeRedraw = true;
+            }
         }
     }
 }
