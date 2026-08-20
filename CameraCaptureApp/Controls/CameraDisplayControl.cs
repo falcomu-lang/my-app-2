@@ -109,8 +109,6 @@ namespace CameraCaptureApp.Controls
                 _grayWaveformSelectionStart = null;
                 _grayWaveformSelectionEnd = null;
                 _grayWaveformDragging = false;
-                _zoom = 1f;
-                _imageOffset = PointF.Empty;
             }
 
             OverlayText = "Waveform selection mode";
@@ -219,6 +217,12 @@ namespace CameraCaptureApp.Controls
 
             lock (_imageLock)
             {
+                if (_grayWaveformSelectionActive)
+                {
+                    source.Dispose();
+                    return;
+                }
+
                 DisposeCurrentImage();
                 DisposeRollingPreviewFrames();
                 _largeImageSource = source;
@@ -248,6 +252,12 @@ namespace CameraCaptureApp.Controls
 
             lock (_imageLock)
             {
+                if (_grayWaveformSelectionActive)
+                {
+                    bitmap.Dispose();
+                    return;
+                }
+
                 DisposeCurrentImage();
                 DisposeRollingPreviewFrames();
                 _sourceBitmap = bitmap;
@@ -279,6 +289,12 @@ namespace CameraCaptureApp.Controls
             bool shouldFitToView;
             lock (_imageLock)
             {
+                if (_grayWaveformSelectionActive)
+                {
+                    bitmap.Dispose();
+                    return;
+                }
+
                 shouldFitToView = _rollingPreviewFrames.Count == 0 ||
                     _rollingPreviewFrameWidth != bitmap.Width ||
                     _rollingPreviewFrameHeight != bitmap.Height ||
@@ -354,13 +370,12 @@ namespace CameraCaptureApp.Controls
                 return;
             }
 
-            if (!selectionActive && bitmap != null)
+            if (bitmap != null)
             {
                 var drawWidth = bitmap.Width * zoom;
                 var drawHeight = bitmap.Height * zoom;
                 e.Graphics.InterpolationMode = InterpolationMode.Low;
                 e.Graphics.DrawImage(bitmap, offset.X, offset.Y, drawWidth, drawHeight);
-                return;
             }
 
             if (_rollingPreviewFrames.Count > 0)
@@ -388,19 +403,9 @@ namespace CameraCaptureApp.Controls
 
                     e.Graphics.DrawImage(rollingFrame, RectangleF.FromLTRB(drawLeft, drawTop, drawRight, drawBottom));
                 }
-
-                return;
             }
 
-            if (largeImageSource == null)
-            {
-                if (!selectionActive)
-                {
-                    return;
-                }
-            }
-
-            if (!selectionActive)
+            if (largeImageSource != null)
             {
                 DrawLargeImage(e.Graphics, largeImageSource, zoom, offset);
             }
@@ -998,12 +1003,12 @@ namespace CameraCaptureApp.Controls
 
             var scaleX = bounds.Width / (float)size.Width;
             var scaleY = bounds.Height / (float)size.Height;
-            var zoom = Math.Min(scaleX, scaleY);
+            var zoom = _zoom > 0f ? _zoom : Math.Min(scaleX, scaleY);
             var drawWidth = size.Width * zoom;
             var drawHeight = size.Height * zoom;
             return new Rectangle(
-                bounds.X + ((bounds.Width - (int)Math.Round(drawWidth)) / 2),
-                bounds.Y + ((bounds.Height - (int)Math.Round(drawHeight)) / 2),
+                (int)Math.Round(_imageOffset.X),
+                (int)Math.Round(_imageOffset.Y),
                 Math.Max(1, (int)Math.Round(drawWidth)),
                 Math.Max(1, (int)Math.Round(drawHeight)));
         }
