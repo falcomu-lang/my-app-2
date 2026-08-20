@@ -53,6 +53,11 @@ namespace CameraCaptureApp.Forms
             this.panelChart.Name = "panelChart";
             this.panelChart.Size = new System.Drawing.Size(960, 480);
             this.panelChart.TabIndex = 2;
+            this.panelChart.TabStop = true;
+            this.panelChart.MouseDown += new System.Windows.Forms.MouseEventHandler(this.panelChart_MouseDown);
+            this.panelChart.MouseEnter += new System.EventHandler(this.panelChart_MouseEnter);
+            this.panelChart.MouseMove += new System.Windows.Forms.MouseEventHandler(this.panelChart_MouseMove);
+            this.panelChart.MouseUp += new System.Windows.Forms.MouseEventHandler(this.panelChart_MouseUp);
             this.panelChart.Paint += new System.Windows.Forms.PaintEventHandler(this.panelChart_Paint);
             // 
             // buttonClose

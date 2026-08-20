@@ -16,12 +16,20 @@ namespace CameraCaptureApp.Forms
         private readonly int[] _grayValues;
         private readonly int _minGray;
         private readonly int _maxGray;
+        private float _viewXMin;
+        private float _viewXMax;
+        private float _viewYMin;
+        private float _viewYMax;
+        private bool _isSelectingZoom;
+        private Point _selectionStart;
+        private Point _selectionEnd;
 
         public GrayScaleWaveformForm(IGrayPixelSource pixelSource, Point[] linePoints)
         {
             _pixelSource = pixelSource;
             _linePoints = linePoints ?? new Point[0];
             InitializeComponent();
+            panelChart.MouseWheel += panelChart_MouseWheel;
             if (_pixelSource == null || _linePoints.Length == 0)
             {
                 buttonClose.Text = "關閉";
@@ -32,6 +40,7 @@ namespace CameraCaptureApp.Forms
             _grayValues = SampleGrayValues(_pixelSource, _linePoints);
             _minGray = _grayValues.Min();
             _maxGray = _grayValues.Max();
+            ResetView();
             labelInfo.Text = "Points: " + _grayValues.Length + " | Gray range: " + _minGray + " - " + _maxGray;
             panelChart.Invalidate();
         }
@@ -68,6 +77,7 @@ namespace CameraCaptureApp.Forms
 
             DrawAxes(e.Graphics, bounds);
             DrawWaveform(e.Graphics, bounds);
+            DrawSelectionRectangle(e.Graphics);
         }
 
         private void DrawAxes(Graphics graphics, Rectangle bounds)
@@ -78,6 +88,14 @@ namespace CameraCaptureApp.Forms
                 graphics.DrawLine(pen, bounds.Left, bounds.Bottom, bounds.Right, bounds.Bottom);
                 graphics.DrawLine(pen, bounds.Left, bounds.Top, bounds.Left, bounds.Bottom);
             }
+
+            using (var brush = new SolidBrush(Color.Gainsboro))
+            {
+                graphics.DrawString(((int)Math.Round(_viewYMax)).ToString(), Font, brush, bounds.Left - 26, bounds.Top - 7);
+                graphics.DrawString(((int)Math.Round(_viewYMin)).ToString(), Font, brush, bounds.Left - 18, bounds.Bottom - 13);
+                graphics.DrawString(((int)Math.Round(_viewXMin)).ToString(), Font, brush, bounds.Left, bounds.Bottom + 5);
+                graphics.DrawString(((int)Math.Round(_viewXMax)).ToString(), Font, brush, bounds.Right - 42, bounds.Bottom + 5);
+            }
         }
 
         private void DrawWaveform(Graphics graphics, Rectangle bounds)
@@ -87,11 +105,16 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
-            var points = new List<PointF>(_grayValues.Length);
+            var points = new List<PointF>();
             for (var i = 0; i < _grayValues.Length; i++)
             {
-                var x = bounds.Left + (i * (bounds.Width - 1f) / Math.Max(1, _grayValues.Length - 1));
-                var y = bounds.Bottom - ((_grayValues[i] / 255f) * bounds.Height);
+                if (i < _viewXMin || i > _viewXMax)
+                {
+                    continue;
+                }
+
+                var x = ValueToChartX(i, bounds);
+                var y = ValueToChartY(_grayValues[i], bounds);
                 points.Add(new PointF(x, y));
             }
 
@@ -110,6 +133,128 @@ namespace CameraCaptureApp.Forms
             }
         }
 
+        private void DrawSelectionRectangle(Graphics graphics)
+        {
+            if (!_isSelectingZoom)
+            {
+                return;
+            }
+
+            var rect = GetSelectionRectangle();
+            if (rect.Width < 2 || rect.Height < 2)
+            {
+                return;
+            }
+
+            using (var brush = new SolidBrush(Color.FromArgb(45, 90, 200, 255)))
+            using (var pen = new Pen(Color.FromArgb(170, 90, 200, 255), 1f))
+            {
+                graphics.FillRectangle(brush, rect);
+                graphics.DrawRectangle(pen, rect);
+            }
+        }
+
+        private void ResetView()
+        {
+            _viewXMin = 0f;
+            _viewXMax = Math.Max(1, _grayValues.Length - 1);
+            _viewYMin = 0f;
+            _viewYMax = 255f;
+            _isSelectingZoom = false;
+            _selectionStart = Point.Empty;
+            _selectionEnd = Point.Empty;
+            UpdateViewLabel();
+        }
+
+        private void UpdateViewLabel()
+        {
+            if (_grayValues == null || _grayValues.Length == 0)
+            {
+                return;
+            }
+
+            labelInfo.Text = string.Format(
+                "Points: {0} | Gray range: {1} - {2} | View X: {3:0}-{4:0}, Y: {5:0}-{6:0}",
+                _grayValues.Length,
+                _minGray,
+                _maxGray,
+                _viewXMin,
+                _viewXMax,
+                _viewYMin,
+                _viewYMax);
+        }
+
+        private float ValueToChartX(float xValue, Rectangle bounds)
+        {
+            var range = Math.Max(0.0001f, _viewXMax - _viewXMin);
+            return bounds.Left + ((xValue - _viewXMin) / range * bounds.Width);
+        }
+
+        private float ValueToChartY(float yValue, Rectangle bounds)
+        {
+            var range = Math.Max(0.0001f, _viewYMax - _viewYMin);
+            return bounds.Bottom - ((yValue - _viewYMin) / range * bounds.Height);
+        }
+
+        private float ChartToValueX(int x, Rectangle bounds)
+        {
+            var range = Math.Max(0.0001f, _viewXMax - _viewXMin);
+            return _viewXMin + ((x - bounds.Left) / (float)Math.Max(1, bounds.Width) * range);
+        }
+
+        private float ChartToValueY(int y, Rectangle bounds)
+        {
+            var range = Math.Max(0.0001f, _viewYMax - _viewYMin);
+            return _viewYMax - ((y - bounds.Top) / (float)Math.Max(1, bounds.Height) * range);
+        }
+
+        private Rectangle GetChartBounds()
+        {
+            var bounds = panelChart.ClientRectangle;
+            bounds.Inflate(-28, -28);
+            return bounds;
+        }
+
+        private Rectangle GetSelectionRectangle()
+        {
+            return Rectangle.FromLTRB(
+                Math.Min(_selectionStart.X, _selectionEnd.X),
+                Math.Min(_selectionStart.Y, _selectionEnd.Y),
+                Math.Max(_selectionStart.X, _selectionEnd.X),
+                Math.Max(_selectionStart.Y, _selectionEnd.Y));
+        }
+
+        private void ZoomAt(Point mousePoint, float factor)
+        {
+            var bounds = GetChartBounds();
+            if (!bounds.Contains(mousePoint))
+            {
+                return;
+            }
+
+            var centerX = ChartToValueX(mousePoint.X, bounds);
+            var centerY = ChartToValueY(mousePoint.Y, bounds);
+            var newXRange = Math.Max(1f, (_viewXMax - _viewXMin) * factor);
+            var newYRange = Math.Max(1f, (_viewYMax - _viewYMin) * factor);
+            ApplyView(centerX - newXRange / 2f, centerX + newXRange / 2f, centerY - newYRange / 2f, centerY + newYRange / 2f);
+        }
+
+        private void ApplyView(float xMin, float xMax, float yMin, float yMax)
+        {
+            if (xMax <= xMin || yMax <= yMin)
+            {
+                return;
+            }
+
+            var maxX = Math.Max(1, _grayValues.Length - 1);
+            _viewXMin = Math.Max(0f, Math.Min(maxX - 1f, xMin));
+            _viewXMax = Math.Max(_viewXMin + 1f, Math.Min(maxX, xMax));
+            _viewYMin = Math.Max(0f, Math.Min(254f, yMin));
+            _viewYMax = Math.Max(_viewYMin + 1f, Math.Min(255f, yMax));
+            UpdateViewLabel();
+            panelChart.Invalidate();
+        }
+
         private static int[] SampleGrayValues(IGrayPixelSource pixelSource, Point[] linePoints)
         {
             var result = new int[linePoints.Length];
@@ -124,6 +269,84 @@ namespace CameraCaptureApp.Forms
         private void buttonClose_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void panelChart_MouseDown(object sender, MouseEventArgs e)
+        {
+            panelChart.Focus();
+            if (e.Button == MouseButtons.Right)
+            {
+                ResetView();
+                panelChart.Invalidate();
+                return;
+            }
+
+            if (e.Button != MouseButtons.Left || _grayValues == null || _grayValues.Length == 0)
+            {
+                return;
+            }
+
+            var bounds = GetChartBounds();
+            if (!bounds.Contains(e.Location))
+            {
+                return;
+            }
+
+            _isSelectingZoom = true;
+            _selectionStart = e.Location;
+            _selectionEnd = e.Location;
+            panelChart.Invalidate();
+        }
+
+        private void panelChart_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isSelectingZoom)
+            {
+                return;
+            }
+
+            _selectionEnd = e.Location;
+            panelChart.Invalidate();
+        }
+
+        private void panelChart_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (!_isSelectingZoom)
+            {
+                return;
+            }
+
+            _selectionEnd = e.Location;
+            _isSelectingZoom = false;
+            var rect = GetSelectionRectangle();
+            var bounds = GetChartBounds();
+            var clipped = Rectangle.Intersect(rect, bounds);
+            if (clipped.Width >= 6 && clipped.Height >= 6)
+            {
+                var xMin = ChartToValueX(clipped.Left, bounds);
+                var xMax = ChartToValueX(clipped.Right, bounds);
+                var yMax = ChartToValueY(clipped.Top, bounds);
+                var yMin = ChartToValueY(clipped.Bottom, bounds);
+                ApplyView(xMin, xMax, yMin, yMax);
+                return;
+            }
+
+            panelChart.Invalidate();
+        }
+
+        private void panelChart_MouseWheel(object sender, MouseEventArgs e)
+        {
+            if (_grayValues == null || _grayValues.Length == 0)
+            {
+                return;
+            }
+
+            ZoomAt(e.Location, e.Delta > 0 ? 0.8f : 1.25f);
+        }
+
+        private void panelChart_MouseEnter(object sender, EventArgs e)
+        {
+            panelChart.Focus();
         }
     }
 }
