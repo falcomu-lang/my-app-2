@@ -37,6 +37,8 @@ namespace CameraCaptureApp.Controls
 
         public event EventHandler SaveSnapshotRequested;
 
+        public event EventHandler GrayWaveformRequested;
+
         public CameraDisplayControl()
         {
             InitializeComponent();
@@ -69,6 +71,12 @@ namespace CameraCaptureApp.Controls
         {
             get { return buttonSaveSnapshot.Enabled; }
             set { buttonSaveSnapshot.Enabled = value; }
+        }
+
+        public bool GrayWaveformButtonEnabled
+        {
+            get { return buttonGrayWaveform.Enabled; }
+            set { buttonGrayWaveform.Enabled = value; }
         }
 
         public async Task LoadImageFromFileAsync(string filePath, CancellationToken cancellationToken)
@@ -546,6 +554,15 @@ namespace CameraCaptureApp.Controls
         private void buttonSaveSnapshot_Click(object sender, EventArgs e)
         {
             var handler = SaveSnapshotRequested;
+            if (handler != null)
+            {
+                handler(this, EventArgs.Empty);
+            }
+        }
+
+        private void buttonGrayWaveform_Click(object sender, EventArgs e)
+        {
+            var handler = GrayWaveformRequested;
             if (handler != null)
             {
                 handler(this, EventArgs.Empty);

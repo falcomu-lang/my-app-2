@@ -1,0 +1,87 @@
+namespace CameraCaptureApp.Forms
+{
+    partial class GrayScaleWaveformForm
+    {
+        private System.ComponentModel.IContainer components = null;
+        private System.Windows.Forms.Label labelTitle;
+        private System.Windows.Forms.Label labelInfo;
+        private System.Windows.Forms.Panel panelChart;
+        private System.Windows.Forms.Button buttonClose;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void InitializeComponent()
+        {
+            this.labelTitle = new System.Windows.Forms.Label();
+            this.labelInfo = new System.Windows.Forms.Label();
+            this.panelChart = new System.Windows.Forms.Panel();
+            this.buttonClose = new System.Windows.Forms.Button();
+            this.SuspendLayout();
+            // 
+            // labelTitle
+            // 
+            this.labelTitle.AutoSize = true;
+            this.labelTitle.Font = new System.Drawing.Font("Microsoft JhengHei UI", 12F, System.Drawing.FontStyle.Bold);
+            this.labelTitle.Location = new System.Drawing.Point(16, 14);
+            this.labelTitle.Name = "labelTitle";
+            this.labelTitle.Size = new System.Drawing.Size(150, 25);
+            this.labelTitle.TabIndex = 0;
+            this.labelTitle.Text = "灰階波形結果";
+            // 
+            // labelInfo
+            // 
+            this.labelInfo.AutoSize = true;
+            this.labelInfo.Location = new System.Drawing.Point(18, 49);
+            this.labelInfo.Name = "labelInfo";
+            this.labelInfo.Size = new System.Drawing.Size(44, 16);
+            this.labelInfo.TabIndex = 1;
+            this.labelInfo.Text = "Ready";
+            // 
+            // panelChart
+            // 
+            this.panelChart.BackColor = System.Drawing.Color.FromArgb(20, 24, 35);
+            this.panelChart.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panelChart.Location = new System.Drawing.Point(21, 74);
+            this.panelChart.Name = "panelChart";
+            this.panelChart.Size = new System.Drawing.Size(960, 480);
+            this.panelChart.TabIndex = 2;
+            this.panelChart.Paint += new System.Windows.Forms.PaintEventHandler(this.panelChart_Paint);
+            // 
+            // buttonClose
+            // 
+            this.buttonClose.Location = new System.Drawing.Point(895, 570);
+            this.buttonClose.Name = "buttonClose";
+            this.buttonClose.Size = new System.Drawing.Size(86, 32);
+            this.buttonClose.TabIndex = 3;
+            this.buttonClose.Text = "關閉";
+            this.buttonClose.UseVisualStyleBackColor = true;
+            this.buttonClose.Click += new System.EventHandler(this.buttonClose_Click);
+            // 
+            // GrayScaleWaveformForm
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(1004, 621);
+            this.Controls.Add(this.buttonClose);
+            this.Controls.Add(this.panelChart);
+            this.Controls.Add(this.labelInfo);
+            this.Controls.Add(this.labelTitle);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.Name = "GrayScaleWaveformForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Text = "灰階波形";
+            this.ResumeLayout(false);
+            this.PerformLayout();
+        }
+    }
+}

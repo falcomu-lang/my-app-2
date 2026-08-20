@@ -590,7 +590,6 @@ namespace CameraCaptureApp.Services
 
         private void OnTransferNotify(object sender, SapXferNotifyEventArgs argsNotify)
         {
-            _status.ScannedLineCount = argsNotify.EventCount;
             _status.ScanStateText = argsNotify.Trash ? "Trash" : "Receiving";
             _status.LastMessage = argsNotify.Trash
                 ? "Frame landed in trash buffer."
@@ -598,6 +597,7 @@ namespace CameraCaptureApp.Services
 
             if (!argsNotify.Trash)
             {
+                _status.ScannedLineCount++;
                 if (_settings.TriggerMode == TriggerMode.ExternalTrigger && _pendingExternalTriggerEvents > 0)
                 {
                     _pendingExternalTriggerEvents--;

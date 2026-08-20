@@ -10,6 +10,7 @@ namespace CameraCaptureApp.Controls
         private System.Windows.Forms.Panel bottomPanel;
         private System.Windows.Forms.Label statusLabel;
         private System.Windows.Forms.Button buttonSaveSnapshot;
+        private System.Windows.Forms.Button buttonGrayWaveform;
         private System.Windows.Forms.Button buttonFitToWindow;
 
         protected override void Dispose(bool disposing)
@@ -30,6 +31,7 @@ namespace CameraCaptureApp.Controls
             this.viewerPanel = new CameraCaptureApp.Controls.BufferedRenderPanel();
             this.bottomPanel = new System.Windows.Forms.Panel();
             this.buttonSaveSnapshot = new System.Windows.Forms.Button();
+            this.buttonGrayWaveform = new System.Windows.Forms.Button();
             this.buttonFitToWindow = new System.Windows.Forms.Button();
             this.statusLabel = new System.Windows.Forms.Label();
             this.topPanel.SuspendLayout();
@@ -91,6 +93,7 @@ namespace CameraCaptureApp.Controls
             // 
             this.bottomPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(22)))), ((int)(((byte)(34)))));
             this.bottomPanel.Controls.Add(this.buttonSaveSnapshot);
+            this.bottomPanel.Controls.Add(this.buttonGrayWaveform);
             this.bottomPanel.Controls.Add(this.buttonFitToWindow);
             this.bottomPanel.Controls.Add(this.statusLabel);
             this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
@@ -112,6 +115,19 @@ namespace CameraCaptureApp.Controls
             this.buttonSaveSnapshot.Text = "保留影像";
             this.buttonSaveSnapshot.UseVisualStyleBackColor = true;
             this.buttonSaveSnapshot.Click += new System.EventHandler(this.buttonSaveSnapshot_Click);
+            // 
+            // buttonGrayWaveform
+            // 
+            this.buttonGrayWaveform.Dock = System.Windows.Forms.DockStyle.Right;
+            this.buttonGrayWaveform.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonGrayWaveform.ForeColor = System.Drawing.Color.White;
+            this.buttonGrayWaveform.Location = new System.Drawing.Point(520, 10);
+            this.buttonGrayWaveform.Name = "buttonGrayWaveform";
+            this.buttonGrayWaveform.Size = new System.Drawing.Size(144, 30);
+            this.buttonGrayWaveform.TabIndex = 3;
+            this.buttonGrayWaveform.Text = "取得灰階波形";
+            this.buttonGrayWaveform.UseVisualStyleBackColor = true;
+            this.buttonGrayWaveform.Click += new System.EventHandler(this.buttonGrayWaveform_Click);
             // 
             // buttonFitToWindow
             // 
