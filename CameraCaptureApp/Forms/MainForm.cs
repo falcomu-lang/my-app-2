@@ -631,7 +631,6 @@ namespace CameraCaptureApp.Forms
         private void QueueExternalTriggerAutoSave()
         {
             if (_settings == null ||
-                _settings.TriggerMode != TriggerMode.ExternalTrigger ||
                 !_settings.ExternalFrameTriggerOneFrame ||
                 !_settings.AutoSaveOnExternalTriggerOneFrame)
             {
