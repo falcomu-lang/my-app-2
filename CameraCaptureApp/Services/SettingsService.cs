@@ -53,6 +53,7 @@ namespace CameraCaptureApp.Services
             settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger = GetBool(values, "ExternalFrameTriggerOneFrameSetEncoderOnTrigger", settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger);
             settings.AutoConnect = GetBool(values, "AutoConnect", settings.AutoConnect);
             settings.AutoSave = GetBool(values, "AutoSave", settings.AutoSave);
+            settings.AutoSaveOnExternalTriggerOneFrame = GetBool(values, "AutoSaveOnExternalTriggerOneFrame", settings.AutoSaveOnExternalTriggerOneFrame);
             settings.SaveFolder = GetString(values, "SaveFolder", settings.SaveFolder);
             settings.FileNamePattern = GetString(values, "FileNamePattern", settings.FileNamePattern);
             settings.ImageSaveFormat = GetEnum(values, "ImageSaveFormat", settings.ImageSaveFormat);
@@ -102,6 +103,7 @@ namespace CameraCaptureApp.Services
                 "ExternalFrameTriggerOneFrameSetEncoderOnTrigger=" + settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger.ToString(),
                 "AutoConnect=" + settings.AutoConnect.ToString(),
                 "AutoSave=" + settings.AutoSave.ToString(),
+                "AutoSaveOnExternalTriggerOneFrame=" + settings.AutoSaveOnExternalTriggerOneFrame.ToString(),
                 "SaveFolder=" + settings.SaveFolder,
                 "FileNamePattern=" + settings.FileNamePattern,
                 "ImageSaveFormat=" + settings.ImageSaveFormat.ToString(),

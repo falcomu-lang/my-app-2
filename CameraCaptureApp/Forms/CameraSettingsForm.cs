@@ -81,6 +81,7 @@ namespace CameraCaptureApp.Forms
             checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Checked = Settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger;
             UpdateTriggerModeControls();
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
+            checkBoxAutoSaveOnExternalTriggerOneFrame.Checked = Settings.AutoSaveOnExternalTriggerOneFrame;
             comboBoxImageSaveFormat.SelectedIndex = GetImageSaveFormatIndex(Settings.ImageSaveFormat);
             labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
         }
@@ -282,6 +283,7 @@ namespace CameraCaptureApp.Forms
             Settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger = checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Enabled &&
                 checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Checked;
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
+            Settings.AutoSaveOnExternalTriggerOneFrame = checkBoxAutoSaveOnExternalTriggerOneFrame.Checked;
             Settings.ImageSaveFormat = GetImageSaveFormatFromIndex(comboBoxImageSaveFormat.SelectedIndex);
         }
 

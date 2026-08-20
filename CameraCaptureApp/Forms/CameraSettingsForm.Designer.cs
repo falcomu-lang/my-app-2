@@ -42,6 +42,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.CheckBox checkBoxExternalFrameTriggerOneFrameCompareFromEncoder;
         private System.Windows.Forms.CheckBox checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger;
         private System.Windows.Forms.Label labelImageSaveFormat;
+        private System.Windows.Forms.CheckBox checkBoxAutoSaveOnExternalTriggerOneFrame;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
         private System.Windows.Forms.NumericUpDown numericLength;
@@ -108,6 +109,7 @@ namespace CameraCaptureApp.Forms
             this.comboBoxTriggerMode = new System.Windows.Forms.ComboBox();
             this.tabPageSaving = new System.Windows.Forms.TabPage();
             this.labelImageSaveFormat = new System.Windows.Forms.Label();
+            this.checkBoxAutoSaveOnExternalTriggerOneFrame = new System.Windows.Forms.CheckBox();
             this.comboBoxImageSaveFormat = new System.Windows.Forms.ComboBox();
             this.buttonApply = new System.Windows.Forms.Button();
             this.buttonOk = new System.Windows.Forms.Button();
@@ -547,6 +549,7 @@ namespace CameraCaptureApp.Forms
             // tabPageSaving
             // 
             this.tabPageSaving.Controls.Add(this.labelImageSaveFormat);
+            this.tabPageSaving.Controls.Add(this.checkBoxAutoSaveOnExternalTriggerOneFrame);
             this.tabPageSaving.Controls.Add(this.comboBoxImageSaveFormat);
             this.tabPageSaving.Location = new System.Drawing.Point(4, 26);
             this.tabPageSaving.Name = "tabPageSaving";
@@ -573,6 +576,16 @@ namespace CameraCaptureApp.Forms
             this.comboBoxImageSaveFormat.Name = "comboBoxImageSaveFormat";
             this.comboBoxImageSaveFormat.Size = new System.Drawing.Size(180, 24);
             this.comboBoxImageSaveFormat.TabIndex = 5;
+            // 
+            // checkBoxAutoSaveOnExternalTriggerOneFrame
+            // 
+            this.checkBoxAutoSaveOnExternalTriggerOneFrame.AutoSize = true;
+            this.checkBoxAutoSaveOnExternalTriggerOneFrame.Location = new System.Drawing.Point(35, 96);
+            this.checkBoxAutoSaveOnExternalTriggerOneFrame.Name = "checkBoxAutoSaveOnExternalTriggerOneFrame";
+            this.checkBoxAutoSaveOnExternalTriggerOneFrame.Size = new System.Drawing.Size(333, 20);
+            this.checkBoxAutoSaveOnExternalTriggerOneFrame.TabIndex = 6;
+            this.checkBoxAutoSaveOnExternalTriggerOneFrame.Text = "Auto save snapshot after external trigger frame";
+            this.checkBoxAutoSaveOnExternalTriggerOneFrame.UseVisualStyleBackColor = true;
             // 
             // buttons
             // 

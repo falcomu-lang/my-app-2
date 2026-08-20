@@ -617,6 +617,7 @@ namespace CameraCaptureApp.Forms
 
             try
             {
+                QueueExternalTriggerAutoSave();
                 BeginInvoke(new Action(ApplyMeterWheelActionsOnExternalTrigger));
             }
             catch (ObjectDisposedException)
@@ -625,6 +626,19 @@ namespace CameraCaptureApp.Forms
             catch (InvalidOperationException)
             {
             }
+        }
+
+        private void QueueExternalTriggerAutoSave()
+        {
+            if (_settings == null ||
+                _settings.TriggerMode != TriggerMode.ExternalTrigger ||
+                !_settings.ExternalFrameTriggerOneFrame ||
+                !_settings.AutoSaveOnExternalTriggerOneFrame)
+            {
+                return;
+            }
+
+            Interlocked.Increment(ref _pendingSnapshotSaveCount);
         }
 
         private void ApplyMeterWheelActionsOnExternalTrigger()

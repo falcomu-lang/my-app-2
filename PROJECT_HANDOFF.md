@@ -14,8 +14,8 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Main project: `CameraCaptureApp/CameraCaptureApp.csproj`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
-- Current handoff date: `2026-08-17`
-- Latest pushed feature commit referenced by this handoff: `28f9ae7 Persist meter wheel entry values`
+- Current handoff date: `2026-08-19`
+- Latest pushed feature commit referenced by this handoff: `bcd86b6 Add external trigger encoder reset option`
 
 Latest verified local build command:
 
@@ -57,6 +57,9 @@ Latest local build result: `0 warning / 0 error`
   - `Gain`
   - `Length`
   - `Internal Line Rate`
+- Recent user-confirmed behavior:
+  - Meter wheel parameters now persist across restart as expected.
+  - External-trigger/meter-wheel automatic compare action currently behaves as expected.
 
 ### Trigger Page Updates
 
@@ -67,12 +70,27 @@ Latest local build result: `0 warning / 0 error`
   - It can be used with `Continuous`.
   - It can be used with `ExternalTrigger`.
 - The app persists this setting in `settings.ini` as `ExternalFrameTriggerOneFrame`.
+- Additional trigger-page options:
+  - `Compare Set follows current encoder value`
+  - `Also apply Encoder Set on external trigger`
+- `External Trigger One Frame` remains available in both:
+  - `Continuous`
+  - `External Trigger`
+- `Compare Set follows current encoder value` is available only when:
+  - `Trigger Mode = External Trigger`
+  - `External Trigger One Frame` is checked
+- When `Trigger Mode = Continuous`, `Compare Set follows current encoder value` is automatically unchecked and disabled.
+- `Also apply Encoder Set on external trigger` is available only when `Compare Set follows current encoder value` is checked.
+- The app persists these settings in `settings.ini` as:
+  - `ExternalFrameTriggerOneFrameCompareFromEncoder`
+  - `ExternalFrameTriggerOneFrameSetEncoderOnTrigger`
 - The `External Trigger` preview-arm check now considers both:
   - `EXT_LINE_TRIGGER_ENABLE`
   - `EXT_FRAME_TRIGGER_ENABLE`
 - Important behavior note:
   - This checkbox only toggles the external frame trigger enable state.
   - It does not replace the existing line trigger mode or internal line rate behavior.
+  - The automatic compare/encoder actions are app-side LSI-8181 operations triggered by Sapera external-trigger notification; they do not change Sapera trigger parameters by themselves.
 
 ## LSI-8181 Meter Wheel Status
 
@@ -122,6 +140,13 @@ Latest local build result: `0 warning / 0 error`
   - `Reverse Direction` software setting for reversing meter wheel count direction without rewiring.
   - `CMP Out Width` input and `Set`.
   - `Extension` button below `CMP Out Width`.
+- The meter wheel form now protects settings while loading saved values into UI controls:
+  - UI initialization no longer fires value-change handlers that overwrite saved settings with default values.
+  - This fixed the observed issue where `Multiple Rate`, `Reverse Direction`, and `CMP Out Width` appeared to revert after restart.
+- `Multiple Rate`, `Reverse Direction`, and `CMP Out Width` persist through `settings.ini`.
+  - `Multiple Rate` saves when the combo-box selection changes or when `Set` is pressed.
+  - `Reverse Direction` saves when the checkbox changes.
+  - `CMP Out Width` saves when the numeric value changes or when `Set` is pressed.
 - The extension compare window supports `CMP0` through `CMP7`:
   - Mask.
   - Offset Compare.
@@ -146,8 +171,13 @@ Latest local build result: `0 warning / 0 error`
   - `MeterWheelCompareValue`
 - When opening the meter wheel window, the persisted values are loaded into the UI, including the saved Card ID selection.
 - When pressing meter wheel `Apply` / `Set` for increment, multiple rate, or CMP out width, the values are saved back through `SettingsService`.
+- Changing multiple rate or CMP out width in the UI also saves immediately.
 - The encoder and compare custom numeric entry fields now persist as settings values, but they are not automatically pushed to hardware when the form opens.
 - The `Set` buttons remain the only path that writes those entry values to the meter wheel card.
+- Important compare/encoder behavior:
+  - The Compare custom numeric value is user-defined.
+  - Pressing Compare `Set` writes the current Compare numeric value to hardware and must not auto-replace the value from the live encoder.
+  - Pressing Encoder `Set` writes the current Encoder numeric value to hardware.
 - When connecting to the meter wheel card, the app applies persisted meter wheel settings immediately:
   - Encoder input mode is forced to quadrature mode.
   - Multiple rate uses the saved `X4` / `X2` / `X1` selection.
@@ -167,6 +197,14 @@ Latest local build result: `0 warning / 0 error`
   - It toggles A phase polarity bit `0` only, preserving the other CIO polarity bits.
   - Default `false` keeps the original wiring direction.
   - `true` reverses quadrature count direction so the previous negative direction becomes positive.
+- External-trigger meter-wheel automation:
+  - `CameraService` now exposes `ExternalTriggerReceived`.
+  - It is raised when Sapera reports `ExternalTrigger` or `ExternalTrigger2`.
+  - `MainForm` listens for this event.
+  - If `Trigger Mode = External Trigger`, `External Trigger One Frame` is checked, and `Compare Set follows current encoder value` is checked, the app calls `_meterWheelService.SetCompare(_settings.MeterWheelCompareValue)`.
+  - If `Also apply Encoder Set on external trigger` is also checked, the app then calls `_meterWheelService.SetEncoder(_settings.MeterWheelEncoderValue)`.
+  - This is intended to let the external trigger automatically perform the same logical action as the Meter Wheel Control form's Compare `Set`, with optional Encoder `Set` back to the stored origin/preset value.
+  - These automatic actions do not mutate the numeric entry fields; they write the persisted values to hardware.
 - If the vendor program changes the LSI-8181 hardware state, this app restores its persisted meter wheel settings on the next startup auto-connect or manual connect. It cannot prevent another process with DLL access from changing hardware registers while both programs are running.
 - Important API correction:
   - `LSI8181_CO_read` reads the instantaneous physical `CMP_OUT` output state, not whether CMP OUT functionality is enabled.
@@ -187,6 +225,7 @@ Latest local build result: `0 warning / 0 error`
   - `C:\Program Files (x86)\JS Automation\LSI8181\API\x64\LSI8181_64.cs`
 - The last verified build after the meter wheel updates succeeded with `0 warning / 0 error`.
 - The last verified build after the trigger-page and meter-wheel entry-value updates also succeeded with `0 warning / 0 error`.
+- The latest verified build after external-trigger compare/encoder automation and meter-wheel persistence fixes also succeeded with `0 warning / 0 error`.
 
 ## Rolling Capture
 
@@ -384,26 +423,34 @@ Important limitation:
    - `MeterWheelCardId`
    - `MeterWheelCompareIncrement`
    - `MeterWheelMultipleRate`
+   - `MeterWheelReverseDirection`
    - `MeterWheelCmpOutWidth`
+   - `MeterWheelEncoderValue`
+   - `MeterWheelCompareValue`
    - `MeterWheelExtensionCompareMask`
    - `MeterWheelExtensionCompareOffsets`
    - `MeterWheelExtensionComparePulseWidths`
    - `MeterWheelExtensionCompareOutputStates`
-10. Verify extension compare output behavior for `CMP0_OUT` through `CMP7_OUT` on real hardware.
-11. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
-12. If save speed remains too slow, profile time spent in:
+10. Verify external-trigger automation on real hardware:
+   - `Continuous` mode disables `Compare Set follows current encoder value`.
+   - `External Trigger` mode allows `Compare Set follows current encoder value`.
+   - External trigger causes Compare Set to write the saved `MeterWheelCompareValue`.
+   - With `Also apply Encoder Set on external trigger`, external trigger also writes the saved `MeterWheelEncoderValue`.
+11. Verify extension compare output behavior for `CMP0_OUT` through `CMP7_OUT` on real hardware.
+12. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
+13. If save speed remains too slow, profile time spent in:
    - copying frame bytes into the grayscale buffer,
    - WIC encoding,
    - final disk write / antivirus / sync folder overhead.
-13. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
-14. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
+14. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
+15. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
    - Large `Length` values naturally delay UI updates because the app waits for a full frame.
    - Consider `EndOfNLines` or other Sapera line/chunk callbacks if supported.
-15. If full continuous long-image capture is required, implement a recorder queue:
+16. If full continuous long-image capture is required, implement a recorder queue:
    - Background worker owns the full-resolution data path.
    - UI preview remains downscaled and droppable.
    - Capture/export reads from recorder output.
-16. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
+17. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
 
 ## Notes For The Next Person
 
@@ -421,6 +468,10 @@ Important limitation:
 - Do not add custom helper method calls inside `.Designer.cs` files; Visual Studio Designer can fail to load the form even when MSBuild succeeds.
 - Do not move meter wheel service ownership back into `MeterWheelControlForm`; closing that window must not disconnect the meter wheel.
 - `MainForm` owns the meter wheel service and is responsible for app-start auto-connect and final app-close disposal.
+- Keep meter wheel setting load guarded so UI control-change events do not overwrite persisted values during form initialization.
+- Keep Compare numeric entry user-defined. Do not auto-fill Compare from live encoder when the user presses Compare `Set`.
+- `Compare Set follows current encoder value` is intentionally disabled outside `External Trigger` mode.
+- The optional external-trigger Encoder Set writes the saved `MeterWheelEncoderValue`, not the current live encoder value.
 - Treat exposure/gain/length/internal line rate as currently stable behavior and test all four after camera pipeline changes.
 - Preserve the separation between UI preview and full-resolution save data. The save path should continue using `FrameRecorder` snapshots, not the downscaled display bitmap.
 - For save pipeline changes, keep the temporary `.tmp` write then final move behavior to avoid users opening incomplete output files.
