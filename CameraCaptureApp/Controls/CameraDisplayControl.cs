@@ -475,7 +475,7 @@ namespace CameraCaptureApp.Controls
                 graphics.InterpolationMode = _isPanning ? InterpolationMode.Low : InterpolationMode.HighQualityBicubic;
                 DrawPreviewRegion(graphics, preview.Bitmap, preview.Scale, visibleSourceRect, zoom, offset);
                 graphics.InterpolationMode = previousInterpolation;
-                if (!ShouldRenderTiles(zoom, preview.Scale))
+                if (_isPanning || !ShouldRenderTiles(zoom, preview.Scale))
                 {
                     return;
                 }
@@ -706,6 +706,7 @@ namespace CameraCaptureApp.Controls
 
             _isPanning = false;
             viewerPanel.Cursor = Cursors.Default;
+            viewerPanel.Invalidate();
         }
 
         private void viewerPanel_MouseEnter(object sender, EventArgs e)

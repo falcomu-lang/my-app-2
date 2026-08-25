@@ -119,6 +119,7 @@ namespace CameraCaptureApp.Controls
                     Bitmap tile = null;
                     try
                     {
+                        tile = CreateTileBitmap(normalized);
                         lock (_sync)
                         {
                             if (_disposed)
@@ -126,7 +127,6 @@ namespace CameraCaptureApp.Controls
                                 return;
                             }
 
-                            tile = CreateTileBitmap(normalized);
                             AddTileToCacheUnsafe(key, tile);
                             tile = null;
                         }
