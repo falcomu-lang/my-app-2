@@ -47,6 +47,9 @@ namespace CameraCaptureApp.Forms
             // 
             // panelChart
             // 
+            this.panelChart.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.panelChart.BackColor = System.Drawing.Color.FromArgb(20, 24, 35);
             this.panelChart.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelChart.Location = new System.Drawing.Point(21, 74);
@@ -62,6 +65,7 @@ namespace CameraCaptureApp.Forms
             // 
             // buttonClose
             // 
+            this.buttonClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.buttonClose.Location = new System.Drawing.Point(895, 570);
             this.buttonClose.Name = "buttonClose";
             this.buttonClose.Size = new System.Drawing.Size(86, 32);
@@ -79,8 +83,9 @@ namespace CameraCaptureApp.Forms
             this.Controls.Add(this.panelChart);
             this.Controls.Add(this.labelInfo);
             this.Controls.Add(this.labelTitle);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
+            this.MinimumSize = new System.Drawing.Size(760, 420);
             this.MinimizeBox = false;
             this.Name = "GrayScaleWaveformForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
