@@ -462,25 +462,23 @@ namespace CameraCaptureApp.Controls
 
         private void DrawLargeImage(Graphics graphics, LargeImageSource source, float zoom, PointF offset)
         {
-            using (var preview = source.GetBestPreview(zoom))
-            {
-                var drawWidth = source.Width * zoom;
-                var drawHeight = source.Height * zoom;
-                var previousInterpolation = graphics.InterpolationMode;
-                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                graphics.DrawImage(preview.Bitmap, offset.X, offset.Y, drawWidth, drawHeight);
-                graphics.InterpolationMode = previousInterpolation;
-                if (!ShouldRenderTiles(zoom, preview.Scale))
-                {
-                    return;
-                }
-            }
-
             var viewBounds = viewerPanel.ClientRectangle;
             var visibleSourceRect = GetVisibleSourceRectangle(source.Width, source.Height, viewBounds, zoom, offset);
             if (visibleSourceRect.Width <= 0 || visibleSourceRect.Height <= 0)
             {
                 return;
+            }
+
+            using (var preview = source.GetBestPreview(zoom))
+            {
+                var previousInterpolation = graphics.InterpolationMode;
+                graphics.InterpolationMode = _isPanning ? InterpolationMode.Low : InterpolationMode.HighQualityBicubic;
+                DrawPreviewRegion(graphics, preview.Bitmap, preview.Scale, visibleSourceRect, zoom, offset);
+                graphics.InterpolationMode = previousInterpolation;
+                if (!ShouldRenderTiles(zoom, preview.Scale))
+                {
+                    return;
+                }
             }
 
             var startTileX = (visibleSourceRect.Left / TileSourceSize) * TileSourceSize;
@@ -496,10 +494,7 @@ namespace CameraCaptureApp.Controls
                     Bitmap tile;
                     if (source.TryGetTile(tileRect, out tile))
                     {
-                        using (tile)
-                        {
-                            DrawTile(graphics, tile, tileRect, zoom, offset);
-                        }
+                        DrawTile(graphics, tile, tileRect, zoom, offset);
                     }
                     else
                     {
@@ -507,6 +502,27 @@ namespace CameraCaptureApp.Controls
                     }
                 }
             }
+        }
+
+        private static void DrawPreviewRegion(Graphics graphics, Bitmap previewBitmap, float previewScale, Rectangle visibleSourceRect, float zoom, PointF offset)
+        {
+            if (previewBitmap == null || previewScale <= 0f)
+            {
+                return;
+            }
+
+            var sourceLeft = Math.Max(0, Math.Min(previewBitmap.Width - 1, (int)Math.Floor(visibleSourceRect.Left * previewScale)));
+            var sourceTop = Math.Max(0, Math.Min(previewBitmap.Height - 1, (int)Math.Floor(visibleSourceRect.Top * previewScale)));
+            var sourceRight = Math.Max(sourceLeft + 1, Math.Min(previewBitmap.Width, (int)Math.Ceiling(visibleSourceRect.Right * previewScale)));
+            var sourceBottom = Math.Max(sourceTop + 1, Math.Min(previewBitmap.Height, (int)Math.Ceiling(visibleSourceRect.Bottom * previewScale)));
+            var sourceRect = Rectangle.FromLTRB(sourceLeft, sourceTop, sourceRight, sourceBottom);
+            var destinationRect = RectangleF.FromLTRB(
+                offset.X + (visibleSourceRect.Left * zoom),
+                offset.Y + (visibleSourceRect.Top * zoom),
+                offset.X + (visibleSourceRect.Right * zoom),
+                offset.Y + (visibleSourceRect.Bottom * zoom));
+
+            graphics.DrawImage(previewBitmap, destinationRect, sourceRect, GraphicsUnit.Pixel);
         }
 
         private void RequestTile(LargeImageSource source, Rectangle tileRect)

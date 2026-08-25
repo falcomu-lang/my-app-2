@@ -73,7 +73,7 @@ namespace CameraCaptureApp.Controls
                     selected.Bitmap = CreateScaledBitmap(selected.DecodeWidth, selected.DecodeHeight);
                 }
 
-                return new PreviewBitmap((Bitmap)selected.Bitmap.Clone(), selected.Scale);
+                return new PreviewBitmap(selected.Bitmap, selected.Scale, false);
             }
         }
 
@@ -89,7 +89,7 @@ namespace CameraCaptureApp.Controls
                 if (_tileCache.TryGetValue(key, out cached))
                 {
                     TouchKey(key);
-                    tile = (Bitmap)cached.Clone();
+                    tile = cached;
                     return true;
                 }
             }
@@ -525,10 +525,13 @@ namespace CameraCaptureApp.Controls
 
         internal sealed class PreviewBitmap : IDisposable
         {
-            public PreviewBitmap(Bitmap bitmap, float scale)
+            private readonly bool _ownsBitmap;
+
+            public PreviewBitmap(Bitmap bitmap, float scale, bool ownsBitmap)
             {
                 Bitmap = bitmap;
                 Scale = scale;
+                _ownsBitmap = ownsBitmap;
             }
 
             public Bitmap Bitmap { get; private set; }
@@ -537,11 +540,12 @@ namespace CameraCaptureApp.Controls
 
             public void Dispose()
             {
-                if (Bitmap != null)
+                if (_ownsBitmap && Bitmap != null)
                 {
                     Bitmap.Dispose();
-                    Bitmap = null;
                 }
+
+                Bitmap = null;
             }
         }
 
