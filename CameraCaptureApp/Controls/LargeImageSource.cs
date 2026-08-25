@@ -250,6 +250,59 @@ namespace CameraCaptureApp.Controls
             }
         }
 
+        public void GetGrayValues(Point[] points, int[] destination)
+        {
+            if (points == null || destination == null)
+            {
+                return;
+            }
+
+            lock (_sync)
+            {
+                ThrowIfDisposed();
+                var count = Math.Min(points.Length, destination.Length);
+                var groups = new Dictionary<string, TileSampleGroup>(StringComparer.Ordinal);
+                for (var i = 0; i < count; i++)
+                {
+                    var point = points[i];
+                    if (point.X < 0 || point.Y < 0 || point.X >= Width || point.Y >= Height)
+                    {
+                        destination[i] = 0;
+                        continue;
+                    }
+
+                    var tileX = (point.X / TileSourceSize) * TileSourceSize;
+                    var tileY = (point.Y / TileSourceSize) * TileSourceSize;
+                    var tileRect = new Rectangle(tileX, tileY, Math.Min(TileSourceSize, Width - tileX), Math.Min(TileSourceSize, Height - tileY));
+                    var key = CreateTileKey(tileRect);
+                    TileSampleGroup group;
+                    if (!groups.TryGetValue(key, out group))
+                    {
+                        group = new TileSampleGroup(tileRect);
+                        groups.Add(key, group);
+                    }
+
+                    group.SampleIndexes.Add(i);
+                }
+
+                foreach (var pair in groups)
+                {
+                    Bitmap tile;
+                    if (!_tileCache.TryGetValue(pair.Key, out tile))
+                    {
+                        tile = CreateTileBitmap(pair.Value.TileRect);
+                        AddTileToCacheUnsafe(pair.Key, tile);
+                    }
+                    else
+                    {
+                        TouchKey(pair.Key);
+                    }
+
+                    ReadGrayValuesFromBitmap(tile, pair.Value.TileRect, points, pair.Value.SampleIndexes, destination);
+                }
+            }
+        }
+
         private void InitializePreviewLevels()
         {
             AddPreviewLevel(512);
@@ -411,6 +464,63 @@ namespace CameraCaptureApp.Controls
 
             var pixel = bitmap.GetPixel(x, y);
             return (pixel.R + pixel.G + pixel.B) / 3;
+        }
+
+        private static void ReadGrayValuesFromBitmap(Bitmap bitmap, Rectangle tileRect, Point[] points, List<int> sampleIndexes, int[] destination)
+        {
+            if (bitmap == null || sampleIndexes == null)
+            {
+                return;
+            }
+
+            var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+            var data = bitmap.LockBits(rect, ImageLockMode.ReadOnly, bitmap.PixelFormat);
+            try
+            {
+                var bitsPerPixel = Image.GetPixelFormatSize(bitmap.PixelFormat);
+                var bytesPerPixel = Math.Max(1, bitsPerPixel / 8);
+                foreach (var sampleIndex in sampleIndexes)
+                {
+                    var point = points[sampleIndex];
+                    var localX = Math.Max(0, Math.Min(bitmap.Width - 1, point.X - tileRect.X));
+                    var localY = Math.Max(0, Math.Min(bitmap.Height - 1, point.Y - tileRect.Y));
+                    var row = data.Scan0 + (localY * data.Stride);
+                    var offset = localX * bytesPerPixel;
+                    if (bitmap.PixelFormat == PixelFormat.Format8bppIndexed)
+                    {
+                        destination[sampleIndex] = Marshal.ReadByte(row, offset);
+                        continue;
+                    }
+
+                    if (bytesPerPixel >= 3)
+                    {
+                        var b = Marshal.ReadByte(row, offset);
+                        var g = Marshal.ReadByte(row, offset + 1);
+                        var r = Marshal.ReadByte(row, offset + 2);
+                        destination[sampleIndex] = (r + g + b) / 3;
+                        continue;
+                    }
+
+                    destination[sampleIndex] = Marshal.ReadByte(row, offset);
+                }
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
+        }
+
+        private sealed class TileSampleGroup
+        {
+            public TileSampleGroup(Rectangle tileRect)
+            {
+                TileRect = tileRect;
+                SampleIndexes = new List<int>();
+            }
+
+            public Rectangle TileRect { get; private set; }
+
+            public List<int> SampleIndexes { get; private set; }
         }
 
         internal sealed class PreviewBitmap : IDisposable

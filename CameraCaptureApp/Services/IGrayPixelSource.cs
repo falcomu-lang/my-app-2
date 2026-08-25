@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 
 namespace CameraCaptureApp.Services
 {
@@ -9,5 +10,7 @@ namespace CameraCaptureApp.Services
         int Height { get; }
 
         int GetGrayAt(int x, int y);
+
+        void GetGrayValues(Point[] points, int[] destination);
     }
 }

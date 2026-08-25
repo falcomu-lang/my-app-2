@@ -1185,6 +1185,20 @@ namespace CameraCaptureApp.Controls
                 return (pixel.R + pixel.G + pixel.B) / 3;
             }
 
+            public void GetGrayValues(Point[] points, int[] destination)
+            {
+                if (points == null || destination == null)
+                {
+                    return;
+                }
+
+                var count = Math.Min(points.Length, destination.Length);
+                for (var i = 0; i < count; i++)
+                {
+                    destination[i] = GetGrayAt(points[i].X, points[i].Y);
+                }
+            }
+
             public void Dispose()
             {
                 _bitmap.Dispose();
@@ -1207,6 +1221,11 @@ namespace CameraCaptureApp.Controls
             public int GetGrayAt(int x, int y)
             {
                 return _source.GetGrayAt(x, y);
+            }
+
+            public void GetGrayValues(Point[] points, int[] destination)
+            {
+                _source.GetGrayValues(points, destination);
             }
 
             public void Dispose()

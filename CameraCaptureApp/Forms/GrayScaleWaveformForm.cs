@@ -294,11 +294,7 @@ namespace CameraCaptureApp.Forms
         private static int[] SampleGrayValues(IGrayPixelSource pixelSource, Point[] linePoints)
         {
             var result = new int[linePoints.Length];
-            for (var i = 0; i < linePoints.Length; i++)
-            {
-                result[i] = pixelSource.GetGrayAt(linePoints[i].X, linePoints[i].Y);
-            }
-
+            pixelSource.GetGrayValues(linePoints, result);
             return result;
         }
 
