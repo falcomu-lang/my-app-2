@@ -542,10 +542,10 @@ namespace CameraCaptureApp.Controls
             var right = offset.X + (tileRect.Right * zoom);
             var bottom = offset.Y + (tileRect.Bottom * zoom);
 
-            var drawLeft = (float)Math.Round(left);
-            var drawTop = (float)Math.Round(top);
-            var drawRight = (float)Math.Round(right);
-            var drawBottom = (float)Math.Round(bottom);
+            var drawLeft = (float)Math.Floor(left);
+            var drawTop = (float)Math.Floor(top);
+            var drawRight = (float)Math.Ceiling(right);
+            var drawBottom = (float)Math.Ceiling(bottom);
             if (drawRight <= drawLeft)
             {
                 drawRight = drawLeft + 1f;
@@ -558,8 +558,24 @@ namespace CameraCaptureApp.Controls
 
             var drawRect = RectangleF.FromLTRB(drawLeft, drawTop, drawRight, drawBottom);
             var previousInterpolation = graphics.InterpolationMode;
+            var previousPixelOffset = graphics.PixelOffsetMode;
             graphics.InterpolationMode = zoom >= 1f ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear;
-            graphics.DrawImage(tile, drawRect);
+            graphics.PixelOffsetMode = PixelOffsetMode.Half;
+            using (var attributes = new ImageAttributes())
+            {
+                attributes.SetWrapMode(WrapMode.TileFlipXY);
+                graphics.DrawImage(
+                    tile,
+                    Rectangle.Round(drawRect),
+                    0,
+                    0,
+                    tile.Width,
+                    tile.Height,
+                    GraphicsUnit.Pixel,
+                    attributes);
+            }
+
+            graphics.PixelOffsetMode = previousPixelOffset;
             graphics.InterpolationMode = previousInterpolation;
         }
 
