@@ -124,8 +124,34 @@ namespace CameraCaptureApp.Services
 
         public void Disconnect()
         {
-            DestroySdkObjects();
-            DisposeSdkObjects();
+            if (!_status.IsConnected && !HasSdkObjects())
+            {
+                _status.IsPreviewing = false;
+                _status.IsConnected = false;
+                _status.HasSignal = false;
+                _status.ScanStateText = "Disconnected";
+                _status.LastMessage = "Camera disconnected.";
+                return;
+            }
+
+            try
+            {
+                DestroySdkObjects();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Sapera object destroy failed during disconnect.", ex);
+            }
+
+            try
+            {
+                DisposeSdkObjects();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Sapera object dispose failed during disconnect.", ex);
+            }
+
             _status.IsPreviewing = false;
             _status.IsConnected = false;
             _status.HasSignal = false;
@@ -586,6 +612,14 @@ namespace CameraCaptureApp.Services
                 _acquisition.Dispose();
                 _acquisition = null;
             }
+        }
+
+        private bool HasSdkObjects()
+        {
+            return _acqDevice != null ||
+                _acquisition != null ||
+                _buffers != null ||
+                _transfer != null;
         }
 
         private void OnTransferNotify(object sender, SapXferNotifyEventArgs argsNotify)

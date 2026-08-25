@@ -14,13 +14,13 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Main project: `CameraCaptureApp/CameraCaptureApp.csproj`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
-- Current handoff date: `2026-08-19`
-- Latest pushed feature commit referenced by this handoff: `bcd86b6 Add external trigger encoder reset option`
+- Current handoff date: `2026-08-25`
+- Latest pushed feature commit referenced by this handoff: `9522f55 Hide large image tile seams`
 
 Latest verified local build command:
 
 ```powershell
-& "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\amd64\MSBuild.exe" ".\CameraCaptureApp.sln" /t:Build /p:Configuration=Debug
+& "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\amd64\MSBuild.exe" ".\CameraCaptureApp.sln" /p:Configuration=Debug /p:Platform="Any CPU" /p:GenerateResourceMSBuildArchitecture=CurrentArchitecture /m:1
 ```
 
 Latest local build result: `0 warning / 0 error`
@@ -33,6 +33,9 @@ Latest local build result: `0 warning / 0 error`
 - Runtime-hosted camera viewer in `MainForm`.
 - `settings.ini` persistence beside the built executable.
 - Large image viewing support with zoom / pan and reduced UI flicker.
+- Large image viewing supports tiled rendering for huge images such as the user's `16384 x 50000` case.
+- Large-image pan behavior was tuned so dragging uses a lightweight preview layer, then high-resolution tiles are refreshed after mouse-up.
+- Large-image tile rendering was adjusted to avoid visible seams between tiles at fractional zoom levels.
 - Main command button enable/disable state follows connection and preview state.
 - Camera apply result popup has been removed; apply result remains in the settings form status label.
 - Live preview is downscaled before display to reduce UI stalls.
@@ -60,6 +63,83 @@ Latest local build result: `0 warning / 0 error`
 - Recent user-confirmed behavior:
   - Meter wheel parameters now persist across restart as expected.
   - External-trigger/meter-wheel automatic compare action currently behaves as expected.
+  - Main image pan smoothness is now acceptable after the preview-during-drag change.
+  - Gray waveform generation speed for large loaded images is now acceptable after batched tile sampling.
+
+## Gray Waveform Feature
+
+- Main viewer toolbar now includes `取得灰階波形` to create a grayscale waveform from the currently displayed image.
+- The feature can be used without connecting to the camera:
+  - load an image from file,
+  - press `取得灰階波形`,
+  - draw a line directly on the main image view.
+- It also works after stopping camera preview:
+  - the app locks the current displayed frame for line selection,
+  - new camera frames do not replace the selection image while selection is active.
+- Selection behavior:
+  - left-click drag on the main image defines the waveform line,
+  - confirmation dialog shows start/end/length,
+  - `Retry` restarts line selection,
+  - cancel exits selection mode.
+- For camera frames, waveform sampling uses the full-resolution frame stored in `FrameRecorder`, not the downscaled display preview.
+- For loaded large images, waveform sampling uses `LargeImageSource` tile data so it can sample real source pixels without creating a huge full-size bitmap.
+- Important implementation files:
+  - `CameraCaptureApp/Controls/CameraDisplayControl.cs`
+  - `CameraCaptureApp/Controls/LargeImageSource.cs`
+  - `CameraCaptureApp/Forms/GrayScaleWaveformForm.cs`
+  - `CameraCaptureApp/Forms/GrayScaleWaveformForm.Designer.cs`
+  - `CameraCaptureApp/Forms/GrayWaveformConfirmForm.cs`
+  - `CameraCaptureApp/Services/IGrayPixelSource.cs`
+  - `CameraCaptureApp/Services/GrayWaveformSelectionEventArgs.cs`
+- `IGrayPixelSource` exposes both:
+  - `GetGrayAt(int x, int y)`
+  - `GetGrayValues(Point[] points, int[] destination)`
+- `GetGrayValues` was added for large-image performance. Do not regress the waveform form back to per-point `GetGrayAt` loops for large images.
+- `LargeImageSource.GetGrayValues` groups line points by `1024 x 1024` tile, creates/loads each tile once, locks it once, and reads all points in that tile as a batch.
+- Earlier user performance datapoint:
+  - source image: `16384 x 50000`,
+  - line length: `11078` points,
+  - pre-batch time: about `34 seconds`,
+  - post-batch speed was user-confirmed as much faster / acceptable.
+- Waveform result window behavior:
+  - initial Y range is fixed at `0-255`,
+  - mouse wheel zooms in/out,
+  - left mouse drag selects a zoom region,
+  - right mouse button resets the view,
+  - horizontal guide lines are drawn every `16` gray levels plus `255`,
+  - the chart panel is double-buffered to reduce selection flicker,
+  - the window is resizable and has the normal Windows maximize button,
+  - the chart expands with the window and the close button stays anchored at bottom-right.
+
+## Large Image Display Notes
+
+- `LargeImageSource` is the main abstraction for huge loaded images.
+- It builds preview levels at max dimensions:
+  - `512`
+  - `1024`
+  - `2048`
+  - `4096`
+  - `8192`
+- It renders high-resolution detail as `1024 x 1024` tiles.
+- Tile cache limit is currently `MaxTileCacheCount = 96`.
+- Pan / zoom performance changes:
+  - cached preview and tile bitmaps are reused for painting instead of cloned on every paint,
+  - preview drawing clips to only the currently visible source rectangle,
+  - while `_isPanning` is true, the viewer renders only the preview layer and skips tile drawing/scheduling,
+  - mouse-up invalidates the viewer so high-resolution tiles are drawn/refreshed after dragging stops,
+  - tile creation now happens outside the shared `_sync` lock, reducing UI stalls while background tile decode is active.
+- Tile seam fix:
+  - tile destination rectangles use `Floor` for left/top and `Ceiling` for right/bottom to prevent 1-pixel gaps at fractional zoom,
+  - tile drawing uses `ImageAttributes.SetWrapMode(WrapMode.TileFlipXY)` to reduce interpolation artifacts at tile edges.
+- User-reported zoom levels that previously felt less smooth:
+  - `0.19x`
+  - `0.23x`
+  - `0.29x`
+  - `0.36x`
+  - `0.45x`
+  - `0.57x`
+  - `0.71x`
+- Preserve the current panning strategy unless intentionally changing the interaction model; user said the latest smoothness is what they wanted.
 
 ### Trigger Page Updates
 
@@ -393,6 +473,8 @@ Important limitation:
 - PNG/TIF save time may be dominated by encoder CPU work, not just disk throughput.
 - `TIF (uncompressed)` exists as a speed-oriented option, trading larger files for less compression work.
 - Parallel save limit is currently hard-coded in `MainForm` as `MaxConcurrentSnapshotSaves = 5`.
+- Large-image viewing is now tuned for smooth pan by showing preview while dragging and restoring high-resolution tiles after mouse-up. This is intentional; do not force high-resolution tile drawing during mouse drag unless replacing it with a faster rendering engine.
+- Large-image tile seams were addressed in commit `9522f55`; if seams reappear, first inspect tile destination rounding and interpolation/wrap mode before changing the tile cache architecture.
 - The downloaded PDF `20161221032935911.pdf` is currently untracked and should not be committed unless intentionally needed.
 
 ## Recommended Next Steps
@@ -438,19 +520,31 @@ Important limitation:
    - With `Also apply Encoder Set on external trigger`, external trigger also writes the saved `MeterWheelEncoderValue`.
 11. Verify extension compare output behavior for `CMP0_OUT` through `CMP7_OUT` on real hardware.
 12. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
-13. If save speed remains too slow, profile time spent in:
+13. Re-test large-image pan behavior on the target `16384 x 50000` files at the known sensitive zoom levels:
+   - `0.19x`
+   - `0.23x`
+   - `0.29x`
+   - `0.36x`
+   - `0.45x`
+   - `0.57x`
+   - `0.71x`
+14. Re-test large-image tile seam visibility after zooming and panning at fractional zoom levels.
+15. Re-test gray waveform sampling on loaded large images and camera frames:
+   - loaded large image should sample real source pixels through `LargeImageSource`,
+   - camera frame should sample the full-resolution frame from `FrameRecorder`, not the UI preview bitmap.
+16. If save speed remains too slow, profile time spent in:
    - copying frame bytes into the grayscale buffer,
    - WIC encoding,
    - final disk write / antivirus / sync folder overhead.
-14. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
-15. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
+17. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
+18. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
    - Large `Length` values naturally delay UI updates because the app waits for a full frame.
    - Consider `EndOfNLines` or other Sapera line/chunk callbacks if supported.
-16. If full continuous long-image capture is required, implement a recorder queue:
+19. If full continuous long-image capture is required, implement a recorder queue:
    - Background worker owns the full-resolution data path.
    - UI preview remains downscaled and droppable.
    - Capture/export reads from recorder output.
-17. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
+20. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
 
 ## Notes For The Next Person
 
@@ -474,4 +568,7 @@ Important limitation:
 - The optional external-trigger Encoder Set writes the saved `MeterWheelEncoderValue`, not the current live encoder value.
 - Treat exposure/gain/length/internal line rate as currently stable behavior and test all four after camera pipeline changes.
 - Preserve the separation between UI preview and full-resolution save data. The save path should continue using `FrameRecorder` snapshots, not the downscaled display bitmap.
+- Preserve the separation between UI preview and gray-waveform sampling data. Camera waveform sampling should continue using `FrameRecorder.SnapshotLatest()` when the viewer is displaying a preview bitmap.
+- Preserve `IGrayPixelSource.GetGrayValues` batch sampling. Large-image waveform speed depends on tile grouping and batch reads.
+- Preserve large-image pan behavior: preview while dragging, high-resolution tiles after mouse-up.
 - For save pipeline changes, keep the temporary `.tmp` write then final move behavior to avoid users opening incomplete output files.

@@ -38,6 +38,7 @@ namespace CameraCaptureApp.Forms
         private MeterWheelControlForm _meterWheelControlForm;
         private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
+        private bool _isClosing;
 
         public MainForm(ICameraService cameraService, ISettingsService settingsService)
         {
@@ -144,11 +145,21 @@ namespace CameraCaptureApp.Forms
         private void MeterWheelAutoConnectTimer_Tick(object sender, EventArgs e)
         {
             _meterWheelAutoConnectTimer.Stop();
+            if (_isClosing || IsDisposed)
+            {
+                return;
+            }
+
             AutoConnectMeterWheel();
         }
 
         private void AutoConnectMeterWheel()
         {
+            if (_isClosing || IsDisposed)
+            {
+                return;
+            }
+
             if (_meterWheelService.IsInitialized)
             {
                 return;
@@ -623,14 +634,23 @@ namespace CameraCaptureApp.Forms
             }
         }
 
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            _isClosing = true;
+            _statusRefreshTimer.Stop();
+            _meterWheelAutoConnectTimer.Stop();
+            CancelPendingImageLoad();
+            CancelPendingPreviewFrame();
+            base.OnFormClosing(e);
+        }
+
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            _isClosing = true;
             _cameraService.FrameReady -= CameraService_FrameReady;
             _cameraService.ExternalTriggerReceived -= CameraService_ExternalTriggerReceived;
             _cameraDisplayControl.SaveSnapshotRequested -= CameraDisplayControl_SaveSnapshotRequested;
-            _statusRefreshTimer.Stop();
             _statusRefreshTimer.Dispose();
-            _meterWheelAutoConnectTimer.Stop();
             _meterWheelAutoConnectTimer.Dispose();
             if (_meterWheelControlForm != null && !_meterWheelControlForm.IsDisposed)
             {
@@ -647,8 +667,24 @@ namespace CameraCaptureApp.Forms
                 pendingFrame.Dispose();
             }
 
-            _cameraService.Disconnect();
-            _meterWheelService.Dispose();
+            try
+            {
+                _cameraService.Disconnect();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Camera disconnect during shutdown failed.", ex);
+            }
+
+            try
+            {
+                _meterWheelService.Dispose();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Meter wheel dispose during shutdown failed.", ex);
+            }
+
             base.OnFormClosed(e);
         }
 
@@ -858,11 +894,21 @@ namespace CameraCaptureApp.Forms
 
         private void StatusRefreshTimer_Tick(object sender, EventArgs e)
         {
+            if (_isClosing || IsDisposed)
+            {
+                return;
+            }
+
             UpdateStatus();
         }
 
         private void MainForm_Shown(object sender, EventArgs e)
         {
+            if (_isClosing || IsDisposed)
+            {
+                return;
+            }
+
             TryAutoConnectOnStart();
             _meterWheelAutoConnectTimer.Start();
         }
@@ -878,6 +924,11 @@ namespace CameraCaptureApp.Forms
 
         private void UpdateStatus()
         {
+            if (_isClosing || IsDisposed)
+            {
+                return;
+            }
+
             var status = _cameraService.Status;
 
             labelHeaderConnectionValue.Text = status.IsConnected ? "Connected" : "Offline";
@@ -978,7 +1029,7 @@ namespace CameraCaptureApp.Forms
 
         private void TryAutoConnectOnStart()
         {
-            if (_autoConnectAttempted || !_settings.AutoConnect)
+            if (_isClosing || IsDisposed || _autoConnectAttempted || !_settings.AutoConnect)
             {
                 return;
             }
