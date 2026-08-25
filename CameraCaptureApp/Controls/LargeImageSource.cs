@@ -127,9 +127,7 @@ namespace CameraCaptureApp.Controls
                             }
 
                             tile = CreateTileBitmap(normalized);
-                            _tileCache[key] = tile;
-                            _tileOrder.AddFirst(key);
-                            TrimCache();
+                            AddTileToCacheUnsafe(key, tile);
                             tile = null;
                         }
 
@@ -239,6 +237,11 @@ namespace CameraCaptureApp.Controls
                 if (!_tileCache.TryGetValue(key, out tile))
                 {
                     tile = CreateTileBitmap(tileRect);
+                    AddTileToCacheUnsafe(key, tile);
+                }
+                else
+                {
+                    TouchKey(key);
                 }
 
                 var localX = x - tileRect.X;
@@ -311,6 +314,25 @@ namespace CameraCaptureApp.Controls
 
                 _tileOrder.RemoveLast();
             }
+        }
+
+        private void AddTileToCacheUnsafe(string key, Bitmap tile)
+        {
+            Bitmap existing;
+            if (_tileCache.TryGetValue(key, out existing))
+            {
+                TouchKey(key);
+                if (!ReferenceEquals(existing, tile))
+                {
+                    tile.Dispose();
+                }
+
+                return;
+            }
+
+            _tileCache[key] = tile;
+            _tileOrder.AddFirst(key);
+            TrimCache();
         }
 
         private Bitmap CreateTileBitmap(Rectangle sourceRect)
@@ -387,11 +409,8 @@ namespace CameraCaptureApp.Controls
                 }
             }
 
-            using (var clone = bitmap.Clone(new Rectangle(x, y, 1, 1), bitmap.PixelFormat))
-            {
-                var pixel = clone.GetPixel(0, 0);
-                return (pixel.R + pixel.G + pixel.B) / 3;
-            }
+            var pixel = bitmap.GetPixel(x, y);
+            return (pixel.R + pixel.G + pixel.B) / 3;
         }
 
         internal sealed class PreviewBitmap : IDisposable
