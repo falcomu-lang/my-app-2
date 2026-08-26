@@ -112,8 +112,7 @@ namespace CameraCaptureApp.Services
                     }
                 }
 
-                DestroySdkObjects();
-                DisposeSdkObjects();
+                SafeCleanupSdkObjects("connect failure");
                 _status.IsConnected = false;
                 _status.HasSignal = false;
                 _status.ScanStateText = "Error";
@@ -134,23 +133,7 @@ namespace CameraCaptureApp.Services
                 return;
             }
 
-            try
-            {
-                DestroySdkObjects();
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Log("Sapera object destroy failed during disconnect.", ex);
-            }
-
-            try
-            {
-                DisposeSdkObjects();
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Log("Sapera object dispose failed during disconnect.", ex);
-            }
+            SafeCleanupSdkObjects("disconnect");
 
             _status.IsPreviewing = false;
             _status.IsConnected = false;
@@ -611,6 +594,81 @@ namespace CameraCaptureApp.Services
                 _acquisition.AcqNotify -= OnAcqNotify;
                 _acquisition.Dispose();
                 _acquisition = null;
+            }
+        }
+
+        private void SafeCleanupSdkObjects(string reason)
+        {
+            SafeSaperaCleanup(reason, "transfer destroy", () =>
+            {
+                if (_transfer != null && _transfer.Initialized)
+                {
+                    _transfer.Destroy();
+                }
+            });
+            SafeSaperaCleanup(reason, "buffer destroy", () =>
+            {
+                if (_buffers != null && _buffers.Initialized)
+                {
+                    _buffers.Destroy();
+                }
+            });
+            SafeSaperaCleanup(reason, "acquisition destroy", () =>
+            {
+                if (_acquisition != null && _acquisition.Initialized)
+                {
+                    _acquisition.Destroy();
+                }
+            });
+            SafeSaperaCleanup(reason, "acq device dispose", () =>
+            {
+                if (_acqDevice != null)
+                {
+                    _acqDevice.Dispose();
+                    _acqDevice = null;
+                }
+            });
+            SafeSaperaCleanup(reason, "transfer dispose", () =>
+            {
+                if (_transfer != null)
+                {
+                    _transfer.XferNotify -= OnTransferNotify;
+                    _transfer.Dispose();
+                    _transfer = null;
+                }
+            });
+            SafeSaperaCleanup(reason, "buffer dispose", () =>
+            {
+                if (_buffers != null)
+                {
+                    _buffers.Dispose();
+                    _buffers = null;
+                }
+            });
+            SafeSaperaCleanup(reason, "acquisition dispose", () =>
+            {
+                if (_acquisition != null)
+                {
+                    _acquisition.SignalNotify -= OnSignalNotify;
+                    _acquisition.AcqNotify -= OnAcqNotify;
+                    _acquisition.Dispose();
+                    _acquisition = null;
+                }
+            });
+
+            _deviceFeaturesAvailable = false;
+            _acqDevicePathSummary = string.Empty;
+        }
+
+        private static void SafeSaperaCleanup(string reason, string actionName, Action cleanupAction)
+        {
+            try
+            {
+                cleanupAction();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Sapera " + actionName + " failed during " + reason + ".", ex);
             }
         }
 
