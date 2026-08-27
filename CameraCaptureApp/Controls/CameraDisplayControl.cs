@@ -476,7 +476,7 @@ namespace CameraCaptureApp.Controls
                 graphics.InterpolationMode = _isPanning ? InterpolationMode.Low : InterpolationMode.HighQualityBicubic;
                 DrawPreviewRegion(graphics, preview.Bitmap, preview.Scale, visibleSourceRect, zoom, offset);
                 graphics.InterpolationMode = previousInterpolation;
-                if (_isPanning || !ShouldRenderTiles(zoom, preview.Scale))
+                if (!ShouldRenderTiles(zoom, preview.Scale))
                 {
                     return;
                 }
@@ -497,7 +497,7 @@ namespace CameraCaptureApp.Controls
                     {
                         DrawTile(graphics, tile, tileRect, zoom, offset);
                     }
-                    else
+                    else if (!_isPanning)
                     {
                         RequestTile(source, tileRect);
                     }
