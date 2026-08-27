@@ -257,6 +257,7 @@ namespace CameraCaptureApp.Controls
             FitImageToView();
             UpdateStatusLabel();
             viewerPanel.Invalidate();
+            source.QueuePreviewBuilds(ScheduleTileRefresh);
         }
 
         private async Task ApplyBitmapAsync(Bitmap bitmap, int version, int sourceWidth, int sourceHeight, CancellationToken cancellationToken)
@@ -992,7 +993,7 @@ namespace CameraCaptureApp.Controls
                 }
 
                 var imageBounds = GetCurrentDisplayImageBoundsFUnsafe();
-                _grayWaveformSelectionEnd = ClampToImage(ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe()), GetCurrentImageSizeUnsafe());
+                _grayWaveformSelectionEnd = GetWaveformSelectionEndPoint(e.Location, imageBounds, GetCurrentImageSizeUnsafe());
                 viewerPanel.Invalidate();
                 return true;
             }
@@ -1009,7 +1010,7 @@ namespace CameraCaptureApp.Controls
                 }
 
                 var imageBounds = GetCurrentDisplayImageBoundsFUnsafe();
-                _grayWaveformSelectionEnd = ClampToImage(ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe()), GetCurrentImageSizeUnsafe());
+                _grayWaveformSelectionEnd = GetWaveformSelectionEndPoint(e.Location, imageBounds, GetCurrentImageSizeUnsafe());
                 _grayWaveformDragging = false;
                 var start = _grayWaveformSelectionStart ?? Point.Empty;
                 var end = _grayWaveformSelectionEnd ?? start;
@@ -1223,6 +1224,61 @@ namespace CameraCaptureApp.Controls
             return new Point(
                 Math.Max(0, Math.Min(imageSize.Width - 1, point.X)),
                 Math.Max(0, Math.Min(imageSize.Height - 1, point.Y)));
+        }
+
+        private Point GetWaveformSelectionEndPoint(Point clientPoint, RectangleF imageBounds, Size imageSize)
+        {
+            var end = ClampToImage(ClientToImage(clientPoint, imageBounds, imageSize), imageSize);
+            if ((ModifierKeys & Keys.Shift) != Keys.Shift || !_grayWaveformSelectionStart.HasValue)
+            {
+                return end;
+            }
+
+            return ClampToImage(SnapLineEndPoint(_grayWaveformSelectionStart.Value, end), imageSize);
+        }
+
+        private static Point SnapLineEndPoint(Point start, Point end)
+        {
+            var dx = end.X - start.X;
+            var dy = end.Y - start.Y;
+            if (dx == 0 && dy == 0)
+            {
+                return end;
+            }
+
+            var angle = Math.Atan2(dy, dx) * 180d / Math.PI;
+            if (angle < 0d)
+            {
+                angle += 360d;
+            }
+
+            var quadrant = Math.Floor(angle / 90d);
+            var angleInQuadrant = angle - (quadrant * 90d);
+            double snappedAngleInQuadrant;
+            if (angleInQuadrant <= 30d)
+            {
+                snappedAngleInQuadrant = 0d;
+            }
+            else if (angleInQuadrant < 60d)
+            {
+                snappedAngleInQuadrant = 45d;
+            }
+            else
+            {
+                snappedAngleInQuadrant = 90d;
+            }
+
+            var snappedAngle = (quadrant * 90d) + snappedAngleInQuadrant;
+            if (snappedAngle >= 360d)
+            {
+                snappedAngle -= 360d;
+            }
+
+            var radians = snappedAngle * Math.PI / 180d;
+            var length = Math.Sqrt((dx * dx) + (dy * dy));
+            return new Point(
+                start.X + (int)Math.Round(Math.Cos(radians) * length),
+                start.Y + (int)Math.Round(Math.Sin(radians) * length));
         }
 
         private sealed class BitmapGrayPixelSource : IGrayPixelSource

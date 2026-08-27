@@ -23,6 +23,7 @@ namespace CameraCaptureApp.Controls
         private readonly LinkedList<string> _tileOrder;
         private readonly HashSet<string> _pendingTiles;
         private readonly List<PreviewLevel> _previewLevels;
+        private bool _previewBuildQueued;
         private bool _disposed;
 
         public LargeImageSource(string filePath)
@@ -37,6 +38,7 @@ namespace CameraCaptureApp.Controls
             _pendingTiles = new HashSet<string>(StringComparer.Ordinal);
             _previewLevels = new List<PreviewLevel>();
             InitializePreviewLevels();
+            CreateFastPreview();
         }
 
         public int Width { get; private set; }
@@ -58,23 +60,112 @@ namespace CameraCaptureApp.Controls
             lock (_sync)
             {
                 ThrowIfDisposed();
-                PreviewLevel selected = _previewLevels[0];
+                PreviewLevel selected = null;
                 for (var i = 0; i < _previewLevels.Count; i++)
                 {
-                    if (_previewLevels[i].Scale >= zoom)
+                    if (_previewLevels[i].Bitmap != null && _previewLevels[i].Scale >= zoom)
                     {
                         selected = _previewLevels[i];
                         break;
                     }
                 }
 
-                if (selected.Bitmap == null)
+                if (selected == null)
                 {
+                    for (var i = _previewLevels.Count - 1; i >= 0; i--)
+                    {
+                        if (_previewLevels[i].Bitmap != null)
+                        {
+                            selected = _previewLevels[i];
+                            break;
+                        }
+                    }
+                }
+
+                if (selected == null)
+                {
+                    selected = _previewLevels[_previewLevels.Count - 1];
                     selected.Bitmap = CreateScaledBitmap(selected.DecodeWidth, selected.DecodeHeight);
                 }
 
                 return new PreviewBitmap(selected.Bitmap, selected.Scale, false);
             }
+        }
+
+        public void QueuePreviewBuilds(Action onReady)
+        {
+            lock (_sync)
+            {
+                if (_disposed || _previewBuildQueued)
+                {
+                    return;
+                }
+
+                _previewBuildQueued = true;
+            }
+
+            Task.Run(
+                () =>
+                {
+                    try
+                    {
+                        for (var i = _previewLevels.Count - 1; i >= 0; i--)
+                        {
+                            PreviewLevel level;
+                            lock (_sync)
+                            {
+                                if (_disposed)
+                                {
+                                    return;
+                                }
+
+                                level = _previewLevels[i];
+                                if (level.Bitmap != null)
+                                {
+                                    continue;
+                                }
+                            }
+
+                            Bitmap bitmap = null;
+                            try
+                            {
+                                bitmap = CreateScaledBitmap(level.DecodeWidth, level.DecodeHeight);
+                                lock (_sync)
+                                {
+                                    if (_disposed)
+                                    {
+                                        return;
+                                    }
+
+                                    if (level.Bitmap == null)
+                                    {
+                                        level.Bitmap = bitmap;
+                                        bitmap = null;
+                                    }
+                                }
+
+                                if (onReady != null)
+                                {
+                                    onReady();
+                                }
+                            }
+                            finally
+                            {
+                                if (bitmap != null)
+                                {
+                                    bitmap.Dispose();
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        lock (_sync)
+                        {
+                            _previewBuildQueued = false;
+                        }
+                    }
+                });
         }
 
         public bool TryGetTile(Rectangle sourceRect, out Bitmap tile)
@@ -311,6 +402,17 @@ namespace CameraCaptureApp.Controls
             AddPreviewLevel(4096);
             AddPreviewLevel(8192);
             _previewLevels.Sort((a, b) => b.Scale.CompareTo(a.Scale));
+        }
+
+        private void CreateFastPreview()
+        {
+            if (_previewLevels.Count == 0)
+            {
+                return;
+            }
+
+            var fastestLevel = _previewLevels[_previewLevels.Count - 1];
+            fastestLevel.Bitmap = CreateScaledBitmap(fastestLevel.DecodeWidth, fastestLevel.DecodeHeight);
         }
 
         private void AddPreviewLevel(int maxDimension)

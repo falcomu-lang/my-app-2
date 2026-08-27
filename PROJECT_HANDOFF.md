@@ -14,8 +14,11 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Main project: `CameraCaptureApp/CameraCaptureApp.csproj`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
-- Current handoff date: `2026-08-26`
-- Latest pushed feature commit referenced by this handoff: `d0ed6fb Guard Sapera cleanup failures`
+- Current handoff date: `2026-08-27`
+- Latest pushed feature commit referenced by this handoff: `62725b4 Fix waveform selection at high zoom`
+- Latest verified local changes not yet pushed:
+  - Shift-assisted gray waveform line snapping.
+  - Progressive large-image preview refinement while loading.
 
 Latest verified local build command:
 
@@ -79,6 +82,11 @@ Latest local build result: `0 warning / 0 error`
   - new camera frames do not replace the selection image while selection is active.
 - Selection behavior:
   - left-click drag on the main image defines the waveform line,
+  - holding `Shift` while drawing snaps the line angle using the user's requested buckets:
+    - `0-30` degrees snaps to horizontal,
+    - `31-59` degrees snaps to `45` degrees,
+    - `60-90` degrees snaps to vertical,
+    - the same rule repeats in the other quadrants,
   - confirmation dialog shows start/end/length,
   - `Retry` restarts line selection,
   - cancel exits selection mode.
@@ -121,6 +129,12 @@ Latest local build result: `0 warning / 0 error`
   - `2048`
   - `4096`
   - `8192`
+- Large-image file loading now uses progressive preview refinement:
+  - `LargeImageSource` creates only the fastest/smallest full-image preview during construction.
+  - Larger preview levels are generated in the background after the image is displayed.
+  - Each completed preview level schedules a viewer refresh.
+  - This means the user can see a blurry full-image overview quickly, and the same overview becomes clearer as background preview levels complete.
+  - Zooming into an area may initially show the available preview, then high-resolution tiles replace that area as tile decoding completes.
 - It renders high-resolution detail as `1024 x 1024` tiles.
 - Tile cache limit is currently `MaxTileCacheCount = 96`.
 - Pan / zoom performance changes:
