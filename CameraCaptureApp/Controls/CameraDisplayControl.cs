@@ -16,6 +16,8 @@ namespace CameraCaptureApp.Controls
         private const int TileSourceSize = 1024;
         private const float TileRenderZoomThreshold = 0.12f;
         private const float TilePreviewHandoffRatio = 1.02f;
+        private const float CachedTilePanZoomThreshold = 0.35f;
+        private const int MaxCachedTilesWhilePanning = 12;
         private const int TileRefreshIntervalMs = 33;
         private const int MaxLivePreviewDimension = 1600;
 
@@ -476,7 +478,8 @@ namespace CameraCaptureApp.Controls
                 graphics.InterpolationMode = _isPanning ? InterpolationMode.Low : InterpolationMode.HighQualityBicubic;
                 DrawPreviewRegion(graphics, preview.Bitmap, preview.Scale, visibleSourceRect, zoom, offset);
                 graphics.InterpolationMode = previousInterpolation;
-                if (_isPanning || !ShouldRenderTiles(zoom, preview.Scale))
+                if (!ShouldRenderTiles(zoom, preview.Scale) ||
+                    (_isPanning && !ShouldDrawCachedTilesWhilePanning(zoom, visibleSourceRect)))
                 {
                     return;
                 }
@@ -497,7 +500,7 @@ namespace CameraCaptureApp.Controls
                     {
                         DrawTile(graphics, tile, tileRect, zoom, offset);
                     }
-                    else
+                    else if (!_isPanning)
                     {
                         RequestTile(source, tileRect);
                     }
@@ -588,6 +591,18 @@ namespace CameraCaptureApp.Controls
             }
 
             return zoom > (previewScale * TilePreviewHandoffRatio);
+        }
+
+        private static bool ShouldDrawCachedTilesWhilePanning(float zoom, Rectangle visibleSourceRect)
+        {
+            if (zoom < CachedTilePanZoomThreshold)
+            {
+                return false;
+            }
+
+            var tileColumns = ((visibleSourceRect.Width + TileSourceSize - 1) / TileSourceSize) + 1;
+            var tileRows = ((visibleSourceRect.Height + TileSourceSize - 1) / TileSourceSize) + 1;
+            return tileColumns * tileRows <= MaxCachedTilesWhilePanning;
         }
 
         private void ScheduleTileRefresh()
