@@ -446,8 +446,8 @@ namespace CameraCaptureApp.Controls
                 return;
             }
 
-            var imageBounds = GetCurrentDisplayImageBoundsUnsafe();
-            if (imageBounds.Width <= 0 || imageBounds.Height <= 0)
+            var imageBounds = GetCurrentDisplayImageBoundsFUnsafe();
+            if (imageBounds.Width <= 0f || imageBounds.Height <= 0f)
             {
                 return;
             }
@@ -968,14 +968,14 @@ namespace CameraCaptureApp.Controls
                     return false;
                 }
 
-                var imageBounds = GetCurrentDisplayImageBoundsUnsafe();
-                if (!imageBounds.Contains(e.Location))
+                var imageBounds = GetCurrentDisplayImageBoundsFUnsafe();
+                if (!ContainsPoint(imageBounds, e.Location))
                 {
                     return false;
                 }
 
                 _grayWaveformDragging = true;
-                _grayWaveformSelectionStart = ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe());
+                _grayWaveformSelectionStart = ClampToImage(ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe()), GetCurrentImageSizeUnsafe());
                 _grayWaveformSelectionEnd = _grayWaveformSelectionStart;
                 viewerPanel.Invalidate();
                 return true;
@@ -991,7 +991,7 @@ namespace CameraCaptureApp.Controls
                     return false;
                 }
 
-                var imageBounds = GetCurrentDisplayImageBoundsUnsafe();
+                var imageBounds = GetCurrentDisplayImageBoundsFUnsafe();
                 _grayWaveformSelectionEnd = ClampToImage(ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe()), GetCurrentImageSizeUnsafe());
                 viewerPanel.Invalidate();
                 return true;
@@ -1008,7 +1008,7 @@ namespace CameraCaptureApp.Controls
                     return false;
                 }
 
-                var imageBounds = GetCurrentDisplayImageBoundsUnsafe();
+                var imageBounds = GetCurrentDisplayImageBoundsFUnsafe();
                 _grayWaveformSelectionEnd = ClampToImage(ClientToImage(e.Location, imageBounds, GetCurrentImageSizeUnsafe()), GetCurrentImageSizeUnsafe());
                 _grayWaveformDragging = false;
                 var start = _grayWaveformSelectionStart ?? Point.Empty;
@@ -1058,12 +1058,32 @@ namespace CameraCaptureApp.Controls
             return GetImageBoundsUnsafe(GetCurrentDisplayImageSizeUnsafe());
         }
 
+        private RectangleF GetCurrentDisplayImageBoundsFUnsafe()
+        {
+            return GetImageBoundsFUnsafe(GetCurrentDisplayImageSizeUnsafe());
+        }
+
         private Rectangle GetImageBoundsUnsafe(Size size)
+        {
+            var bounds = GetImageBoundsFUnsafe(size);
+            if (bounds.Width <= 0f || bounds.Height <= 0f)
+            {
+                return Rectangle.Empty;
+            }
+
+            return new Rectangle(
+                (int)Math.Floor(bounds.X),
+                (int)Math.Floor(bounds.Y),
+                Math.Max(1, (int)Math.Ceiling(bounds.Width)),
+                Math.Max(1, (int)Math.Ceiling(bounds.Height)));
+        }
+
+        private RectangleF GetImageBoundsFUnsafe(Size size)
         {
             var bounds = GetDestinationRectangle();
             if (size.Width <= 0 || size.Height <= 0 || bounds.Width <= 0 || bounds.Height <= 0)
             {
-                return Rectangle.Empty;
+                return RectangleF.Empty;
             }
 
             var scaleX = bounds.Width / (float)size.Width;
@@ -1071,11 +1091,11 @@ namespace CameraCaptureApp.Controls
             var zoom = _zoom > 0f ? _zoom : Math.Min(scaleX, scaleY);
             var drawWidth = size.Width * zoom;
             var drawHeight = size.Height * zoom;
-            return new Rectangle(
-                (int)Math.Round(_imageOffset.X),
-                (int)Math.Round(_imageOffset.Y),
-                Math.Max(1, (int)Math.Round(drawWidth)),
-                Math.Max(1, (int)Math.Round(drawHeight)));
+            return new RectangleF(
+                _imageOffset.X,
+                _imageOffset.Y,
+                Math.Max(1f, drawWidth),
+                Math.Max(1f, drawHeight));
         }
 
         private Size GetCurrentImageSizeUnsafe()
@@ -1161,9 +1181,9 @@ namespace CameraCaptureApp.Controls
             return points.ToArray();
         }
 
-        private static Point ClientToImage(Point point, Rectangle imageBounds, Size imageSize)
+        private static Point ClientToImage(Point point, RectangleF imageBounds, Size imageSize)
         {
-            if (imageBounds.Width <= 0 || imageBounds.Height <= 0 || imageSize.Width <= 0 || imageSize.Height <= 0)
+            if (imageBounds.Width <= 0f || imageBounds.Height <= 0f || imageSize.Width <= 0 || imageSize.Height <= 0)
             {
                 return Point.Empty;
             }
@@ -1173,9 +1193,9 @@ namespace CameraCaptureApp.Controls
             return new Point((int)Math.Round(x), (int)Math.Round(y));
         }
 
-        private static Point ImageToClient(Point point, Rectangle imageBounds, Size imageSize)
+        private static Point ImageToClient(Point point, RectangleF imageBounds, Size imageSize)
         {
-            if (imageBounds.Width <= 0 || imageBounds.Height <= 0 || imageSize.Width <= 0 || imageSize.Height <= 0)
+            if (imageBounds.Width <= 0f || imageBounds.Height <= 0f || imageSize.Width <= 0 || imageSize.Height <= 0)
             {
                 return Point.Empty;
             }
@@ -1183,6 +1203,14 @@ namespace CameraCaptureApp.Controls
             var x = imageBounds.Left + (point.X * imageBounds.Width / (float)imageSize.Width);
             var y = imageBounds.Top + (point.Y * imageBounds.Height / (float)imageSize.Height);
             return new Point((int)Math.Round(x), (int)Math.Round(y));
+        }
+
+        private static bool ContainsPoint(RectangleF bounds, Point point)
+        {
+            return point.X >= bounds.Left &&
+                point.X <= bounds.Right &&
+                point.Y >= bounds.Top &&
+                point.Y <= bounds.Bottom;
         }
 
         private static Point ClampToImage(Point point, Size imageSize)

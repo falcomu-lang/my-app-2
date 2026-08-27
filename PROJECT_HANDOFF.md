@@ -14,8 +14,8 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Main project: `CameraCaptureApp/CameraCaptureApp.csproj`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
-- Current handoff date: `2026-08-25`
-- Latest pushed feature commit referenced by this handoff: `9522f55 Hide large image tile seams`
+- Current handoff date: `2026-08-26`
+- Latest pushed feature commit referenced by this handoff: `d0ed6fb Guard Sapera cleanup failures`
 
 Latest verified local build command:
 
@@ -65,6 +65,7 @@ Latest local build result: `0 warning / 0 error`
   - External-trigger/meter-wheel automatic compare action currently behaves as expected.
   - Main image pan smoothness is now acceptable after the preview-during-drag change.
   - Gray waveform generation speed for large loaded images is now acceptable after batched tile sampling.
+- Shutdown/connect-failure cleanup now guards Sapera cleanup calls so a Sapera DLL load failure does not bubble directly to the UI thread during cleanup.
 
 ## Gray Waveform Feature
 
@@ -456,11 +457,25 @@ Important limitation:
 - If no user-selected DeviceFeature path exists and exactly one AcqDevice is found, the app auto-selects that unique path.
 - If line rate ever stops working on another machine, first verify that `DeviceFeatureServerName` / `DeviceFeatureResourceIndex` point to the same attached-camera path shown by CamExpert.
 - The Sapera DLL reference still points to a local SDK/demo DLL path, so another computer needs a compatible Sapera SDK/runtime setup.
+- Important deployment finding from `2026-08-26`:
+  - The development machine uses Sapera SDK/runtime `9.12`.
+  - The field machine was reported as Sapera SDK/runtime `8.6`.
+  - The observed field error was `System.IO.FileLoadException: cannot load a procedure imported by DALSA.SaperaLT.SapClassBasic.dll`.
+  - This strongly suggests a Sapera managed/native DLL version mismatch, not necessarily missing frame-grabber hardware.
+  - A machine can have a capture card installed but still fail if the runtime DLLs are older than the managed `DALSA.SaperaLT.SapClassBasic.dll` used by the app build.
+  - Preferred resolution: keep the development and field Sapera runtime versions aligned.
+  - If the field machine cannot be upgraded to `9.12`, rebuild this app against the field machine's `8.6` Sapera DLLs.
+- Commit `d0ed6fb` added safer Sapera cleanup:
+  - connect-failure cleanup now uses guarded per-object destroy/dispose calls,
+  - disconnect cleanup uses the same guarded cleanup path,
+  - cleanup failures are logged through `AppLogger` instead of surfacing directly as a UI thread exception.
+- This guarded cleanup does not fix Sapera version incompatibility by itself; it only prevents cleanup-time failures from interrupting app shutdown or connect failure handling.
 
 ## Known Issues / Current Limits
 
 - No automated tests.
 - No installer or deployment package.
+- Deployment currently depends on a compatible Sapera LT runtime. The app was built on a Sapera `9.12` development machine, while the field machine was reported as `8.6`; this mismatch can cause `FileLoadException` / imported procedure load failures even when a capture card is present.
 - LSI-8181 meter wheel support is now partially implemented, but it still requires real hardware validation.
 - The app depends on `LSI8181_64.dll` and the LSI-8181 driver being available at runtime. The vendor DLL is not committed to this repository.
 - The current meter wheel layer only wraps the needed APIs for basic counter/compare/CMP OUT setup. It does not embed or expose the full vendor test program.
@@ -480,28 +495,33 @@ Important limitation:
 ## Recommended Next Steps
 
 1. Test the latest `main` on the real LSI-8181/camera machine after this handoff update.
-2. Verify the meter wheel and camera wiring before chasing software bugs:
+2. Align Sapera runtime versions before deeper camera debugging:
+   - Option A: install Sapera `9.12` runtime/SDK on the field machine to match the development machine.
+   - Option B: rebuild the app against Sapera `8.6` DLLs if the field machine must remain on `8.6`.
+   - Confirm `CameraCaptureApp.exe` is running as `x64` and loads matching 64-bit Sapera native DLLs.
+   - Do not treat capture-card presence alone as proof that Sapera DLL loading is correct.
+3. Verify the meter wheel and camera wiring before chasing software bugs:
    - meter wheel TTL output
    - camera trigger input
    - expected physical output from the LSI-8181 card
-3. Confirm the desired capture mode on hardware:
+4. Confirm the desired capture mode on hardware:
    - one pulse equals one line
    - the app keeps stacking lines until the requested image length is reached
    - display happens only after the full line count is collected
-4. Verify the current free-run path still works after the external-trigger changes:
+5. Verify the current free-run path still works after the external-trigger changes:
    - continuous mode should not inherit external-trigger parameters
    - no Sapera warning dialogs should appear in normal free-run
-5. Verify meter wheel card connection behavior with `LSI8181_64.dll` available beside the app executable or in the DLL search path.
-6. Verify startup behavior:
+6. Verify meter wheel card connection behavior with `LSI8181_64.dll` available beside the app executable or in the DLL search path.
+7. Verify startup behavior:
    - Start the app.
    - Wait at least `1 second`.
    - Confirm the meter wheel auto-connects to the persisted `MeterWheelCardId`.
    - Open and close `Meter Wheel Control`; confirm closing the window does not disconnect the card.
-7. Verify physical output wiring:
+8. Verify physical output wiring:
    - Main compare output: `CMP_OUT`.
    - Extension offset outputs: `CMP0_OUT` through `CMP7_OUT`.
-8. Verify actual `CMP_OUT` pulse behavior with the configured `CMP Out Width`; do not rely on the vendor Compare form checkbox alone.
-9. Confirm the persisted meter wheel settings are restored and applied after app restart:
+9. Verify actual `CMP_OUT` pulse behavior with the configured `CMP Out Width`; do not rely on the vendor Compare form checkbox alone.
+10. Confirm the persisted meter wheel settings are restored and applied after app restart:
    - `MeterWheelCardId`
    - `MeterWheelCompareIncrement`
    - `MeterWheelMultipleRate`
@@ -513,14 +533,14 @@ Important limitation:
    - `MeterWheelExtensionCompareOffsets`
    - `MeterWheelExtensionComparePulseWidths`
    - `MeterWheelExtensionCompareOutputStates`
-10. Verify external-trigger automation on real hardware:
+11. Verify external-trigger automation on real hardware:
    - `Continuous` mode disables `Compare Set follows current encoder value`.
    - `External Trigger` mode allows `Compare Set follows current encoder value`.
    - External trigger causes Compare Set to write the saved `MeterWheelCompareValue`.
    - With `Also apply Encoder Set on external trigger`, external trigger also writes the saved `MeterWheelEncoderValue`.
-11. Verify extension compare output behavior for `CMP0_OUT` through `CMP7_OUT` on real hardware.
-12. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
-13. Re-test large-image pan behavior on the target `16384 x 50000` files at the known sensitive zoom levels:
+12. Verify extension compare output behavior for `CMP0_OUT` through `CMP7_OUT` on real hardware.
+13. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
+14. Re-test large-image pan behavior on the target `16384 x 50000` files at the known sensitive zoom levels:
    - `0.19x`
    - `0.23x`
    - `0.29x`
@@ -528,23 +548,23 @@ Important limitation:
    - `0.45x`
    - `0.57x`
    - `0.71x`
-14. Re-test large-image tile seam visibility after zooming and panning at fractional zoom levels.
-15. Re-test gray waveform sampling on loaded large images and camera frames:
+15. Re-test large-image tile seam visibility after zooming and panning at fractional zoom levels.
+16. Re-test gray waveform sampling on loaded large images and camera frames:
    - loaded large image should sample real source pixels through `LargeImageSource`,
    - camera frame should sample the full-resolution frame from `FrameRecorder`, not the UI preview bitmap.
-16. If save speed remains too slow, profile time spent in:
+17. If save speed remains too slow, profile time spent in:
    - copying frame bytes into the grayscale buffer,
    - WIC encoding,
    - final disk write / antivirus / sync folder overhead.
-17. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
-18. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
+18. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
+19. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
    - Large `Length` values naturally delay UI updates because the app waits for a full frame.
    - Consider `EndOfNLines` or other Sapera line/chunk callbacks if supported.
-19. If full continuous long-image capture is required, implement a recorder queue:
+20. If full continuous long-image capture is required, implement a recorder queue:
    - Background worker owns the full-resolution data path.
    - UI preview remains downscaled and droppable.
    - Capture/export reads from recorder output.
-20. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
+21. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
 
 ## Notes For The Next Person
 
@@ -572,3 +592,4 @@ Important limitation:
 - Preserve `IGrayPixelSource.GetGrayValues` batch sampling. Large-image waveform speed depends on tile grouping and batch reads.
 - Preserve large-image pan behavior: preview while dragging, high-resolution tiles after mouse-up.
 - For save pipeline changes, keep the temporary `.tmp` write then final move behavior to avoid users opening incomplete output files.
+- Do not assume `FileLoadException` from `DALSA.SaperaLT.SapClassBasic.dll` means no capture card. It can mean the card exists but Sapera managed/native DLL versions are mismatched.
