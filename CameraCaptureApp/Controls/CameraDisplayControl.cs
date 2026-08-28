@@ -16,8 +16,8 @@ namespace CameraCaptureApp.Controls
         private const int TileSourceSize = 1024;
         private const float TileRenderZoomThreshold = 0.12f;
         private const float TilePreviewHandoffRatio = 1.02f;
-        private const float CachedTilePanZoomThreshold = 0.35f;
-        private const int MaxCachedTilesWhilePanning = 12;
+        private const float CachedTilePanZoomThreshold = 0.18f;
+        private const int MaxCachedTilesWhilePanning = 64;
         private const int TileRefreshIntervalMs = 33;
         private const int MaxLivePreviewDimension = 1600;
 
@@ -498,7 +498,7 @@ namespace CameraCaptureApp.Controls
                     Bitmap tile;
                     if (source.TryGetTile(tileRect, out tile))
                     {
-                        DrawTile(graphics, tile, tileRect, zoom, offset);
+                        DrawTile(graphics, tile, tileRect, zoom, offset, _isPanning);
                     }
                     else if (!_isPanning)
                     {
@@ -539,7 +539,7 @@ namespace CameraCaptureApp.Controls
                 ScheduleTileRefresh);
         }
 
-        private static void DrawTile(Graphics graphics, Bitmap tile, Rectangle tileRect, float zoom, PointF offset)
+        private static void DrawTile(Graphics graphics, Bitmap tile, Rectangle tileRect, float zoom, PointF offset, bool lightweight)
         {
             var left = offset.X + (tileRect.Left * zoom);
             var top = offset.Y + (tileRect.Top * zoom);
@@ -563,7 +563,7 @@ namespace CameraCaptureApp.Controls
             var drawRect = RectangleF.FromLTRB(drawLeft, drawTop, drawRight, drawBottom);
             var previousInterpolation = graphics.InterpolationMode;
             var previousPixelOffset = graphics.PixelOffsetMode;
-            graphics.InterpolationMode = zoom >= 1f ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear;
+            graphics.InterpolationMode = lightweight ? InterpolationMode.Low : (zoom >= 1f ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear);
             graphics.PixelOffsetMode = PixelOffsetMode.Half;
             using (var attributes = new ImageAttributes())
             {
