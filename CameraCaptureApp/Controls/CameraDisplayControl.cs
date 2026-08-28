@@ -19,6 +19,7 @@ namespace CameraCaptureApp.Controls
         private const float CachedTilePanZoomThreshold = 0.18f;
         private const int MaxCachedTilesWhilePanning = 96;
         private const int PanTileRequestIntervalMs = 90;
+        private const int PanInvalidateIntervalMs = 16;
         private const int TileRefreshIntervalMs = 33;
         private const int MaxLivePreviewDimension = 1600;
 
@@ -36,6 +37,7 @@ namespace CameraCaptureApp.Controls
         private int _imageVersion;
         private DateTime _lastDisplayUpdateUtc;
         private DateTime _lastPanTileRequestUtc;
+        private DateTime _lastPanInvalidateUtc;
         private bool _tileRefreshPending;
         private float _zoom = 1f;
         private PointF _imageOffset = PointF.Empty;
@@ -477,7 +479,7 @@ namespace CameraCaptureApp.Controls
             using (var preview = source.GetBestPreview(zoom))
             {
                 var previousInterpolation = graphics.InterpolationMode;
-                graphics.InterpolationMode = _isPanning ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBicubic;
+                graphics.InterpolationMode = _isPanning ? InterpolationMode.Bilinear : InterpolationMode.HighQualityBicubic;
                 DrawPreviewRegion(graphics, preview.Bitmap, preview.Scale, visibleSourceRect, zoom, offset);
                 graphics.InterpolationMode = previousInterpolation;
                 if (!ShouldRenderTiles(zoom, preview.Scale) ||
@@ -624,6 +626,18 @@ namespace CameraCaptureApp.Controls
             return true;
         }
 
+        private void InvalidateViewerWhilePanning()
+        {
+            var now = DateTime.UtcNow;
+            if ((now - _lastPanInvalidateUtc).TotalMilliseconds < PanInvalidateIntervalMs)
+            {
+                return;
+            }
+
+            _lastPanInvalidateUtc = now;
+            viewerPanel.Invalidate();
+        }
+
         private void ScheduleTileRefresh()
         {
             if (IsDisposed || !IsHandleCreated)
@@ -720,6 +734,7 @@ namespace CameraCaptureApp.Controls
 
             _isPanning = true;
             _lastMousePoint = e.Location;
+            _lastPanInvalidateUtc = DateTime.MinValue;
             viewerPanel.Cursor = Cursors.Hand;
         }
 
@@ -745,7 +760,7 @@ namespace CameraCaptureApp.Controls
             }
 
             UpdateStatusLabel();
-            viewerPanel.Invalidate();
+            InvalidateViewerWhilePanning();
         }
 
         private void viewerPanel_MouseUp(object sender, MouseEventArgs e)
