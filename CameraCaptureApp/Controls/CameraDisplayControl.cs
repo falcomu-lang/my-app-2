@@ -17,7 +17,8 @@ namespace CameraCaptureApp.Controls
         private const float TileRenderZoomThreshold = 0.12f;
         private const float TilePreviewHandoffRatio = 1.02f;
         private const float CachedTilePanZoomThreshold = 0.18f;
-        private const int MaxCachedTilesWhilePanning = 64;
+        private const int MaxCachedTilesWhilePanning = 96;
+        private const int PanTileRequestIntervalMs = 90;
         private const int TileRefreshIntervalMs = 33;
         private const int MaxLivePreviewDimension = 1600;
 
@@ -34,6 +35,7 @@ namespace CameraCaptureApp.Controls
         private Point _lastMousePoint;
         private int _imageVersion;
         private DateTime _lastDisplayUpdateUtc;
+        private DateTime _lastPanTileRequestUtc;
         private bool _tileRefreshPending;
         private float _zoom = 1f;
         private PointF _imageOffset = PointF.Empty;
@@ -475,7 +477,7 @@ namespace CameraCaptureApp.Controls
             using (var preview = source.GetBestPreview(zoom))
             {
                 var previousInterpolation = graphics.InterpolationMode;
-                graphics.InterpolationMode = _isPanning ? InterpolationMode.Low : InterpolationMode.HighQualityBicubic;
+                graphics.InterpolationMode = _isPanning ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBicubic;
                 DrawPreviewRegion(graphics, preview.Bitmap, preview.Scale, visibleSourceRect, zoom, offset);
                 graphics.InterpolationMode = previousInterpolation;
                 if (!ShouldRenderTiles(zoom, preview.Scale) ||
@@ -489,6 +491,7 @@ namespace CameraCaptureApp.Controls
             var endTileX = ((visibleSourceRect.Right + TileSourceSize - 1) / TileSourceSize) * TileSourceSize;
             var startTileY = (visibleSourceRect.Top / TileSourceSize) * TileSourceSize;
             var endTileY = ((visibleSourceRect.Bottom + TileSourceSize - 1) / TileSourceSize) * TileSourceSize;
+            var allowPanTileRequests = _isPanning && ShouldRequestTilesWhilePanning();
 
             for (var tileY = startTileY; tileY < endTileY; tileY += TileSourceSize)
             {
@@ -499,6 +502,10 @@ namespace CameraCaptureApp.Controls
                     if (source.TryGetTile(tileRect, out tile))
                     {
                         DrawTile(graphics, tile, tileRect, zoom, offset, _isPanning);
+                    }
+                    else if (allowPanTileRequests)
+                    {
+                        source.QueueTile(tileRect, ScheduleTileRefresh);
                     }
                     else if (!_isPanning)
                     {
@@ -603,6 +610,18 @@ namespace CameraCaptureApp.Controls
             var tileColumns = ((visibleSourceRect.Width + TileSourceSize - 1) / TileSourceSize) + 1;
             var tileRows = ((visibleSourceRect.Height + TileSourceSize - 1) / TileSourceSize) + 1;
             return tileColumns * tileRows <= MaxCachedTilesWhilePanning;
+        }
+
+        private bool ShouldRequestTilesWhilePanning()
+        {
+            var now = DateTime.UtcNow;
+            if ((now - _lastPanTileRequestUtc).TotalMilliseconds < PanTileRequestIntervalMs)
+            {
+                return false;
+            }
+
+            _lastPanTileRequestUtc = now;
+            return true;
         }
 
         private void ScheduleTileRefresh()
