@@ -14,7 +14,6 @@ namespace CameraCaptureApp.Forms
     public partial class MainForm : Form
     {
         private const int MaxConcurrentSnapshotSaves = 5;
-        private const int MaxPendingPreviewFrames = 3;
         private readonly ICameraService _cameraService;
         private readonly ISettingsService _settingsService;
         private readonly Controls.CameraDisplayControl _cameraDisplayControl;
@@ -26,7 +25,7 @@ namespace CameraCaptureApp.Forms
         private CancellationTokenSource _imageLoadTokenSource;
         private CancellationTokenSource _previewFrameTokenSource;
         private readonly object _pendingPreviewFramesLock = new object();
-        private readonly Queue<Bitmap> _pendingPreviewFrames = new Queue<Bitmap>();
+        private readonly Queue<Bitmap> _pendingRollingPreviewFrames = new Queue<Bitmap>();
         private readonly SemaphoreSlim _snapshotSaveGate = new SemaphoreSlim(MaxConcurrentSnapshotSaves, MaxConcurrentSnapshotSaves);
         private readonly object _snapshotProgressLock = new object();
         private bool _autoConnectAttempted;
@@ -37,8 +36,8 @@ namespace CameraCaptureApp.Forms
         private int _snapshotSaveFailedCount;
         private SaveProgressForm _snapshotProgressForm;
         private MeterWheelControlForm _meterWheelControlForm;
+        private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
-        private int _previewFramesDropped;
         private bool _isClosing;
 
         public MainForm(ICameraService cameraService, ISettingsService settingsService)
@@ -661,7 +660,12 @@ namespace CameraCaptureApp.Forms
             CancelPendingImageLoad();
             CancelPendingPreviewFrame();
             _frameRecorder.Dispose();
-            ClearPendingPreviewFrames();
+            ClearPendingRollingPreviewFrames();
+            var pendingFrame = Interlocked.Exchange(ref _pendingPreviewFrame, null);
+            if (pendingFrame != null)
+            {
+                pendingFrame.Dispose();
+            }
 
             try
             {
@@ -702,7 +706,22 @@ namespace CameraCaptureApp.Forms
                 _frameRecorder.ClearRolling();
             }
             SaveLatestRecordedFrameIfRequestedAsync();
-            EnqueuePendingPreviewFrame(e.Frame);
+            if (_settings.RollingCaptureEnabled)
+            {
+                lock (_pendingPreviewFramesLock)
+                {
+                    _pendingRollingPreviewFrames.Enqueue(e.Frame);
+                }
+            }
+            else
+            {
+                ClearPendingRollingPreviewFrames();
+                var previousFrame = Interlocked.Exchange(ref _pendingPreviewFrame, e.Frame);
+                if (previousFrame != null)
+                {
+                    previousFrame.Dispose();
+                }
+            }
 
             if (Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 1) == 0)
             {
@@ -785,7 +804,11 @@ namespace CameraCaptureApp.Forms
             Bitmap frame = null;
             try
             {
-                frame = DequeueLatestPendingPreviewFrame();
+                frame = Interlocked.Exchange(ref _pendingPreviewFrame, null);
+                if (frame == null)
+                {
+                    frame = DequeuePendingRollingPreviewFrame();
+                }
 
                 if (frame == null || IsDisposed)
                 {
@@ -803,7 +826,7 @@ namespace CameraCaptureApp.Forms
                 }
 
                 Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 0);
-                if (HasPendingPreviewFrames() &&
+                if ((Interlocked.CompareExchange(ref _pendingPreviewFrame, null, null) != null || HasPendingRollingPreviewFrames()) &&
                     Interlocked.Exchange(ref _previewFrameUiUpdateQueued, 1) == 0 &&
                     !IsDisposed &&
                     IsHandleCreated)
@@ -813,84 +836,29 @@ namespace CameraCaptureApp.Forms
             }
         }
 
-        private void EnqueuePendingPreviewFrame(Bitmap frame)
+        private Bitmap DequeuePendingRollingPreviewFrame()
         {
-            if (frame == null)
-            {
-                return;
-            }
-
-            var droppedFrames = new List<Bitmap>();
-            var droppedCount = 0;
             lock (_pendingPreviewFramesLock)
             {
-                while (_pendingPreviewFrames.Count >= MaxPendingPreviewFrames)
-                {
-                    droppedFrames.Add(_pendingPreviewFrames.Dequeue());
-                    droppedCount++;
-                }
-
-                _pendingPreviewFrames.Enqueue(frame);
-            }
-
-            foreach (var droppedFrame in droppedFrames)
-            {
-                droppedFrame.Dispose();
-            }
-
-            if (droppedCount > 0)
-            {
-                var totalDropped = Interlocked.Add(ref _previewFramesDropped, droppedCount);
-                SetFooterMessage("UI preview queue is full. Skipped preview frames: " + totalDropped + ".");
+                return _pendingRollingPreviewFrames.Count > 0 ? _pendingRollingPreviewFrames.Dequeue() : null;
             }
         }
 
-        private Bitmap DequeueLatestPendingPreviewFrame()
-        {
-            var droppedFrames = new List<Bitmap>();
-            Bitmap latestFrame = null;
-            lock (_pendingPreviewFramesLock)
-            {
-                while (_pendingPreviewFrames.Count > 0)
-                {
-                    if (latestFrame != null)
-                    {
-                        droppedFrames.Add(latestFrame);
-                    }
-
-                    latestFrame = _pendingPreviewFrames.Dequeue();
-                }
-            }
-
-            foreach (var droppedFrame in droppedFrames)
-            {
-                droppedFrame.Dispose();
-            }
-
-            if (droppedFrames.Count > 0)
-            {
-                var totalDropped = Interlocked.Add(ref _previewFramesDropped, droppedFrames.Count);
-                SetFooterMessage("UI preview skipped older frames to stay responsive: " + totalDropped + ".");
-            }
-
-            return latestFrame;
-        }
-
-        private bool HasPendingPreviewFrames()
+        private bool HasPendingRollingPreviewFrames()
         {
             lock (_pendingPreviewFramesLock)
             {
-                return _pendingPreviewFrames.Count > 0;
+                return _pendingRollingPreviewFrames.Count > 0;
             }
         }
 
-        private void ClearPendingPreviewFrames()
+        private void ClearPendingRollingPreviewFrames()
         {
             lock (_pendingPreviewFramesLock)
             {
-                while (_pendingPreviewFrames.Count > 0)
+                while (_pendingRollingPreviewFrames.Count > 0)
                 {
-                    _pendingPreviewFrames.Dequeue().Dispose();
+                    _pendingRollingPreviewFrames.Dequeue().Dispose();
                 }
             }
         }
