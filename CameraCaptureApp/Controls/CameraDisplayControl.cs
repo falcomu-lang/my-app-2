@@ -16,8 +16,8 @@ namespace CameraCaptureApp.Controls
         private const int TileSourceSize = 1024;
         private const float TileRenderZoomThreshold = 0.12f;
         private const float TilePreviewHandoffRatio = 1.02f;
-        private const float CachedTilePanZoomThreshold = 0.45f;
-        private const int MaxCachedTilesWhilePanning = 24;
+        private const float CachedTilePanZoomThreshold = 0.22f;
+        private const int MaxCachedTilesWhilePanning = 48;
         private const int PanInvalidateIntervalMs = 16;
         private const int TileRefreshIntervalMs = 33;
         private const int MaxLivePreviewDimension = 1600;
