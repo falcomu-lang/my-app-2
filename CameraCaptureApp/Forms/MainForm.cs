@@ -14,7 +14,7 @@ namespace CameraCaptureApp.Forms
     public partial class MainForm : Form
     {
         private const int MaxConcurrentSnapshotSaves = 5;
-        private const int MaxPendingPreviewFrames = 5;
+        private const int MaxPendingPreviewFrames = 3;
         private readonly ICameraService _cameraService;
         private readonly ISettingsService _settingsService;
         private readonly Controls.CameraDisplayControl _cameraDisplayControl;
@@ -785,7 +785,7 @@ namespace CameraCaptureApp.Forms
             Bitmap frame = null;
             try
             {
-                frame = DequeuePendingPreviewFrame();
+                frame = DequeueLatestPendingPreviewFrame();
 
                 if (frame == null || IsDisposed)
                 {
@@ -845,12 +845,35 @@ namespace CameraCaptureApp.Forms
             }
         }
 
-        private Bitmap DequeuePendingPreviewFrame()
+        private Bitmap DequeueLatestPendingPreviewFrame()
         {
+            var droppedFrames = new List<Bitmap>();
+            Bitmap latestFrame = null;
             lock (_pendingPreviewFramesLock)
             {
-                return _pendingPreviewFrames.Count > 0 ? _pendingPreviewFrames.Dequeue() : null;
+                while (_pendingPreviewFrames.Count > 0)
+                {
+                    if (latestFrame != null)
+                    {
+                        droppedFrames.Add(latestFrame);
+                    }
+
+                    latestFrame = _pendingPreviewFrames.Dequeue();
+                }
             }
+
+            foreach (var droppedFrame in droppedFrames)
+            {
+                droppedFrame.Dispose();
+            }
+
+            if (droppedFrames.Count > 0)
+            {
+                var totalDropped = Interlocked.Add(ref _previewFramesDropped, droppedFrames.Count);
+                SetFooterMessage("UI preview skipped older frames to stay responsive: " + totalDropped + ".");
+            }
+
+            return latestFrame;
         }
 
         private bool HasPendingPreviewFrames()
