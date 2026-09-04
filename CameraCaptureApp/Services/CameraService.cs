@@ -182,7 +182,11 @@ namespace CameraCaptureApp.Services
 
             var extLineTriggerEnabled = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
             var extFrameTriggerEnabled = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE);
-            var lineArmed = extLineTriggerEnabled.HasValue && extLineTriggerEnabled.Value == 1;
+            var lineTriggerEnabled = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.LINE_TRIGGER_ENABLE);
+            var lineIntegrateEnabled = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE);
+            var lineArmed = extLineTriggerEnabled.HasValue && extLineTriggerEnabled.Value == 1
+                && (!lineTriggerEnabled.HasValue || lineTriggerEnabled.Value == 1)
+                && (!lineIntegrateEnabled.HasValue || lineIntegrateEnabled.Value == 1);
             var frameArmed = extFrameTriggerEnabled.HasValue && extFrameTriggerEnabled.Value == 1;
 
             if (_settings.ExternalFrameTriggerOneFrame)
@@ -193,15 +197,23 @@ namespace CameraCaptureApp.Services
                     + FormatNullableInt(extLineTriggerEnabled)
                     + ", EXT_FRAME_TRIGGER_ENABLE="
                     + FormatNullableInt(extFrameTriggerEnabled)
+                    + ", LINE_TRIGGER_ENABLE="
+                    + FormatNullableInt(lineTriggerEnabled)
+                    + ", LINE_INTEGRATE_ENABLE="
+                    + FormatNullableInt(lineIntegrateEnabled)
                     + ". Preview was not started to avoid free-run acquisition.");
             }
 
             return new ExternalTriggerArmStatus(
                 lineArmed,
-                "External Trigger is not armed: External Trigger One Frame is disabled, so EXT_LINE_TRIGGER_ENABLE must read back as 1 while EXT_FRAME_TRIGGER_ENABLE may remain 0. Readback EXT_LINE_TRIGGER_ENABLE="
+                "External Trigger is not armed: External Trigger One Frame is disabled, so external line triggering must be armed while EXT_FRAME_TRIGGER_ENABLE may remain 0. Readback EXT_LINE_TRIGGER_ENABLE="
                 + FormatNullableInt(extLineTriggerEnabled)
                 + ", EXT_FRAME_TRIGGER_ENABLE="
                 + FormatNullableInt(extFrameTriggerEnabled)
+                + ", LINE_TRIGGER_ENABLE="
+                + FormatNullableInt(lineTriggerEnabled)
+                + ", LINE_INTEGRATE_ENABLE="
+                + FormatNullableInt(lineIntegrateEnabled)
                 + ". Preview was not started to avoid free-run acquisition.");
         }
 
@@ -2812,9 +2824,9 @@ namespace CameraCaptureApp.Services
             var disabledInternalLine = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0);
             var disabledInternalFrame = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0);
             var disabledShaftEncoder = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE, 0);
-            var disabledCameraTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 0);
+            var enabledCameraTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 1);
             var disabledExternalTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0);
-            var disabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 0);
+            var enabledLineTrigger = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 1);
             var lineIntegrateMethodApplied = TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_METHOD, SapAcquisition.Val.LINE_INTEGRATE_METHOD_3);
             var lineIntegrateDurationApplied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_DURATION, 40);
             var pulse0HighApplied = TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_PULSE0_POLARITY, SapAcquisition.Val.ACTIVE_HIGH);
@@ -2834,9 +2846,9 @@ namespace CameraCaptureApp.Services
                 + "intLineOff=" + FormatApplyResult(disabledInternalLine, "0")
                 + " intFrameOff=" + FormatApplyResult(disabledInternalFrame, "0")
                 + " shaftEncoderOff=" + FormatApplyResult(disabledShaftEncoder, "0")
-                + " camTriggerOff=" + FormatApplyResult(disabledCameraTrigger, "0")
+                + " camTriggerOn=" + FormatApplyResult(enabledCameraTrigger, "1")
                 + " extTriggerOff=" + FormatApplyResult(disabledExternalTrigger, "0")
-                + " lineTriggerOff=" + FormatApplyResult(disabledLineTrigger, "0")
+                + " lineTriggerOn=" + FormatApplyResult(enabledLineTrigger, "1")
                 + " lineIntegrateMethod3=" + FormatApplyResult(lineIntegrateMethodApplied, "LINE_INTEGRATE_METHOD_3")
                 + " lineIntegrateDuration40=" + FormatApplyResult(lineIntegrateDurationApplied, "40")
                 + " pulse0High=" + FormatApplyResult(pulse0HighApplied, "ACTIVE_HIGH")
@@ -2862,7 +2874,7 @@ namespace CameraCaptureApp.Services
                 + " shaftEncoder=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.SHAFT_ENCODER_ENABLE)
                 + " extFrameEnable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE));
 
-            return enabledExternalLine;
+            return enabledExternalLine && (!IsAcquisitionParameterAvailable(SapAcquisition.Prm.LINE_TRIGGER_ENABLE) || enabledLineTrigger);
         }
 
         private bool TrySetCc1ToPulse1()
