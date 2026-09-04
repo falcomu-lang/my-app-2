@@ -150,10 +150,11 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
-            if (_settings.TriggerMode == TriggerMode.ExternalTrigger && !IsExternalLineTriggerArmed())
+            var externalTriggerArmStatus = GetExternalTriggerArmStatus();
+            if (_settings.TriggerMode == TriggerMode.ExternalTrigger && !externalTriggerArmStatus.IsArmed)
             {
                 _status.ScanStateText = "Trigger not armed";
-                _status.LastMessage = "External Trigger is not armed: EXT_LINE_TRIGGER_ENABLE or EXT_FRAME_TRIGGER_ENABLE did not read back as 1. Preview was not started to avoid free-run acquisition.";
+                _status.LastMessage = externalTriggerArmStatus.Message;
                 return false;
             }
 
@@ -170,17 +171,51 @@ namespace CameraCaptureApp.Services
             return false;
         }
 
-        private bool IsExternalLineTriggerArmed()
+        private ExternalTriggerArmStatus GetExternalTriggerArmStatus()
         {
             if (_acquisition == null || !_acquisition.Initialized)
             {
-                return false;
+                return new ExternalTriggerArmStatus(
+                    false,
+                    "External Trigger is not armed: acquisition is not initialized. Preview was not started to avoid free-run acquisition.");
             }
 
             var extLineTriggerEnabled = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
             var extFrameTriggerEnabled = ReadAcquisitionIntParameterValue(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE);
-            return (extLineTriggerEnabled.HasValue && extLineTriggerEnabled.Value == 1)
-                || (extFrameTriggerEnabled.HasValue && extFrameTriggerEnabled.Value == 1);
+            var lineArmed = extLineTriggerEnabled.HasValue && extLineTriggerEnabled.Value == 1;
+            var frameArmed = extFrameTriggerEnabled.HasValue && extFrameTriggerEnabled.Value == 1;
+
+            if (_settings.ExternalFrameTriggerOneFrame)
+            {
+                return new ExternalTriggerArmStatus(
+                    lineArmed && frameArmed,
+                    "External Trigger is not armed: External Trigger One Frame is enabled, so both EXT_LINE_TRIGGER_ENABLE and EXT_FRAME_TRIGGER_ENABLE must read back as 1. Readback EXT_LINE_TRIGGER_ENABLE="
+                    + FormatNullableInt(extLineTriggerEnabled)
+                    + ", EXT_FRAME_TRIGGER_ENABLE="
+                    + FormatNullableInt(extFrameTriggerEnabled)
+                    + ". Preview was not started to avoid free-run acquisition.");
+            }
+
+            return new ExternalTriggerArmStatus(
+                lineArmed,
+                "External Trigger is not armed: External Trigger One Frame is disabled, so EXT_LINE_TRIGGER_ENABLE must read back as 1 while EXT_FRAME_TRIGGER_ENABLE may remain 0. Readback EXT_LINE_TRIGGER_ENABLE="
+                + FormatNullableInt(extLineTriggerEnabled)
+                + ", EXT_FRAME_TRIGGER_ENABLE="
+                + FormatNullableInt(extFrameTriggerEnabled)
+                + ". Preview was not started to avoid free-run acquisition.");
+        }
+
+        private sealed class ExternalTriggerArmStatus
+        {
+            public ExternalTriggerArmStatus(bool isArmed, string message)
+            {
+                IsArmed = isArmed;
+                Message = message;
+            }
+
+            public bool IsArmed { get; private set; }
+
+            public string Message { get; private set; }
         }
 
         private void ConfigureExternalTriggerEvents()
