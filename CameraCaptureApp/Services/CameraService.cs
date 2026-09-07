@@ -2638,10 +2638,11 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
-            if (_settings.TriggerMode == TriggerMode.ExternalTrigger)
+            if (_settings.TriggerMode == TriggerMode.ExternalTrigger ||
+                _settings.TriggerMode == TriggerMode.SoftwareTrigger)
             {
                 notes.Add(
-                    "LineIntegrate exposure skipped for external trigger; official line-integration method 3 keeps duration=40 "
+                    "LineIntegrate exposure skipped for external-line trigger mode; official line-integration method 3 keeps duration=40 "
                     + "enable=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE)
                     + " method=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.LINE_INTEGRATE_METHOD)
                     + " requested=" + requestedExposureValue
