@@ -220,6 +220,13 @@ namespace CameraCaptureApp.Forms
         private void buttonStartPreview_Click(object sender, EventArgs e)
         {
             _frameRecorder.ClearRolling();
+            if (_settings != null && _settings.TriggerMode == TriggerMode.SoftwareTrigger)
+            {
+                StartSoftwareTriggerMeterWheelMonitorIfNeeded();
+                UpdateStatus();
+                return;
+            }
+
             if (_cameraService.StartPreview())
             {
                 StartSoftwareTriggerMeterWheelMonitorIfNeeded();
@@ -237,7 +244,10 @@ namespace CameraCaptureApp.Forms
         private async void buttonStop_Click(object sender, EventArgs e)
         {
             StopSoftwareTriggerMeterWheelMonitor();
-            _cameraService.StopPreview();
+            if (_cameraService.Status != null && _cameraService.Status.IsPreviewing)
+            {
+                _cameraService.StopPreview();
+            }
             UpdateStatus();
             if (_settings.RollingCaptureEnabled)
             {
@@ -782,6 +792,8 @@ namespace CameraCaptureApp.Forms
                 var compareValue = _settings.MeterWheelCompareValue;
                 _softwareTriggerMonitorTask = Task.Run(() => RunSoftwareTriggerMeterWheelMonitor(compareValue, token), token);
             }
+
+            SetFooterMessageFromAnyThread("Software trigger monitor started. Waiting for meter wheel compare crossing.");
         }
 
         private void StopSoftwareTriggerMeterWheelMonitor()
@@ -803,6 +815,15 @@ namespace CameraCaptureApp.Forms
             _softwareTriggerMonitorTokenSource.Dispose();
             _softwareTriggerMonitorTokenSource = null;
             _softwareTriggerMonitorTask = null;
+            Interlocked.Exchange(ref _softwareTriggerCaptureQueued, 0);
+        }
+
+        private bool IsSoftwareTriggerMeterWheelMonitorRunning()
+        {
+            lock (_softwareTriggerMonitorLock)
+            {
+                return _softwareTriggerMonitorTokenSource != null;
+            }
         }
 
         private async Task RunSoftwareTriggerMeterWheelMonitor(int compareValue, CancellationToken token)
@@ -1166,17 +1187,19 @@ namespace CameraCaptureApp.Forms
         {
             var isConnected = status != null && status.IsConnected;
             var isPreviewing = status != null && status.IsPreviewing;
+            var isSoftwareTriggerMonitorRunning = IsSoftwareTriggerMeterWheelMonitorRunning();
+            var isBusyPreviewing = isPreviewing || isSoftwareTriggerMonitorRunning;
 
             buttonCameraSettings.Enabled = true;
             buttonMeterWheel.Enabled = true;
             buttonConnect.Enabled = !isConnected;
             buttonDisconnect.Enabled = isConnected;
-            buttonStartPreview.Enabled = isConnected && !isPreviewing;
-            buttonStop.Enabled = isConnected && isPreviewing;
-            buttonCapture.Enabled = isConnected && !isPreviewing;
-            buttonLoadImage.Enabled = !isPreviewing;
-            _cameraDisplayControl.SaveSnapshotButtonEnabled = isConnected && (!isPreviewing || _settings.RollingCaptureEnabled);
-            _cameraDisplayControl.GrayWaveformButtonEnabled = !isPreviewing;
+            buttonStartPreview.Enabled = isConnected && !isBusyPreviewing;
+            buttonStop.Enabled = isConnected && isBusyPreviewing;
+            buttonCapture.Enabled = isConnected && !isBusyPreviewing;
+            buttonLoadImage.Enabled = !isBusyPreviewing;
+            _cameraDisplayControl.SaveSnapshotButtonEnabled = isConnected && (!isBusyPreviewing || _settings.RollingCaptureEnabled);
+            _cameraDisplayControl.GrayWaveformButtonEnabled = !isBusyPreviewing;
         }
 
         private void CancelPendingImageLoad()
