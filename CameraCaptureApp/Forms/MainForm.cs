@@ -42,6 +42,7 @@ namespace CameraCaptureApp.Forms
         private readonly object _softwareTriggerMonitorLock = new object();
         private CancellationTokenSource _softwareTriggerMonitorTokenSource;
         private Task _softwareTriggerMonitorTask;
+        private int _softwareTriggerCaptureQueued;
 
         public MainForm(ICameraService cameraService, ISettingsService settingsService)
         {
@@ -813,6 +814,7 @@ namespace CameraCaptureApp.Forms
                 if (encoderValue < compareValue)
                 {
                     _meterWheelService.SetCompare(compareValue);
+                    QueueSoftwareTriggerCapture(compareValue, encoderValue);
                     waitingForBelowCompare = false;
                     SetFooterMessageFromAnyThread("Software trigger armed Compare Set: " + compareValue + ", Encoder: " + encoderValue);
                 }
@@ -831,6 +833,7 @@ namespace CameraCaptureApp.Forms
                         if (encoderValue < compareValue)
                         {
                             _meterWheelService.SetCompare(compareValue);
+                            QueueSoftwareTriggerCapture(compareValue, encoderValue);
                             waitingForBelowCompare = false;
                             SetFooterMessageFromAnyThread("Software trigger armed Compare Set: " + compareValue + ", Encoder: " + encoderValue);
                         }
@@ -852,6 +855,62 @@ namespace CameraCaptureApp.Forms
             {
                 AppLogger.Log("Software trigger meter wheel monitor failed.", ex);
                 SetFooterMessageFromAnyThread("Software trigger monitor failed: " + ex.Message);
+            }
+        }
+
+        private void QueueSoftwareTriggerCapture(int compareValue, int encoderValue)
+        {
+            if (Interlocked.Exchange(ref _softwareTriggerCaptureQueued, 1) == 1)
+            {
+                return;
+            }
+
+            if (_isClosing || IsDisposed || !IsHandleCreated)
+            {
+                Interlocked.Exchange(ref _softwareTriggerCaptureQueued, 0);
+                return;
+            }
+
+            try
+            {
+                BeginInvoke(new Action(() => ExecuteSoftwareTriggerCapture(compareValue, encoderValue)));
+            }
+            catch (ObjectDisposedException)
+            {
+                Interlocked.Exchange(ref _softwareTriggerCaptureQueued, 0);
+            }
+            catch (InvalidOperationException)
+            {
+                Interlocked.Exchange(ref _softwareTriggerCaptureQueued, 0);
+            }
+        }
+
+        private void ExecuteSoftwareTriggerCapture(int compareValue, int encoderValue)
+        {
+            try
+            {
+                if (_isClosing || IsDisposed || _settings == null || _settings.TriggerMode != TriggerMode.SoftwareTrigger)
+                {
+                    return;
+                }
+
+                if (_cameraService.CaptureFrame())
+                {
+                    labelFooterMessageValue.Text = "Software trigger capture requested after Compare Set: "
+                        + compareValue
+                        + ", Encoder: "
+                        + encoderValue;
+                    return;
+                }
+
+                labelFooterMessageValue.Text = "Software trigger Capture could not be started after Compare Set: "
+                    + compareValue
+                    + ", Encoder: "
+                    + encoderValue;
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _softwareTriggerCaptureQueued, 0);
             }
         }
 
