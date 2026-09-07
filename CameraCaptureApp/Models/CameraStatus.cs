@@ -6,6 +6,8 @@ namespace CameraCaptureApp.Models
 
         public bool IsPreviewing { get; set; }
 
+        public bool IsCaptureInProgress { get; set; }
+
         public bool HasSignal { get; set; }
 
         public int FrameWidth { get; set; }

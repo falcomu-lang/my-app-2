@@ -12,6 +12,8 @@ namespace CameraCaptureApp.Services
 
         CameraStatus Status { get; }
 
+        bool IsTransferStartBlocked { get; }
+
         void ApplySettings(CameraSettings settings);
 
         bool Connect();

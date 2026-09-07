@@ -777,6 +777,12 @@ namespace CameraCaptureApp.Forms
                 return;
             }
 
+            if (_cameraService.IsTransferStartBlocked)
+            {
+                SetFooterMessageFromAnyThread("Software trigger monitor was not started: camera transfer is still busy.");
+                return;
+            }
+
             if (!_meterWheelService.IsInitialized)
             {
                 SetFooterMessageFromAnyThread("Software trigger monitor was not started: meter wheel is not connected.");
@@ -1187,8 +1193,10 @@ namespace CameraCaptureApp.Forms
         {
             var isConnected = status != null && status.IsConnected;
             var isPreviewing = status != null && status.IsPreviewing;
+            var isCaptureInProgress = status != null && status.IsCaptureInProgress;
+            var isTransferStartBlocked = _cameraService.IsTransferStartBlocked;
             var isSoftwareTriggerMonitorRunning = IsSoftwareTriggerMeterWheelMonitorRunning();
-            var isBusyPreviewing = isPreviewing || isSoftwareTriggerMonitorRunning;
+            var isBusyPreviewing = isPreviewing || isCaptureInProgress || isTransferStartBlocked || isSoftwareTriggerMonitorRunning;
 
             buttonCameraSettings.Enabled = true;
             buttonMeterWheel.Enabled = true;

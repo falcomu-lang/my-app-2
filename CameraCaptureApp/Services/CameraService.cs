@@ -25,6 +25,7 @@ namespace CameraCaptureApp.Services
         private SapBuffer _buffers;
         private SapAcqToBuf _transfer;
         private DateTime _lastPreviewFrameUtc;
+        private DateTime _lastAcquisitionStopUtc = DateTime.MinValue;
         private int _pendingExternalTriggerEvents;
         private bool _deviceFeaturesAvailable;
         private string _acqDevicePathSummary;
@@ -57,6 +58,11 @@ namespace CameraCaptureApp.Services
         public CameraStatus Status
         {
             get { return _status; }
+        }
+
+        public bool IsTransferStartBlocked
+        {
+            get { return IsTransferStartBlockedCore(); }
         }
 
         public void ApplySettings(CameraSettings settings)
@@ -126,6 +132,8 @@ namespace CameraCaptureApp.Services
             if (!_status.IsConnected && !HasSdkObjects())
             {
                 _status.IsPreviewing = false;
+                _status.IsCaptureInProgress = false;
+                _lastAcquisitionStopUtc = DateTime.MinValue;
                 _status.IsConnected = false;
                 _status.HasSignal = false;
                 _status.ScanStateText = "Disconnected";
@@ -136,6 +144,8 @@ namespace CameraCaptureApp.Services
             SafeCleanupSdkObjects("disconnect");
 
             _status.IsPreviewing = false;
+            _status.IsCaptureInProgress = false;
+            _lastAcquisitionStopUtc = DateTime.MinValue;
             _status.IsConnected = false;
             _status.HasSignal = false;
             _status.ScanStateText = "Disconnected";
@@ -147,6 +157,11 @@ namespace CameraCaptureApp.Services
             if (!_status.IsConnected || _transfer == null)
             {
                 _status.LastMessage = "Connect the camera before starting preview.";
+                return false;
+            }
+
+            if (!CanStartTransfer("preview"))
+            {
                 return false;
             }
 
@@ -248,6 +263,8 @@ namespace CameraCaptureApp.Services
             }
 
             _status.IsPreviewing = false;
+            _status.IsCaptureInProgress = false;
+            _lastAcquisitionStopUtc = DateTime.UtcNow;
             _status.ScanStateText = "Stopped";
             _status.LastMessage = "Preview stopped.";
         }
@@ -260,8 +277,14 @@ namespace CameraCaptureApp.Services
                 return false;
             }
 
+            if (!CanStartTransfer("capture"))
+            {
+                return false;
+            }
+
             if (_transfer.Snap())
             {
+                _status.IsCaptureInProgress = true;
                 _status.ScanStateText = "Snap";
                 _status.LastMessage = "Single frame capture requested.";
                 return true;
@@ -269,6 +292,39 @@ namespace CameraCaptureApp.Services
 
             _status.LastMessage = "Single frame capture could not be started.";
             return false;
+        }
+
+        private bool CanStartTransfer(string actionName)
+        {
+            if (IsTransferStartBlockedCore())
+            {
+                _status.LastMessage = BuildTransferStartBlockedMessage(actionName);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool IsTransferStartBlockedCore()
+        {
+            return _status.IsCaptureInProgress || GetStopCooldownRemaining() > TimeSpan.Zero;
+        }
+
+        private string BuildTransferStartBlockedMessage(string actionName)
+        {
+            if (_status.IsCaptureInProgress)
+            {
+                return "Cannot start " + actionName + ": a capture request is still in progress. Wait for the current frame to complete or disconnect/reconnect if Sapera is still holding the resource.";
+            }
+
+            var stopCooldownRemaining = GetStopCooldownRemaining();
+            return "Cannot start " + actionName + ": acquisition was just stopped. Wait " + Math.Ceiling(stopCooldownRemaining.TotalMilliseconds) + " ms for Sapera to release the resource.";
+        }
+
+        private TimeSpan GetStopCooldownRemaining()
+        {
+            var remaining = TimeSpan.FromMilliseconds(750) - (DateTime.UtcNow - _lastAcquisitionStopUtc);
+            return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
         }
 
         public bool SelectConnectionSettings(System.Windows.Forms.IWin32Window owner)
@@ -724,6 +780,7 @@ namespace CameraCaptureApp.Services
 
             if (!argsNotify.Trash)
             {
+                _status.IsCaptureInProgress = false;
                 _status.ScannedLineCount++;
                 if (_settings.TriggerMode == TriggerMode.ExternalTrigger && _pendingExternalTriggerEvents > 0)
                 {
@@ -957,6 +1014,8 @@ namespace CameraCaptureApp.Services
             }
 
             _status.IsConnected = true;
+            _status.IsCaptureInProgress = false;
+            _lastAcquisitionStopUtc = DateTime.MinValue;
             _status.HasSignal = _acquisition.SignalStatus != SapAcquisition.AcqSignalStatus.None;
             _status.CameraName = _serverLocation.ServerName;
             _status.FrameWidth = _buffers.Width;
