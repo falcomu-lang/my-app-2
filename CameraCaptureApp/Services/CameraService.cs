@@ -203,7 +203,7 @@ namespace CameraCaptureApp.Services
             var lineArmed = extLineTriggerEnabled.HasValue && extLineTriggerEnabled.Value == 1;
             var frameArmed = extFrameTriggerEnabled.HasValue && extFrameTriggerEnabled.Value == 1;
 
-            if (UseExternalFrameTriggerOneFrame())
+            if (_settings.ExternalFrameTriggerOneFrame)
             {
                 return new ExternalTriggerArmStatus(
                     lineArmed && frameArmed,
@@ -221,12 +221,6 @@ namespace CameraCaptureApp.Services
                 + ", EXT_FRAME_TRIGGER_ENABLE="
                 + FormatNullableInt(extFrameTriggerEnabled)
                 + ". Preview was not started to avoid free-run acquisition.");
-        }
-
-        private bool UseExternalFrameTriggerOneFrame()
-        {
-            return _settings.TriggerMode == TriggerMode.SoftwareTrigger ||
-                _settings.ExternalFrameTriggerOneFrame;
         }
 
         private sealed class ExternalTriggerArmStatus
@@ -2845,7 +2839,7 @@ namespace CameraCaptureApp.Services
                 || _settings.TriggerMode == TriggerMode.ExternalTrigger
                 || _settings.TriggerMode == TriggerMode.SoftwareTrigger;
 
-            var requestedValue = allowExternalFrameTrigger && UseExternalFrameTriggerOneFrame() ? 1 : 0;
+            var requestedValue = allowExternalFrameTrigger && _settings.ExternalFrameTriggerOneFrame ? 1 : 0;
             var applied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, requestedValue);
             notes.Add(
                 "EXT_FRAME_TRIGGER_ENABLE "
@@ -2875,10 +2869,9 @@ namespace CameraCaptureApp.Services
             var pulse1LowApplied = TrySetAcquisitionValParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_PULSE1_POLARITY, SapAcquisition.Val.ACTIVE_LOW);
             var cc1Pulse1Applied = TrySetCc1ToPulse1();
             var lineIntegrateEnabled = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.LINE_INTEGRATE_ENABLE, 1);
-            var useExternalFrameTriggerOneFrame = UseExternalFrameTriggerOneFrame();
             var externalFrameTriggerEnabled = TrySetAcquisitionIntParameterQuiet(
                 SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE,
-                useExternalFrameTriggerOneFrame ? 1 : 0);
+                _settings.ExternalFrameTriggerOneFrame ? 1 : 0);
             var enabledExternalLine = TrySetAcquisitionIntParameter(notes, 1, SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE);
 
             notes.Add(
@@ -2898,7 +2891,7 @@ namespace CameraCaptureApp.Services
                 + " pulse1Low=" + FormatApplyResult(pulse1LowApplied, "ACTIVE_LOW")
                 + " cc1Pulse1=" + FormatApplyResult(cc1Pulse1Applied, "SIGNAL_NAME_PULSE1")
                 + " lineIntegrateOn=" + FormatApplyResult(lineIntegrateEnabled, "1")
-                + " extFrameEnableWrite=" + FormatApplyResult(externalFrameTriggerEnabled, useExternalFrameTriggerOneFrame ? "1" : "0")
+                + " extFrameEnableWrite=" + FormatApplyResult(externalFrameTriggerEnabled, _settings.ExternalFrameTriggerOneFrame ? "1" : "0")
                 + " sourceWrite=skipped"
                 + " detectionWrite=skipped"
                 + " camTrigger=" + ReadAcquisitionIntParameter(SapAcquisition.Prm.CAM_TRIGGER_ENABLE)

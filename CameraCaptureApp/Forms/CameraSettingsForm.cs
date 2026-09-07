@@ -278,7 +278,7 @@ namespace CameraCaptureApp.Forms
             Settings.RollingCaptureDirection = (RollingCaptureDirection)Math.Max(0, comboBoxRollingCaptureDirection.SelectedIndex);
             Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
-            Settings.ExternalFrameTriggerOneFrame = Settings.TriggerMode == TriggerMode.SoftwareTrigger ||
+            Settings.ExternalFrameTriggerOneFrame = Settings.TriggerMode != TriggerMode.SoftwareTrigger &&
                 checkBoxExternalFrameTriggerOneFrame.Checked;
             Settings.ExternalFrameTriggerOneFrameCompareFromEncoder = checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled &&
                 checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked;
@@ -316,7 +316,7 @@ namespace CameraCaptureApp.Forms
             checkBoxExternalFrameTriggerOneFrame.Enabled = canUseExternalFrameTrigger;
             if (isSoftwareTrigger)
             {
-                checkBoxExternalFrameTriggerOneFrame.Checked = true;
+                checkBoxExternalFrameTriggerOneFrame.Checked = false;
             }
             else if (!canUseExternalFrameTrigger)
             {
