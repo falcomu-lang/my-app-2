@@ -14,11 +14,10 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Main project: `CameraCaptureApp/CameraCaptureApp.csproj`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
-- Current handoff date: `2026-08-27`
-- Latest pushed feature commit referenced by this handoff: `62725b4 Fix waveform selection at high zoom`
+- Current handoff date: `2026-09-07`
+- Latest pushed feature commit referenced by this handoff: `e923d96 Keep software trigger frame trigger disabled`
 - Latest verified local changes not yet pushed:
-  - Shift-assisted gray waveform line snapping.
-  - Progressive large-image preview refinement while loading.
+  - None.
 
 Latest verified local build command:
 
@@ -186,6 +185,87 @@ Latest local build result: `0 warning / 0 error`
   - This checkbox only toggles the external frame trigger enable state.
   - It does not replace the existing line trigger mode or internal line rate behavior.
   - The automatic compare/encoder actions are app-side LSI-8181 operations triggered by Sapera external-trigger notification; they do not change Sapera trigger parameters by themselves.
+
+### Software Trigger Capture Flow
+
+- The current `Software Trigger` design is not a pure camera-side software-trigger mode.
+- It is an app-controlled, position-based one-frame start flow built on the same external line-trigger acquisition base as `External Trigger`.
+- Intended control split:
+  - Software decides when to start one frame.
+  - The meter wheel pulse still triggers each line.
+- Intended Sapera trigger model in `Software Trigger`:
+  - `EXT_FRAME_TRIGGER_ENABLE = 0`
+  - `EXT_LINE_TRIGGER_ENABLE = 1`
+  - App calls `SapAcqToBuf.Snap()` to request one frame.
+  - Meter wheel pulses complete the requested frame line by line.
+- In `Software Trigger`, `External Trigger One Frame` remains visible but is disabled and forced unchecked in the settings UI.
+  - This is intentional.
+  - If `EXT_FRAME_TRIGGER_ENABLE` is enabled in `Software Trigger`, Sapera can wait for an external frame trigger instead of letting `Snap()` start the frame, which prevents the desired meter-wheel-pulse line capture behavior.
+- `Software Trigger` start logic in `MainForm`:
+  - Pressing `Start Preview` starts the software trigger meter-wheel monitor instead of starting normal continuous preview.
+  - The monitor runs on a background task and reads the LSI-8181 encoder value.
+  - If the current `EncoderValue < CompareValue` at monitor start, it immediately writes `CompareValue` to the meter wheel card and queues one capture.
+  - Otherwise, it waits until the encoder transitions below the compare value.
+  - After a capture is queued, the monitor waits for encoder value to go above the compare value before allowing the next below-compare capture request.
+- This avoids continuously calling capture while the encoder remains below compare, because the meter wheel card does not keep generating compare pulses in that state.
+- `Software Trigger` uses `CaptureFrame()` / `SapAcqToBuf.Snap()` only to request one frame. It still requires meter wheel pulses to finish that frame.
+- Recent important commits:
+  - `b89ad54 Add meter wheel software trigger monitor`
+  - `d7dbcf3 Trigger capture from software meter wheel monitor`
+  - `a8b9778 Start software trigger monitor without preview grab`
+  - `d34be40 Keep software trigger line integration aligned`
+  - `e923d96 Keep software trigger frame trigger disabled`
+
+### Software Trigger Busy / Stop Behavior
+
+- `CameraStatus.IsCaptureInProgress` tracks whether a `Snap()` request has been issued and the frame has not yet returned through Sapera transfer notify.
+- While capture is in progress:
+  - `CaptureFrame()` does not issue a second `Snap()`.
+  - `StartPreview()` does not start another transfer.
+  - `Software Trigger` monitor does not start another capture cycle.
+  - The UI treats the camera as busy for `Start Preview` and `Capture`, preventing duplicate capture requests that can cause Sapera `resource in use` errors.
+- `Stop` behavior was intentionally refined:
+  - `Stop` remains available while a frame is still being captured.
+  - If a capture is in progress, `StopPreview()` does not call `Freeze()`.
+  - The current frame continues waiting for meter wheel pulses until it completes.
+  - New software-trigger monitoring is stopped so no next frame is triggered.
+  - Once the current frame completes, the service clears capture-in-progress state and enters `Stopped`.
+- Disconnect/reconnect behavior:
+  - `Disconnect()` clears `IsCaptureInProgress`, the stop-request flag, and the acquisition stop cooldown.
+  - Successful `Connect()` also clears those states because Sapera objects and camera-side acquisition state have been recreated.
+- A short stop cooldown is used after normal stop to avoid immediately restarting a transfer while Sapera is still releasing resources.
+
+### Software Trigger Auto Save
+
+- A new checkbox was added under `Camera Settings -> Saving`:
+  - `Auto save snapshot after software trigger frame`
+- This setting persists in `settings.ini` as:
+  - `AutoSaveOnSoftwareTriggerFrame`
+- The checkbox is enabled only when `Trigger Mode = Software Trigger`.
+- When enabled, each completed `Software Trigger` frame queues an automatic snapshot save of the current frame.
+- The implementation reuses the existing snapshot save queue and progress window.
+- `External Trigger` auto-save and `Software Trigger` auto-save are mode-gated separately:
+  - `AutoSaveOnExternalTriggerOneFrame` only queues saves in `ExternalTrigger`.
+  - `AutoSaveOnSoftwareTriggerFrame` only queues saves in `SoftwareTrigger`.
+- This prevents one completed frame from being queued twice if Sapera also emits external trigger notifications while the app is in `Software Trigger`.
+
+### UI Responsiveness Assessment
+
+- Current architecture already includes basic responsiveness protections:
+  - Sapera callback is separated from direct UI painting.
+  - UI preview updates are queued via `BeginInvoke`.
+  - Older pending preview frames may be dropped so the UI can keep up.
+  - Full-resolution frame data is kept in `FrameRecorder`; the displayed preview may be downscaled.
+  - Snapshot saving runs through a shared queued save pipeline instead of direct blocking UI save calls.
+- The app is not yet a fully decoupled high-throughput display architecture.
+- For very large line-scan frames or simultaneous preview/save workloads, occasional UI stalls are still possible because WinForms painting, `Bitmap` allocation/copying, WIC encoding, disk I/O, and GC can all be expensive.
+- If near-stutter-free operation becomes a primary target, recommended future architecture:
+  - Sapera callback does only minimal frame handoff.
+  - A frame queue owns full-resolution capture data.
+  - A display worker creates downscaled preview bitmaps.
+  - A save worker writes full-resolution data.
+  - UI thread only draws the latest already-prepared preview frame and may drop outdated display frames.
+- Goal should be "UI remains responsive and does not interfere with acquisition" rather than a strict guarantee of zero visible stutter.
 
 ## LSI-8181 Meter Wheel Status
 
@@ -495,7 +575,8 @@ Important limitation:
 - The current meter wheel layer only wraps the needed APIs for basic counter/compare/CMP OUT setup. It does not embed or expose the full vendor test program.
 - The current meter wheel layer also wraps the needed position-offset compare APIs for `CMP0_OUT` through `CMP7_OUT`; it still does not expose every vendor API.
 - The app cannot prevent the vendor LSI-8181 program from changing hardware state if both programs can access the same card. Avoid running both as active controllers at the same time.
-- External-trigger support is not yet considered finished. The current goal is line-by-line triggering from the meter wheel output, not a full-frame software trigger.
+- External-trigger and software-trigger line-scan support are implemented but still require real hardware validation after the latest trigger-mode changes.
+- `Software Trigger` is intended to start one frame via `Snap()` while the meter wheel pulse controls each line. If it stops following meter wheel pulses, first verify that `EXT_FRAME_TRIGGER_ENABLE` remains `0` and `EXT_LINE_TRIGGER_ENABLE` reads back as `1` in `last_apply_params.txt`.
 - Preview responsiveness has improved, but true in-progress line-scan display would require chunk/line-based acquisition events instead of only `EndOfFrame`.
 - `FrameRecorder` stores the latest full frame and, when rolling capture is enabled, a bounded rolling frame list. It does not append all frames/chunks into an unlimited continuous long image.
 - Very large image saves are still expensive. Example user case: `16384 x 50000` 8-bit image is about 819 MB raw data and may encode to roughly 400 MB depending on content/format.
@@ -553,8 +634,22 @@ Important limitation:
    - External trigger causes Compare Set to write the saved `MeterWheelCompareValue`.
    - With `Also apply Encoder Set on external trigger`, external trigger also writes the saved `MeterWheelEncoderValue`.
 12. Verify extension compare output behavior for `CMP0_OUT` through `CMP7_OUT` on real hardware.
-13. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
-14. Re-test large-image pan behavior on the target `16384 x 50000` files at the known sensitive zoom levels:
+13. Verify `Software Trigger` on real hardware:
+   - `External Trigger One Frame` is visible but disabled and unchecked in `Software Trigger`.
+   - `last_apply_params.txt` shows `EXT_FRAME_TRIGGER_ENABLE = 0` and `EXT_LINE_TRIGGER_ENABLE = 1` after reconnect.
+   - Pressing `Start Preview` starts the software-trigger meter-wheel monitor and does not call normal preview `Grab()`.
+   - If `EncoderValue < CompareValue` at monitor start, the app writes compare and calls one `Snap()`.
+   - If `EncoderValue >= CompareValue`, the app waits until encoder crosses below compare before calling one `Snap()`.
+   - After `Snap()`, meter wheel pulses should complete the frame line by line.
+   - While capture is in progress, pressing `Start Preview` must not trigger another capture.
+   - Pressing `Stop` during an unfinished capture stops future software-trigger monitoring but lets the current frame continue until enough meter wheel pulses arrive.
+14. Verify Software Trigger auto-save:
+   - `Auto save snapshot after software trigger frame` is enabled only in `Software Trigger`.
+   - With the checkbox checked, each completed Software Trigger frame saves one image.
+   - A completed frame is not saved twice.
+   - External Trigger auto-save still works only in `ExternalTrigger`.
+15. Compare `PNG`, `TIF`, and `TIF (uncompressed)` save time on the real camera machine for the target image size.
+16. Re-test large-image pan behavior on the target `16384 x 50000` files at the known sensitive zoom levels:
    - `0.19x`
    - `0.23x`
    - `0.29x`
@@ -562,23 +657,23 @@ Important limitation:
    - `0.45x`
    - `0.57x`
    - `0.71x`
-15. Re-test large-image tile seam visibility after zooming and panning at fractional zoom levels.
-16. Re-test gray waveform sampling on loaded large images and camera frames:
+17. Re-test large-image tile seam visibility after zooming and panning at fractional zoom levels.
+18. Re-test gray waveform sampling on loaded large images and camera frames:
    - loaded large image should sample real source pixels through `LargeImageSource`,
    - camera frame should sample the full-resolution frame from `FrameRecorder`, not the UI preview bitmap.
-17. If save speed remains too slow, profile time spent in:
+19. If save speed remains too slow, profile time spent in:
    - copying frame bytes into the grayscale buffer,
    - WIC encoding,
    - final disk write / antivirus / sync folder overhead.
-18. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
-19. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
+20. If many huge images are saved at once, test whether `MaxConcurrentSnapshotSaves = 5` is actually optimal. Large uncompressed/TIFF writes may perform better at 2 or 3 concurrent jobs on some disks.
+21. If preview still feels delayed, determine whether delay comes from waiting for `EndOfFrame`:
    - Large `Length` values naturally delay UI updates because the app waits for a full frame.
    - Consider `EndOfNLines` or other Sapera line/chunk callbacks if supported.
-20. If full continuous long-image capture is required, implement a recorder queue:
+22. If full continuous long-image capture is required, implement a recorder queue:
    - Background worker owns the full-resolution data path.
    - UI preview remains downscaled and droppable.
    - Capture/export reads from recorder output.
-21. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
+23. Keep exposure/gain/length/internal line rate behavior stable when changing preview or recorder architecture.
 
 ## Notes For The Next Person
 
@@ -600,6 +695,12 @@ Important limitation:
 - Keep Compare numeric entry user-defined. Do not auto-fill Compare from live encoder when the user presses Compare `Set`.
 - `Compare Set follows current encoder value` is intentionally disabled outside `External Trigger` mode.
 - The optional external-trigger Encoder Set writes the saved `MeterWheelEncoderValue`, not the current live encoder value.
+- In `Software Trigger`, do not force `ExternalFrameTriggerOneFrame = true`.
+- In `Software Trigger`, do not force `EXT_FRAME_TRIGGER_ENABLE = 1`.
+- The intended `Software Trigger` frame start is app-side `Snap()`; the intended hardware trigger is only external line pulse from the meter wheel.
+- Keep `Software Trigger` line-integration behavior aligned with `ExternalTrigger`; do not let exposure/internal-line-rate logic later disable `LINE_INTEGRATE_ENABLE` after external line trigger setup.
+- Keep `External Trigger` and `Software Trigger` auto-save queues mode-gated so a single completed frame is not saved twice.
+- Pressing `Stop` during `Software Trigger` capture should stop future monitoring, not abort the current frame that is still waiting for meter wheel pulses.
 - Treat exposure/gain/length/internal line rate as currently stable behavior and test all four after camera pipeline changes.
 - Preserve the separation between UI preview and full-resolution save data. The save path should continue using `FrameRecorder` snapshots, not the downscaled display bitmap.
 - Preserve the separation between UI preview and gray-waveform sampling data. Camera waveform sampling should continue using `FrameRecorder.SnapshotLatest()` when the viewer is displaying a preview bitmap.
