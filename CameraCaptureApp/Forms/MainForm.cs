@@ -39,6 +39,9 @@ namespace CameraCaptureApp.Forms
         private Bitmap _pendingPreviewFrame;
         private int _previewFrameUiUpdateQueued;
         private bool _isClosing;
+        private readonly object _softwareTriggerMonitorLock = new object();
+        private CancellationTokenSource _softwareTriggerMonitorTokenSource;
+        private Task _softwareTriggerMonitorTask;
 
         public MainForm(ICameraService cameraService, ISettingsService settingsService)
         {
@@ -216,18 +219,23 @@ namespace CameraCaptureApp.Forms
         private void buttonStartPreview_Click(object sender, EventArgs e)
         {
             _frameRecorder.ClearRolling();
-            _cameraService.StartPreview();
+            if (_cameraService.StartPreview())
+            {
+                StartSoftwareTriggerMeterWheelMonitorIfNeeded();
+            }
             UpdateStatus();
         }
 
         private void buttonDisconnect_Click(object sender, EventArgs e)
         {
+            StopSoftwareTriggerMeterWheelMonitor();
             _cameraService.Disconnect();
             UpdateStatus();
         }
 
         private async void buttonStop_Click(object sender, EventArgs e)
         {
+            StopSoftwareTriggerMeterWheelMonitor();
             _cameraService.StopPreview();
             UpdateStatus();
             if (_settings.RollingCaptureEnabled)
@@ -637,6 +645,7 @@ namespace CameraCaptureApp.Forms
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             _isClosing = true;
+            StopSoftwareTriggerMeterWheelMonitor();
             _statusRefreshTimer.Stop();
             _meterWheelAutoConnectTimer.Stop();
             CancelPendingImageLoad();
@@ -747,6 +756,129 @@ namespace CameraCaptureApp.Forms
             catch (InvalidOperationException)
             {
             }
+        }
+
+        private void StartSoftwareTriggerMeterWheelMonitorIfNeeded()
+        {
+            if (_settings == null || _settings.TriggerMode != TriggerMode.SoftwareTrigger)
+            {
+                StopSoftwareTriggerMeterWheelMonitor();
+                return;
+            }
+
+            if (!_meterWheelService.IsInitialized)
+            {
+                SetFooterMessageFromAnyThread("Software trigger monitor was not started: meter wheel is not connected.");
+                return;
+            }
+
+            lock (_softwareTriggerMonitorLock)
+            {
+                StopSoftwareTriggerMeterWheelMonitorLocked();
+
+                _softwareTriggerMonitorTokenSource = new CancellationTokenSource();
+                var token = _softwareTriggerMonitorTokenSource.Token;
+                var compareValue = _settings.MeterWheelCompareValue;
+                _softwareTriggerMonitorTask = Task.Run(() => RunSoftwareTriggerMeterWheelMonitor(compareValue, token), token);
+            }
+        }
+
+        private void StopSoftwareTriggerMeterWheelMonitor()
+        {
+            lock (_softwareTriggerMonitorLock)
+            {
+                StopSoftwareTriggerMeterWheelMonitorLocked();
+            }
+        }
+
+        private void StopSoftwareTriggerMeterWheelMonitorLocked()
+        {
+            if (_softwareTriggerMonitorTokenSource == null)
+            {
+                return;
+            }
+
+            _softwareTriggerMonitorTokenSource.Cancel();
+            _softwareTriggerMonitorTokenSource.Dispose();
+            _softwareTriggerMonitorTokenSource = null;
+            _softwareTriggerMonitorTask = null;
+        }
+
+        private async Task RunSoftwareTriggerMeterWheelMonitor(int compareValue, CancellationToken token)
+        {
+            var waitingForBelowCompare = true;
+            try
+            {
+                var encoderValue = _meterWheelService.ReadEncoder();
+                if (encoderValue < compareValue)
+                {
+                    _meterWheelService.SetCompare(compareValue);
+                    waitingForBelowCompare = false;
+                    SetFooterMessageFromAnyThread("Software trigger armed Compare Set: " + compareValue + ", Encoder: " + encoderValue);
+                }
+                else
+                {
+                    SetFooterMessageFromAnyThread("Software trigger monitor waiting below Compare: " + compareValue + ", Encoder: " + encoderValue);
+                }
+
+                while (!token.IsCancellationRequested)
+                {
+                    await Task.Delay(50, token);
+                    encoderValue = _meterWheelService.ReadEncoder();
+
+                    if (waitingForBelowCompare)
+                    {
+                        if (encoderValue < compareValue)
+                        {
+                            _meterWheelService.SetCompare(compareValue);
+                            waitingForBelowCompare = false;
+                            SetFooterMessageFromAnyThread("Software trigger armed Compare Set: " + compareValue + ", Encoder: " + encoderValue);
+                        }
+
+                        continue;
+                    }
+
+                    if (encoderValue > compareValue)
+                    {
+                        waitingForBelowCompare = true;
+                        SetFooterMessageFromAnyThread("Software trigger monitor waiting below Compare: " + compareValue + ", Encoder: " + encoderValue);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Log("Software trigger meter wheel monitor failed.", ex);
+                SetFooterMessageFromAnyThread("Software trigger monitor failed: " + ex.Message);
+            }
+        }
+
+        private void SetFooterMessageFromAnyThread(string message)
+        {
+            if (_isClosing || IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                try
+                {
+                    BeginInvoke(new Action<string>(SetFooterMessageFromAnyThread), message);
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                return;
+            }
+
+            labelFooterMessageValue.Text = message;
         }
 
         private void QueueExternalTriggerAutoSave()

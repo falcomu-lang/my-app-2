@@ -1640,6 +1640,7 @@ namespace CameraCaptureApp.Services
                     break;
 
                 case TriggerMode.ExternalTrigger:
+                case TriggerMode.SoftwareTrigger:
                     var disabledFrameSelectors = TrySetNotebookTriggerSelectors(
                         device,
                         details,
@@ -1653,15 +1654,6 @@ namespace CameraCaptureApp.Services
                         new[] { "Line1", "Input1", "CC1", "CameraControl1", "CameraLinkCC1", "CL_CC1", "External", "ExternalLine", "LineTrigger" },
                         new[] { "LineStart", "LineTrigger", "AcquisitionLine" });
                     applied = disabledFrameSelectors || enabledLineSelectors;
-                    break;
-
-                case TriggerMode.SoftwareTrigger:
-                    applied = TrySetNotebookTriggerSelectors(
-                        device,
-                        details,
-                        true,
-                        new[] { "Software", "SoftwareTrigger" },
-                        new[] { "FrameStart", "LineStart", "AcquisitionStart" });
                     break;
 
                 case TriggerMode.SingleFrame:
@@ -2449,29 +2441,19 @@ namespace CameraCaptureApp.Services
                     notes.Add("TriggerMode continuous not supported");
                     return false;
 
-                case TriggerMode.SoftwareTrigger:
-                    if (TryConfigureTriggerSelector("FrameStart", true, "Software") |
-                        TryConfigureTriggerSelector("LineStart", true, "Software"))
-                    {
-                        notes.Add("TriggerMode software applied");
-                        return true;
-                    }
-
-                    notes.Add("TriggerMode software not supported");
-                    return false;
-
                 case TriggerMode.ExternalTrigger:
+                case TriggerMode.SoftwareTrigger:
                     if (TryConfigureTriggerSelector("LineStart", true, "Line1") |
                         TryConfigureTriggerSelector("LineTrigger", true, "Line1") |
                         TryConfigureTriggerSelector("AcquisitionLine", true, "Line1") |
                         TryConfigureTriggerSelector("LineStart", true, "Input1") |
                         TryConfigureTriggerSelector("LineStart", true, "CC1"))
                     {
-                        notes.Add("TriggerMode external line applied");
+                        notes.Add("TriggerMode external line applied for " + _settings.TriggerMode + " mode");
                         return true;
                     }
 
-                    notes.Add("TriggerMode external line not supported");
+                    notes.Add("TriggerMode external line not supported for " + _settings.TriggerMode + " mode");
                     return false;
 
                 case TriggerMode.SingleFrame:
@@ -2726,28 +2708,10 @@ namespace CameraCaptureApp.Services
                     return TryApplyFreerunLineSyncSource(notes);
 
                 case TriggerMode.SoftwareTrigger:
-                    if (TrySetAcquisitionBoolPattern(
-                        notes,
-                        new[]
-                        {
-                            new ParameterWrite(SapAcquisition.Prm.CAM_TRIGGER_ENABLE, 1),
-                            new ParameterWrite(SapAcquisition.Prm.EXT_TRIGGER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.EXT_LINE_TRIGGER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.INT_FRAME_TRIGGER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.INT_LINE_TRIGGER_ENABLE, 0),
-                            new ParameterWrite(SapAcquisition.Prm.LINE_TRIGGER_ENABLE, 1)
-                        }))
-                    {
-                        notes.Add("Acquisition trigger software applied");
-                        return true;
-                    }
-                    break;
-
                 case TriggerMode.ExternalTrigger:
                     if (TryApplyExternalLineTrigger(notes))
                     {
-                        notes.Add("Acquisition trigger external applied");
+                        notes.Add("Acquisition trigger external applied for " + _settings.TriggerMode + " mode");
                         return true;
                     }
                     break;
