@@ -726,6 +726,8 @@ namespace CameraCaptureApp.Forms
             {
                 _frameRecorder.ClearRolling();
             }
+
+            QueueSoftwareTriggerAutoSave();
             SaveLatestRecordedFrameIfRequestedAsync();
             if (_settings.RollingCaptureEnabled)
             {
@@ -971,8 +973,21 @@ namespace CameraCaptureApp.Forms
         private void QueueExternalTriggerAutoSave()
         {
             if (_settings == null ||
+                _settings.TriggerMode != TriggerMode.ExternalTrigger ||
                 !_settings.ExternalFrameTriggerOneFrame ||
                 !_settings.AutoSaveOnExternalTriggerOneFrame)
+            {
+                return;
+            }
+
+            Interlocked.Increment(ref _pendingSnapshotSaveCount);
+        }
+
+        private void QueueSoftwareTriggerAutoSave()
+        {
+            if (_settings == null ||
+                _settings.TriggerMode != TriggerMode.SoftwareTrigger ||
+                !_settings.AutoSaveOnSoftwareTriggerFrame)
             {
                 return;
             }

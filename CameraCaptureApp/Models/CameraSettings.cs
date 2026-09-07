@@ -54,6 +54,8 @@ namespace CameraCaptureApp.Models
 
         public bool AutoSaveOnExternalTriggerOneFrame { get; set; }
 
+        public bool AutoSaveOnSoftwareTriggerFrame { get; set; }
+
         public string SaveFolder { get; set; }
 
         public string FileNamePattern { get; set; }
@@ -112,6 +114,7 @@ namespace CameraCaptureApp.Models
                 AutoConnect = false,
                 AutoSave = false,
                 AutoSaveOnExternalTriggerOneFrame = false,
+                AutoSaveOnSoftwareTriggerFrame = false,
                 SaveFolder = string.Empty,
                 FileNamePattern = "capture_{yyyyMMdd_HHmmss}",
                 ImageSaveFormat = ImageSaveFormat.Png,

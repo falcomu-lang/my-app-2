@@ -43,6 +43,7 @@ namespace CameraCaptureApp.Forms
         private System.Windows.Forms.CheckBox checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger;
         private System.Windows.Forms.Label labelImageSaveFormat;
         private System.Windows.Forms.CheckBox checkBoxAutoSaveOnExternalTriggerOneFrame;
+        private System.Windows.Forms.CheckBox checkBoxAutoSaveOnSoftwareTriggerFrame;
         private System.Windows.Forms.NumericUpDown numericExposure;
         private System.Windows.Forms.NumericUpDown numericGain;
         private System.Windows.Forms.NumericUpDown numericLength;
@@ -110,6 +111,7 @@ namespace CameraCaptureApp.Forms
             this.tabPageSaving = new System.Windows.Forms.TabPage();
             this.labelImageSaveFormat = new System.Windows.Forms.Label();
             this.checkBoxAutoSaveOnExternalTriggerOneFrame = new System.Windows.Forms.CheckBox();
+            this.checkBoxAutoSaveOnSoftwareTriggerFrame = new System.Windows.Forms.CheckBox();
             this.comboBoxImageSaveFormat = new System.Windows.Forms.ComboBox();
             this.buttonApply = new System.Windows.Forms.Button();
             this.buttonOk = new System.Windows.Forms.Button();
@@ -550,6 +552,7 @@ namespace CameraCaptureApp.Forms
             // 
             this.tabPageSaving.Controls.Add(this.labelImageSaveFormat);
             this.tabPageSaving.Controls.Add(this.checkBoxAutoSaveOnExternalTriggerOneFrame);
+            this.tabPageSaving.Controls.Add(this.checkBoxAutoSaveOnSoftwareTriggerFrame);
             this.tabPageSaving.Controls.Add(this.comboBoxImageSaveFormat);
             this.tabPageSaving.Location = new System.Drawing.Point(4, 26);
             this.tabPageSaving.Name = "tabPageSaving";
@@ -586,6 +589,16 @@ namespace CameraCaptureApp.Forms
             this.checkBoxAutoSaveOnExternalTriggerOneFrame.TabIndex = 6;
             this.checkBoxAutoSaveOnExternalTriggerOneFrame.Text = "Auto save snapshot after external trigger frame";
             this.checkBoxAutoSaveOnExternalTriggerOneFrame.UseVisualStyleBackColor = true;
+            // 
+            // checkBoxAutoSaveOnSoftwareTriggerFrame
+            // 
+            this.checkBoxAutoSaveOnSoftwareTriggerFrame.AutoSize = true;
+            this.checkBoxAutoSaveOnSoftwareTriggerFrame.Location = new System.Drawing.Point(35, 126);
+            this.checkBoxAutoSaveOnSoftwareTriggerFrame.Name = "checkBoxAutoSaveOnSoftwareTriggerFrame";
+            this.checkBoxAutoSaveOnSoftwareTriggerFrame.Size = new System.Drawing.Size(338, 20);
+            this.checkBoxAutoSaveOnSoftwareTriggerFrame.TabIndex = 7;
+            this.checkBoxAutoSaveOnSoftwareTriggerFrame.Text = "Auto save snapshot after software trigger frame";
+            this.checkBoxAutoSaveOnSoftwareTriggerFrame.UseVisualStyleBackColor = true;
             // 
             // buttons
             // 

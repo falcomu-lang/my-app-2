@@ -82,6 +82,7 @@ namespace CameraCaptureApp.Forms
             UpdateTriggerModeControls();
             checkBoxAutoConnect.Checked = Settings.AutoConnect;
             checkBoxAutoSaveOnExternalTriggerOneFrame.Checked = Settings.AutoSaveOnExternalTriggerOneFrame;
+            checkBoxAutoSaveOnSoftwareTriggerFrame.Checked = Settings.AutoSaveOnSoftwareTriggerFrame;
             comboBoxImageSaveFormat.SelectedIndex = GetImageSaveFormatIndex(Settings.ImageSaveFormat);
             labelReadResult.Text = "Load Sapera settings first, then read supported CCF values into the fields.";
         }
@@ -277,13 +278,15 @@ namespace CameraCaptureApp.Forms
             Settings.RollingCaptureDirection = (RollingCaptureDirection)Math.Max(0, comboBoxRollingCaptureDirection.SelectedIndex);
             Settings.InternalLineRate = numericInternalLineRate.Value;
             Settings.TriggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
-            Settings.ExternalFrameTriggerOneFrame = checkBoxExternalFrameTriggerOneFrame.Checked;
+            Settings.ExternalFrameTriggerOneFrame = Settings.TriggerMode == TriggerMode.SoftwareTrigger ||
+                checkBoxExternalFrameTriggerOneFrame.Checked;
             Settings.ExternalFrameTriggerOneFrameCompareFromEncoder = checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Enabled &&
                 checkBoxExternalFrameTriggerOneFrameCompareFromEncoder.Checked;
             Settings.ExternalFrameTriggerOneFrameSetEncoderOnTrigger = checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Enabled &&
                 checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Checked;
             Settings.AutoConnect = checkBoxAutoConnect.Checked;
             Settings.AutoSaveOnExternalTriggerOneFrame = checkBoxAutoSaveOnExternalTriggerOneFrame.Checked;
+            Settings.AutoSaveOnSoftwareTriggerFrame = checkBoxAutoSaveOnSoftwareTriggerFrame.Checked;
             Settings.ImageSaveFormat = GetImageSaveFormatFromIndex(comboBoxImageSaveFormat.SelectedIndex);
         }
 
@@ -305,13 +308,17 @@ namespace CameraCaptureApp.Forms
         private void UpdateTriggerModeControls()
         {
             var triggerMode = (TriggerMode)Math.Max(0, comboBoxTriggerMode.SelectedIndex);
+            var isSoftwareTrigger = triggerMode == TriggerMode.SoftwareTrigger;
             var canUseExternalFrameTrigger = triggerMode == TriggerMode.Continuous ||
-                triggerMode == TriggerMode.ExternalTrigger ||
-                triggerMode == TriggerMode.SoftwareTrigger;
+                triggerMode == TriggerMode.ExternalTrigger;
             var canUseCompareSetOnTrigger = triggerMode == TriggerMode.ExternalTrigger;
 
             checkBoxExternalFrameTriggerOneFrame.Enabled = canUseExternalFrameTrigger;
-            if (!canUseExternalFrameTrigger)
+            if (isSoftwareTrigger)
+            {
+                checkBoxExternalFrameTriggerOneFrame.Checked = true;
+            }
+            else if (!canUseExternalFrameTrigger)
             {
                 checkBoxExternalFrameTriggerOneFrame.Checked = false;
             }
@@ -330,6 +337,8 @@ namespace CameraCaptureApp.Forms
             {
                 checkBoxExternalFrameTriggerOneFrameSetEncoderOnTrigger.Checked = false;
             }
+
+            checkBoxAutoSaveOnSoftwareTriggerFrame.Enabled = isSoftwareTrigger;
         }
 
         private static int GetImageSaveFormatIndex(ImageSaveFormat saveFormat)
