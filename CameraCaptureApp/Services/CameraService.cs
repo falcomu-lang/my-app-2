@@ -2753,7 +2753,8 @@ namespace CameraCaptureApp.Services
             }
 
             var allowExternalFrameTrigger = _settings.TriggerMode == TriggerMode.Continuous
-                || _settings.TriggerMode == TriggerMode.ExternalTrigger;
+                || _settings.TriggerMode == TriggerMode.ExternalTrigger
+                || _settings.TriggerMode == TriggerMode.SoftwareTrigger;
 
             var requestedValue = allowExternalFrameTrigger && _settings.ExternalFrameTriggerOneFrame ? 1 : 0;
             var applied = TrySetAcquisitionIntParameterQuiet(SapAcquisition.Prm.EXT_FRAME_TRIGGER_ENABLE, requestedValue);
