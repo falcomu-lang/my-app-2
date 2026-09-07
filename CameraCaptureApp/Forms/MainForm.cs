@@ -244,7 +244,8 @@ namespace CameraCaptureApp.Forms
         private async void buttonStop_Click(object sender, EventArgs e)
         {
             StopSoftwareTriggerMeterWheelMonitor();
-            if (_cameraService.Status != null && _cameraService.Status.IsPreviewing)
+            if (_cameraService.Status != null &&
+                (_cameraService.Status.IsPreviewing || _cameraService.Status.IsCaptureInProgress))
             {
                 _cameraService.StopPreview();
             }

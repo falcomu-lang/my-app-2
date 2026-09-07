@@ -27,6 +27,7 @@ namespace CameraCaptureApp.Services
         private DateTime _lastPreviewFrameUtc;
         private DateTime _lastAcquisitionStopUtc = DateTime.MinValue;
         private int _pendingExternalTriggerEvents;
+        private bool _stopRequestedDuringCapture;
         private bool _deviceFeaturesAvailable;
         private string _acqDevicePathSummary;
         private string _acqDeviceProbeSummary;
@@ -133,6 +134,7 @@ namespace CameraCaptureApp.Services
             {
                 _status.IsPreviewing = false;
                 _status.IsCaptureInProgress = false;
+                _stopRequestedDuringCapture = false;
                 _lastAcquisitionStopUtc = DateTime.MinValue;
                 _status.IsConnected = false;
                 _status.HasSignal = false;
@@ -145,6 +147,7 @@ namespace CameraCaptureApp.Services
 
             _status.IsPreviewing = false;
             _status.IsCaptureInProgress = false;
+            _stopRequestedDuringCapture = false;
             _lastAcquisitionStopUtc = DateTime.MinValue;
             _status.IsConnected = false;
             _status.HasSignal = false;
@@ -257,6 +260,15 @@ namespace CameraCaptureApp.Services
 
         public void StopPreview()
         {
+            if (_status.IsCaptureInProgress)
+            {
+                _status.IsPreviewing = false;
+                _stopRequestedDuringCapture = true;
+                _status.ScanStateText = "Stopping";
+                _status.LastMessage = "Stop requested. Current capture will keep waiting for meter wheel pulses until the frame is complete.";
+                return;
+            }
+
             if (_transfer != null && _transfer.Initialized)
             {
                 _transfer.Freeze();
@@ -264,6 +276,7 @@ namespace CameraCaptureApp.Services
 
             _status.IsPreviewing = false;
             _status.IsCaptureInProgress = false;
+            _stopRequestedDuringCapture = false;
             _lastAcquisitionStopUtc = DateTime.UtcNow;
             _status.ScanStateText = "Stopped";
             _status.LastMessage = "Preview stopped.";
@@ -781,6 +794,15 @@ namespace CameraCaptureApp.Services
             if (!argsNotify.Trash)
             {
                 _status.IsCaptureInProgress = false;
+                if (_stopRequestedDuringCapture)
+                {
+                    _stopRequestedDuringCapture = false;
+                    _status.IsPreviewing = false;
+                    _lastAcquisitionStopUtc = DateTime.UtcNow;
+                    _status.ScanStateText = "Stopped";
+                    _status.LastMessage = "Capture completed after stop request.";
+                }
+
                 _status.ScannedLineCount++;
                 if (_settings.TriggerMode == TriggerMode.ExternalTrigger && _pendingExternalTriggerEvents > 0)
                 {
@@ -1015,6 +1037,7 @@ namespace CameraCaptureApp.Services
 
             _status.IsConnected = true;
             _status.IsCaptureInProgress = false;
+            _stopRequestedDuringCapture = false;
             _lastAcquisitionStopUtc = DateTime.MinValue;
             _status.HasSignal = _acquisition.SignalStatus != SapAcquisition.AcqSignalStatus.None;
             _status.CameraName = _serverLocation.ServerName;
