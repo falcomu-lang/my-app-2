@@ -1509,7 +1509,7 @@ namespace CameraCaptureApp.Services
 
                 notes.Add(
                     "Notebook features target=" + _acqDevicePathSummary + " "
-                    + (IsSelectedAcqDevicePath() ? "targetSource=selected-acquisition-server " : "targetSource=configured-compatible-path ")
+                    + "targetSource=" + GetAcqDeviceTargetSource() + " "
                     + exposureResult.Message
                     + " Gain=" + FormatApplyResult(gainApplied, gainText)
                     + " " + lineRateResult.Message
@@ -1526,6 +1526,44 @@ namespace CameraCaptureApp.Services
         {
             return _serverLocation != null
                 && string.Equals(_acqDevicePathSummary, FormatSapLocation(_serverLocation), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string GetAcqDeviceTargetSource()
+        {
+            if (IsSelectedAcqDevicePath())
+            {
+                return "selected-acquisition-server";
+            }
+
+            if (_acqDevice != null && IsAcqDeviceLocationAssociatedWithAcquisition(_serverLocation == null ? null : _serverLocation.ServerName, _acqDevice.Location))
+            {
+                return "resource-name-matched";
+            }
+
+            return IsConfiguredAcqDeviceLocation(_acqDevice == null ? null : _acqDevice.Location)
+                ? "configured-compatible-path"
+                : "related-server";
+        }
+
+        private static bool IsAcqDeviceLocationAssociatedWithAcquisition(string acquisitionServerName, SapLocation deviceLocation)
+        {
+            if (string.IsNullOrWhiteSpace(acquisitionServerName) || deviceLocation == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var resourceName = SapManager.GetResourceName(
+                    deviceLocation.ServerName,
+                    SapManager.ResourceType.AcqDevice,
+                    deviceLocation.ResourceIndex);
+                return IsAcqDeviceResourceForAcquisition(acquisitionServerName, resourceName);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static string FormatSapLocation(SapLocation location)
@@ -2227,6 +2265,18 @@ namespace CameraCaptureApp.Services
 
             if (!string.IsNullOrWhiteSpace(selectedServerName))
             {
+                foreach (var location in EnumerateAcqDeviceLocationsForAcquisition(selectedServerName))
+                {
+                    var key = location.ServerName + "|" + location.ResourceIndex.ToString();
+                    if (seen.Add(key))
+                    {
+                        yield return location;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedServerName))
+            {
                 for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
                 {
                     var serverName = SapManager.GetServerName(serverIndex);
@@ -2255,6 +2305,39 @@ namespace CameraCaptureApp.Services
                     yield return configuredLocation;
                 }
             }
+        }
+
+        private static IEnumerable<SapLocation> EnumerateAcqDeviceLocationsForAcquisition(string acquisitionServerName)
+        {
+            if (string.IsNullOrWhiteSpace(acquisitionServerName))
+            {
+                yield break;
+            }
+
+            for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
+            {
+                var serverName = SapManager.GetServerName(serverIndex);
+                var resourceCount = SapManager.GetResourceCount(serverName, SapManager.ResourceType.AcqDevice);
+                for (var resourceIndex = 0; resourceIndex < resourceCount; resourceIndex++)
+                {
+                    var resourceName = SapManager.GetResourceName(serverName, SapManager.ResourceType.AcqDevice, resourceIndex);
+                    if (IsAcqDeviceResourceForAcquisition(acquisitionServerName, resourceName))
+                    {
+                        yield return new SapLocation(serverName, resourceIndex);
+                    }
+                }
+            }
+        }
+
+        private static bool IsAcqDeviceResourceForAcquisition(string acquisitionServerName, string acqDeviceResourceName)
+        {
+            if (string.IsNullOrWhiteSpace(acquisitionServerName) || string.IsNullOrWhiteSpace(acqDeviceResourceName))
+            {
+                return false;
+            }
+
+            return string.Equals(acquisitionServerName, acqDeviceResourceName, StringComparison.OrdinalIgnoreCase)
+                || acqDeviceResourceName.StartsWith(acquisitionServerName + "_", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsConfiguredServerForSelectedAcquisition(string acquisitionServerName, string featureServerName)
