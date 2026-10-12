@@ -2167,9 +2167,19 @@ namespace CameraCaptureApp.Services
             {
                 AppendAcqDeviceProbe(candidate);
                 var candidateTimer = System.Diagnostics.Stopwatch.StartNew();
-                var createdDevice = IsConfiguredAcqDeviceLocation(candidate)
-                    ? TryBuildAndCreateConfiguredAcqDevice(candidate)
-                    : TryBuildAndCreateAcqDevice(candidate);
+                var isResourceNameMatched = IsAcqDeviceLocationAssociatedWithAcquisition(
+                    _serverLocation == null ? null : _serverLocation.ServerName,
+                    candidate);
+                var isConfiguredLocation = IsConfiguredAcqDeviceLocation(candidate);
+                SapAcqDevice createdDevice = null;
+                if (isResourceNameMatched || !isConfiguredLocation)
+                {
+                    createdDevice = TryBuildAndCreateAcqDevice(candidate);
+                }
+                if (createdDevice == null && isConfiguredLocation)
+                {
+                    createdDevice = TryBuildAndCreateConfiguredAcqDevice(candidate);
+                }
                 AppLogger.Log(
                     "AcqDevice probe location=" + FormatSapLocation(candidate)
                     + " elapsedMs=" + candidateTimer.ElapsedMilliseconds
