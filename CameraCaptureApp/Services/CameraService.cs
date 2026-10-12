@@ -995,13 +995,24 @@ namespace CameraCaptureApp.Services
 
         private bool OpenCurrentConnection()
         {
+            var connectTimer = System.Diagnostics.Stopwatch.StartNew();
+            var stageTimer = System.Diagnostics.Stopwatch.StartNew();
+            var timingNotes = new System.Collections.Generic.List<string>();
+
             DestroySdkObjects();
             DisposeSdkObjects();
+            timingNotes.Add("cleanupMs=" + stageTimer.ElapsedMilliseconds);
 
             var offlineNotes = new System.Collections.Generic.List<string>();
+            stageTimer.Restart();
             TryWriteOfflineConfigExposure(offlineNotes);
-            TryApplyNotebookDeviceFeatures(offlineNotes);
+            timingNotes.Add("offlineConfigMs=" + stageTimer.ElapsedMilliseconds);
 
+            stageTimer.Restart();
+            TryApplyNotebookDeviceFeatures(offlineNotes);
+            timingNotes.Add("acqDeviceAndCameraFeaturesMs=" + stageTimer.ElapsedMilliseconds);
+
+            stageTimer.Restart();
             _acquisition = new SapAcquisition(_serverLocation, _configFileName);
             _acquisition.SignalNotify += OnSignalNotify;
             _acquisition.SignalNotifyContext = this;
@@ -1013,9 +1024,13 @@ namespace CameraCaptureApp.Services
             {
                 throw new InvalidOperationException("Sapera objects could not be created.");
             }
+            timingNotes.Add("acquisitionCreateMs=" + stageTimer.ElapsedMilliseconds);
 
+            stageTimer.Restart();
             ApplyWritableCameraSettings(false, offlineNotes, true);
+            timingNotes.Add("acquisitionSettingsMs=" + stageTimer.ElapsedMilliseconds);
 
+            stageTimer.Restart();
             if (SapBuffer.IsBufferTypeSupported(_serverLocation, SapBuffer.MemoryType.ScatterGather))
             {
                 _buffers = new SapBufferWithTrash(2, _acquisition, SapBuffer.MemoryType.ScatterGather);
@@ -1034,6 +1049,7 @@ namespace CameraCaptureApp.Services
             {
                 throw new InvalidOperationException("Sapera buffer or transfer objects could not be created.");
             }
+            timingNotes.Add("bufferTransferCreateMs=" + stageTimer.ElapsedMilliseconds);
 
             _status.IsConnected = true;
             _status.IsCaptureInProgress = false;
@@ -1056,6 +1072,11 @@ namespace CameraCaptureApp.Services
                 }
             }
             _status.ScanStateText = "Connected";
+            timingNotes.Add("totalMs=" + connectTimer.ElapsedMilliseconds);
+            AppLogger.Log(
+                "Connect timing server=" + _serverLocation.ServerName
+                + " acqDevice=" + (_acqDevicePathSummary ?? "<none>")
+                + " " + string.Join(" ", timingNotes.ToArray()));
             return true;
         }
 
@@ -2145,9 +2166,14 @@ namespace CameraCaptureApp.Services
             foreach (var candidate in BuildCandidateAcqDeviceLocations())
             {
                 AppendAcqDeviceProbe(candidate);
+                var candidateTimer = System.Diagnostics.Stopwatch.StartNew();
                 var createdDevice = IsConfiguredAcqDeviceLocation(candidate)
                     ? TryBuildAndCreateConfiguredAcqDevice(candidate)
                     : TryBuildAndCreateAcqDevice(candidate);
+                AppLogger.Log(
+                    "AcqDevice probe location=" + FormatSapLocation(candidate)
+                    + " elapsedMs=" + candidateTimer.ElapsedMilliseconds
+                    + " created=" + (createdDevice != null));
                 if (createdDevice != null)
                 {
                     _acqDevice = createdDevice;
