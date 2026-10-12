@@ -2200,11 +2200,11 @@ namespace CameraCaptureApp.Services
             var configuredLocation = hasConfiguredLocation
                 ? new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex)
                 : null;
-            var configuredServerIsRelated = configuredLocation != null
-                && IsRelatedServerName(selectedServerName, configuredLocation.ServerName);
+            var configuredServerMatchesSelection = configuredLocation != null
+                && IsConfiguredServerForSelectedAcquisition(selectedServerName, configuredLocation.ServerName);
             var allowLegacyGlobalFallback = CountAcquisitionServers() <= 1;
 
-            if (configuredServerIsRelated)
+            if (configuredServerMatchesSelection)
             {
                 var configuredKey = configuredLocation.ServerName + "|" + configuredLocation.ResourceIndex.ToString();
                 if (seen.Add(configuredKey))
@@ -2247,7 +2247,7 @@ namespace CameraCaptureApp.Services
                 }
             }
 
-            if (configuredLocation != null && !configuredServerIsRelated && allowLegacyGlobalFallback)
+            if (configuredLocation != null && !configuredServerMatchesSelection && allowLegacyGlobalFallback)
             {
                 var configuredKey = configuredLocation.ServerName + "|" + configuredLocation.ResourceIndex.ToString();
                 if (seen.Add(configuredKey))
@@ -2255,6 +2255,38 @@ namespace CameraCaptureApp.Services
                     yield return configuredLocation;
                 }
             }
+        }
+
+        private static bool IsConfiguredServerForSelectedAcquisition(string acquisitionServerName, string featureServerName)
+        {
+            if (IsRelatedServerName(acquisitionServerName, featureServerName))
+            {
+                return true;
+            }
+
+            int acquisitionInstance;
+            int featureInstance;
+            return TryGetServerInstanceNumber(acquisitionServerName, out acquisitionInstance)
+                && TryGetServerInstanceNumber(featureServerName, out featureInstance)
+                && acquisitionInstance == featureInstance;
+        }
+
+        private static bool TryGetServerInstanceNumber(string serverName, out int instanceNumber)
+        {
+            instanceNumber = -1;
+            if (string.IsNullOrWhiteSpace(serverName))
+            {
+                return false;
+            }
+
+            var separatorIndex = serverName.LastIndexOf('_');
+            return separatorIndex >= 0
+                && separatorIndex < serverName.Length - 1
+                && int.TryParse(
+                    serverName.Substring(separatorIndex + 1),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out instanceNumber);
         }
 
         private static int CountAcquisitionServers()
