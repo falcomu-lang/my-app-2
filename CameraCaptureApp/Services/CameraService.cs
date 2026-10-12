@@ -2377,31 +2377,29 @@ namespace CameraCaptureApp.Services
                 ? _configFileName
                 : _settings.DeviceFeatureConfigFilePath;
             var device = TryBuildAcqDevice(() => new SapAcqDevice(location, deviceConfigFile));
-            if (device == null)
+            if (device != null)
             {
-                return null;
-            }
-
-            try
-            {
-                if (device.Initialized || device.Create())
+                try
                 {
-                    return device;
+                    if (device.Initialized || device.Create())
+                    {
+                        return device;
+                    }
+                }
+                catch
+                {
+                }
+
+                try
+                {
+                    device.Dispose();
+                }
+                catch
+                {
                 }
             }
-            catch
-            {
-            }
 
-            try
-            {
-                device.Dispose();
-            }
-            catch
-            {
-            }
-
-            return null;
+            return TryBuildAndCreateAcqDevice(location);
         }
 
         private IEnumerable<SapAcqDevice> BuildAcqDeviceVariants(SapLocation location)
