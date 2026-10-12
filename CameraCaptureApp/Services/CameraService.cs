@@ -2205,7 +2205,7 @@ namespace CameraCaptureApp.Services
                 SapAcqDevice createdDevice = null;
                 if (isResourceNameMatched || !isConfiguredLocation)
                 {
-                    createdDevice = TryBuildAndCreateAcqDevice(candidate);
+                    createdDevice = TryBuildAndCreateAcqDevice(candidate, isResourceNameMatched);
                 }
                 if (createdDevice == null && isConfiguredLocation)
                 {
@@ -2491,7 +2491,25 @@ namespace CameraCaptureApp.Services
 
         private SapAcqDevice TryBuildAndCreateAcqDevice(SapLocation location)
         {
-            var device = TryBuildAndCreateAcqDeviceVariant(
+            return TryBuildAndCreateAcqDevice(location, false);
+        }
+
+        private SapAcqDevice TryBuildAndCreateAcqDevice(SapLocation location, bool preferNoConfig)
+        {
+            SapAcqDevice device;
+            if (preferNoConfig)
+            {
+                device = TryBuildAndCreateAcqDeviceVariant(
+                    location,
+                    "no-config",
+                    () => new SapAcqDevice(location));
+                if (device != null)
+                {
+                    return device;
+                }
+            }
+
+            device = TryBuildAndCreateAcqDeviceVariant(
                 location,
                 "config-file",
                 () => new SapAcqDevice(location, _configFileName));
@@ -2500,13 +2518,16 @@ namespace CameraCaptureApp.Services
                 return device;
             }
 
-            device = TryBuildAndCreateAcqDeviceVariant(
-                location,
-                "no-config",
-                () => new SapAcqDevice(location));
-            if (device != null)
+            if (!preferNoConfig)
             {
-                return device;
+                device = TryBuildAndCreateAcqDeviceVariant(
+                    location,
+                    "no-config",
+                    () => new SapAcqDevice(location));
+                if (device != null)
+                {
+                    return device;
+                }
             }
 
             device = TryBuildAndCreateAcqDeviceVariant(
