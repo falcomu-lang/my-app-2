@@ -1471,24 +1471,22 @@ namespace CameraCaptureApp.Services
 
         private void TryApplyNotebookDeviceFeatures(System.Collections.Generic.List<string> notes)
         {
-            SapAcqDevice notebookDevice = null;
             try
             {
-                var autoSelectedLocation = false;
-                var notebookLocation = BuildNotebookFeatureLocation(out autoSelectedLocation);
-                if (notebookLocation == null)
+                EnsureAcqDeviceAvailable();
+                if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
                 {
-                    notes.Add("Notebook features skipped: no selected or unique AcqDevice feature path was found. Select Load Features first.");
+                    notes.Add(
+                        "Notebook features skipped: no AcqDevice could be associated with selected acquisition server "
+                        + FormatSapLocation(_serverLocation)
+                        + FormatAcqDeviceProbeSummary()
+                        + (CountAcquisitionServers() > 1
+                            ? ". Saved global feature path was not used because multiple Acquisition servers are present."
+                            : string.Empty));
                     return;
                 }
 
-                notebookDevice = new SapAcqDevice(notebookLocation);
-                if (!notebookDevice.Create())
-                {
-                    notes.Add("Notebook features unavailable: SapAcqDevice.Create failed for " + FormatSapLocation(notebookLocation));
-                    return;
-                }
-
+                var notebookDevice = _acqDevice;
                 var exposureText = decimal.ToInt32(decimal.Truncate(_settings.ExposureTime)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var gainText = decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -1510,8 +1508,8 @@ namespace CameraCaptureApp.Services
                 }
 
                 notes.Add(
-                    "Notebook features target=" + FormatSapLocation(notebookLocation) + " "
-                    + (autoSelectedLocation ? "targetSource=auto-selected " : "targetSource=selected ")
+                    "Notebook features target=" + _acqDevicePathSummary + " "
+                    + (IsSelectedAcqDevicePath() ? "targetSource=selected-acquisition-server " : "targetSource=configured-compatible-path ")
                     + exposureResult.Message
                     + " Gain=" + FormatApplyResult(gainApplied, gainText)
                     + " " + lineRateResult.Message
@@ -1522,73 +1520,12 @@ namespace CameraCaptureApp.Services
                 AppLogger.Log("Notebook feature write failed.", ex);
                 notes.Add("Notebook features unavailable: " + ex.Message);
             }
-            finally
-            {
-                if (notebookDevice != null)
-                {
-                    try
-                    {
-                        if (notebookDevice.Initialized)
-                        {
-                            notebookDevice.Destroy();
-                        }
-                    }
-                    catch
-                    {
-                    }
-
-                    try
-                    {
-                        notebookDevice.Dispose();
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
         }
 
-        private SapLocation BuildNotebookFeatureLocation(out bool autoSelected)
+        private bool IsSelectedAcqDevicePath()
         {
-            autoSelected = false;
-
-            if (!string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName) && _settings.DeviceFeatureResourceIndex >= 0)
-            {
-                return new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex);
-            }
-
-            var candidates = new System.Collections.Generic.List<SapLocation>();
-            foreach (var location in EnumerateAllDirectAcqDeviceLocations())
-            {
-                candidates.Add(location);
-            }
-
-            if (candidates.Count == 1)
-            {
-                autoSelected = true;
-                _settings.DeviceFeatureServerName = candidates[0].ServerName;
-                _settings.DeviceFeatureResourceIndex = candidates[0].ResourceIndex;
-                return candidates[0];
-            }
-
-            return null;
-        }
-
-        private static IEnumerable<SapLocation> EnumerateAllDirectAcqDeviceLocations()
-        {
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
-            {
-                var serverName = SapManager.GetServerName(serverIndex);
-                foreach (var location in EnumerateDirectAcqDeviceLocations(serverName))
-                {
-                    var key = location.ServerName + "|" + location.ResourceIndex;
-                    if (seen.Add(key))
-                    {
-                        yield return location;
-                    }
-                }
-            }
+            return _serverLocation != null
+                && string.Equals(_acqDevicePathSummary, FormatSapLocation(_serverLocation), StringComparison.OrdinalIgnoreCase);
         }
 
         private static string FormatSapLocation(SapLocation location)
@@ -2170,7 +2107,9 @@ namespace CameraCaptureApp.Services
             foreach (var candidate in BuildCandidateAcqDeviceLocations())
             {
                 AppendAcqDeviceProbe(candidate);
-                var createdDevice = TryBuildAndCreateAcqDevice(candidate);
+                var createdDevice = IsConfiguredAcqDeviceLocation(candidate)
+                    ? TryBuildAndCreateConfiguredAcqDevice(candidate)
+                    : TryBuildAndCreateAcqDevice(candidate);
                 if (createdDevice != null)
                 {
                     _acqDevice = createdDevice;
@@ -2179,6 +2118,15 @@ namespace CameraCaptureApp.Services
                     return;
                 }
             }
+        }
+
+        private bool IsConfiguredAcqDeviceLocation(SapLocation location)
+        {
+            return location != null
+                && !string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName)
+                && _settings.DeviceFeatureResourceIndex >= 0
+                && string.Equals(location.ServerName, _settings.DeviceFeatureServerName, StringComparison.OrdinalIgnoreCase)
+                && location.ResourceIndex == _settings.DeviceFeatureResourceIndex;
         }
 
         private void EnsureAcqDeviceAvailable()
@@ -2190,7 +2138,7 @@ namespace CameraCaptureApp.Services
 
             if (_acqDevice == null)
             {
-                TryInitializeConfiguredAcqDevice();
+                TryInitializeAcqDevice();
             }
 
             if (_deviceFeaturesAvailable)
@@ -2206,33 +2154,6 @@ namespace CameraCaptureApp.Services
                     _acqDevice = null;
                 }
             }
-        }
-
-        private void TryInitializeConfiguredAcqDevice()
-        {
-            _deviceFeaturesAvailable = false;
-            _acqDevicePathSummary = string.Empty;
-            _acqDeviceProbeSummary = string.Empty;
-            DisposeAcqDeviceOnly();
-
-            if (string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName) || _settings.DeviceFeatureResourceIndex < 0)
-            {
-                _status.LastMessage = "Device feature path is not selected. Click Load Features in Camera Settings first.";
-                return;
-            }
-
-            var configuredLocation = new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex);
-            AppendAcqDeviceProbe(configuredLocation);
-            var createdDevice = TryBuildAndCreateConfiguredAcqDevice(configuredLocation);
-            if (createdDevice == null)
-            {
-                _status.LastMessage = "SapAcqDevice is not available for selected feature path" + FormatAcqDeviceProbeSummary();
-                return;
-            }
-
-            _acqDevice = createdDevice;
-            _deviceFeaturesAvailable = true;
-            _acqDevicePathSummary = configuredLocation.ServerName + "#" + configuredLocation.ResourceIndex;
         }
 
         private bool TryCreateAcqDevice()
@@ -2273,19 +2194,18 @@ namespace CameraCaptureApp.Services
         private IEnumerable<SapLocation> BuildCandidateAcqDeviceLocations()
         {
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var selectedServerName = _serverLocation == null ? null : _serverLocation.ServerName;
+            var hasConfiguredLocation = !string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName)
+                && _settings.DeviceFeatureResourceIndex >= 0;
+            var configuredLocation = hasConfiguredLocation
+                ? new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex)
+                : null;
+            var configuredServerIsRelated = configuredLocation != null
+                && IsRelatedServerName(selectedServerName, configuredLocation.ServerName);
+            var allowLegacyGlobalFallback = CountAcquisitionServers() <= 1;
 
-            if (_serverLocation != null && !string.IsNullOrWhiteSpace(_serverLocation.ServerName))
+            if (configuredServerIsRelated)
             {
-                var currentKey = _serverLocation.ServerName + "|" + _serverLocation.ResourceIndex.ToString();
-                if (seen.Add(currentKey))
-                {
-                    yield return _serverLocation;
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(_settings.DeviceFeatureServerName) && _settings.DeviceFeatureResourceIndex >= 0)
-            {
-                var configuredLocation = new SapLocation(_settings.DeviceFeatureServerName, _settings.DeviceFeatureResourceIndex);
                 var configuredKey = configuredLocation.ServerName + "|" + configuredLocation.ResourceIndex.ToString();
                 if (seen.Add(configuredKey))
                 {
@@ -2293,21 +2213,25 @@ namespace CameraCaptureApp.Services
                 }
             }
 
-            foreach (var location in EnumerateDirectAcqDeviceLocations(_serverLocation.ServerName))
+            if (!string.IsNullOrWhiteSpace(selectedServerName))
             {
-                var key = location.ServerName + "|" + location.ResourceIndex.ToString();
-                if (seen.Add(key))
+                foreach (var location in EnumerateDirectAcqDeviceLocations(selectedServerName))
                 {
-                    yield return location;
+                    var key = location.ServerName + "|" + location.ResourceIndex.ToString();
+                    if (seen.Add(key))
+                    {
+                        yield return location;
+                    }
                 }
             }
 
-            if (_serverLocation != null && !string.IsNullOrWhiteSpace(_serverLocation.ServerName))
+            if (!string.IsNullOrWhiteSpace(selectedServerName))
             {
                 for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
                 {
                     var serverName = SapManager.GetServerName(serverIndex);
-                    if (!IsRelatedServerName(_serverLocation.ServerName, serverName))
+                    if (!IsRelatedServerName(selectedServerName, serverName)
+                        || string.Equals(selectedServerName, serverName, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
@@ -2322,6 +2246,29 @@ namespace CameraCaptureApp.Services
                     }
                 }
             }
+
+            if (configuredLocation != null && !configuredServerIsRelated && allowLegacyGlobalFallback)
+            {
+                var configuredKey = configuredLocation.ServerName + "|" + configuredLocation.ResourceIndex.ToString();
+                if (seen.Add(configuredKey))
+                {
+                    yield return configuredLocation;
+                }
+            }
+        }
+
+        private static int CountAcquisitionServers()
+        {
+            var count = 0;
+            for (var serverIndex = 0; serverIndex < SapManager.GetServerCount(); serverIndex++)
+            {
+                if (SapManager.GetResourceCount(serverIndex, SapManager.ResourceType.Acq) > 0)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private void AppendAcqDeviceProbe(SapLocation location)

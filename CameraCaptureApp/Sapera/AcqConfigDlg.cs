@@ -95,8 +95,7 @@ namespace DALSA.SaperaLT.SapClassGui
                 bool bAcq = (m_ServerCategory == ServerCategory.ServerAcq || m_ServerCategory == ServerCategory.ServerAll) &&
                            (SapManager.GetResourceCount(i, SapManager.ResourceType.Acq) > 0);
                 bool bAcqDevice = (m_ServerCategory == ServerCategory.ServerAcqDevice || m_ServerCategory == ServerCategory.ServerAll) &&
-                            (SapManager.GetResourceCount(i, SapManager.ResourceType.AcqDevice) > 0 &&
-                            (SapManager.GetResourceCount(i, SapManager.ResourceType.Acq) == 0));
+                            (SapManager.GetResourceCount(i, SapManager.ResourceType.AcqDevice) > 0);
 
                 if (bAcq)
 	            {
@@ -106,8 +105,7 @@ namespace DALSA.SaperaLT.SapClassGui
                 else if (bAcqDevice)
                 {
                     string serverName = SapManager.GetServerName(i);
-                    if (serverName.Contains("CameraLink_") == false && serverName.Contains("LP1") == false && serverName.Contains("LP2") == false)
-                        comboBox_Server.Items.Add(new MyListBoxItem(serverName, false));
+                    comboBox_Server.Items.Add(new MyListBoxItem(serverName, false));
                 }
 	        }
            if (comboBox_Server.Items.Count <= 0)
@@ -132,13 +130,18 @@ namespace DALSA.SaperaLT.SapClassGui
         private void InitResourceCombo()
         {
             comboBox_Device.Items.Clear();
-	        int i=0;
             Object selectedItem = comboBox_Server.SelectedItem;
-            // Add "Acq" resources (cameras) to combo
-	        for (i=0; i < SapManager.GetResourceCount(selectedItem.ToString(), SapManager.ResourceType.Acq); i++)
-	        {
-                string resourceName = SapManager.GetResourceName(selectedItem.ToString(), SapManager.ResourceType.Acq, i);
-                if (SapManager.IsResourceAvailable(selectedItem.ToString(), SapManager.ResourceType.Acq, i))
+            bool useAcqDevice = m_ServerCategory == ServerCategory.ServerAcqDevice
+                || (m_ServerCategory == ServerCategory.ServerAll
+                    && SapManager.GetResourceCount(selectedItem.ToString(), SapManager.ResourceType.Acq) == 0);
+            SapManager.ResourceType resourceType = useAcqDevice
+                ? SapManager.ResourceType.AcqDevice
+                : SapManager.ResourceType.Acq;
+
+            for (int i = 0; i < SapManager.GetResourceCount(selectedItem.ToString(), resourceType); i++)
+            {
+                string resourceName = SapManager.GetResourceName(selectedItem.ToString(), resourceType, i);
+                if (useAcqDevice || SapManager.IsResourceAvailable(selectedItem.ToString(), resourceType, i))
                 {
                     comboBox_Device.Items.Add(resourceName);
                     if (i == m_ResourceIndex)
@@ -148,18 +151,6 @@ namespace DALSA.SaperaLT.SapClassGui
                 {
                     comboBox_Device.Items.Add("Not Available - Resource in Use");
                     comboBox_Device.SelectedIndex = 0;
-                }
-	        }
-	        // Add "AcqDevice" resources (cameras) to combo
-            if (SapManager.GetResourceCount(selectedItem.ToString(), SapManager.ResourceType.Acq) == 0)
-            {
-                for (i = 0; i < SapManager.GetResourceCount(selectedItem.ToString(), SapManager.ResourceType.AcqDevice); i++)
-                {
-                    string resourceName;
-                    resourceName = SapManager.GetResourceName(selectedItem.ToString(), SapManager.ResourceType.AcqDevice, i);
-                    comboBox_Device.Items.Add(resourceName);
-                    if (i == m_ResourceIndex)
-                        comboBox_Device.SelectedItem = resourceName;
                 }
             }
             m_ResourceIndex = comboBox_Device.SelectedIndex;
