@@ -1492,9 +1492,13 @@ namespace CameraCaptureApp.Services
 
         private void TryApplyNotebookDeviceFeatures(System.Collections.Generic.List<string> notes)
         {
+            var timingTimer = System.Diagnostics.Stopwatch.StartNew();
+            var stageTimer = System.Diagnostics.Stopwatch.StartNew();
+            var timingNotes = new System.Collections.Generic.List<string>();
             try
             {
                 EnsureAcqDeviceAvailable();
+                timingNotes.Add("ensureAcqDeviceMs=" + stageTimer.ElapsedMilliseconds);
                 if (!_deviceFeaturesAvailable || _acqDevice == null || !_acqDevice.Initialized)
                 {
                     notes.Add(
@@ -1504,6 +1508,8 @@ namespace CameraCaptureApp.Services
                         + (CountAcquisitionServers() > 1
                             ? ". Saved global feature path was not used because multiple Acquisition servers are present."
                             : string.Empty));
+                    timingNotes.Add("totalMs=" + timingTimer.ElapsedMilliseconds);
+                    AppLogger.Log("Notebook feature timing target=<none> " + string.Join(" ", timingNotes.ToArray()));
                     return;
                 }
 
@@ -1512,6 +1518,7 @@ namespace CameraCaptureApp.Services
                 var gainText = decimal.ToInt32(decimal.Truncate(_settings.Gain)).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var lineRateText = _settings.InternalLineRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var lineRateIntegerText = decimal.ToInt32(decimal.Truncate(_settings.InternalLineRate)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                stageTimer.Restart();
                 var lineRateResult = _settings.TriggerMode == TriggerMode.Continuous
                     ? TrySetNotebookInternalLineRateFeatures(notebookDevice, lineRateText, lineRateIntegerText, true)
                     : new NotebookApplyResult
@@ -1519,15 +1526,35 @@ namespace CameraCaptureApp.Services
                         Applied = false,
                         Message = "InternalLineRate early skipped for " + _settings.TriggerMode + " mode"
                     };
+                timingNotes.Add("lineRateMs=" + stageTimer.ElapsedMilliseconds);
+
+                stageTimer.Restart();
                 var exposureResult = TrySetNotebookExposureFeatures(notebookDevice, exposureText);
+                timingNotes.Add("exposureMs=" + stageTimer.ElapsedMilliseconds);
+
+                stageTimer.Restart();
                 var gainApplied = TrySetNotebookFeatureValue(notebookDevice, "Gain", gainText);
+                timingNotes.Add("gainMs=" + stageTimer.ElapsedMilliseconds);
+
+                stageTimer.Restart();
                 var triggerResult = TrySetNotebookTriggerModeFeatures(notebookDevice, _settings.TriggerMode);
+                timingNotes.Add("triggerMs=" + stageTimer.ElapsedMilliseconds);
 
                 if (exposureResult.Applied || gainApplied || lineRateResult.Applied || triggerResult.Applied)
                 {
+                    stageTimer.Restart();
                     TryUpdateNotebookFeaturesToDevice(notebookDevice);
+                    timingNotes.Add("updateFeaturesMs=" + stageTimer.ElapsedMilliseconds);
+                }
+                else
+                {
+                    timingNotes.Add("updateFeaturesMs=skipped");
                 }
 
+                timingNotes.Add("totalMs=" + timingTimer.ElapsedMilliseconds);
+                AppLogger.Log(
+                    "Notebook feature timing target=" + _acqDevicePathSummary
+                    + " " + string.Join(" ", timingNotes.ToArray()));
                 notes.Add(
                     "Notebook features target=" + _acqDevicePathSummary + " "
                     + "targetSource=" + GetAcqDeviceTargetSource() + " "
@@ -1538,6 +1565,10 @@ namespace CameraCaptureApp.Services
             }
             catch (Exception ex)
             {
+                timingNotes.Add("totalMs=" + timingTimer.ElapsedMilliseconds);
+                AppLogger.Log(
+                    "Notebook feature timing target=" + (_acqDevicePathSummary ?? "<none>")
+                    + " result=exception " + string.Join(" ", timingNotes.ToArray()));
                 AppLogger.Log("Notebook feature write failed.", ex);
                 notes.Add("Notebook features unavailable: " + ex.Message);
             }
