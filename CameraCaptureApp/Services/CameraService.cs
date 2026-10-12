@@ -2460,24 +2460,110 @@ namespace CameraCaptureApp.Services
 
         private SapAcqDevice TryBuildAndCreateAcqDevice(SapLocation location)
         {
-            foreach (var device in BuildAcqDeviceVariants(location))
+            var device = TryBuildAndCreateAcqDeviceVariant(
+                location,
+                "config-file",
+                () => new SapAcqDevice(location, _configFileName));
+            if (device != null)
             {
-                if (device == null)
-                {
-                    continue;
-                }
+                return device;
+            }
 
+            device = TryBuildAndCreateAcqDeviceVariant(
+                location,
+                "no-config",
+                () => new SapAcqDevice(location));
+            if (device != null)
+            {
+                return device;
+            }
+
+            device = TryBuildAndCreateAcqDeviceVariant(
+                location,
+                "boolean-true",
+                () => new SapAcqDevice(location, true));
+            if (device != null)
+            {
+                return device;
+            }
+
+            return TryBuildAndCreateAcqDeviceVariant(
+                location,
+                "boolean-false",
+                () => new SapAcqDevice(location, false));
+        }
+
+        private SapAcqDevice TryBuildAndCreateConfiguredAcqDevice(SapLocation location)
+        {
+            var deviceConfigFile = string.IsNullOrWhiteSpace(_settings.DeviceFeatureConfigFilePath)
+                ? _configFileName
+                : _settings.DeviceFeatureConfigFilePath;
+            var device = TryBuildAndCreateAcqDeviceVariant(
+                location,
+                "configured-file",
+                () => new SapAcqDevice(location, deviceConfigFile));
+            if (device != null)
+            {
+                return device;
+            }
+
+            return TryBuildAndCreateAcqDevice(location);
+        }
+
+        private SapAcqDevice TryBuildAndCreateAcqDeviceVariant(
+            SapLocation location,
+            string variantName,
+            Func<SapAcqDevice> factory)
+        {
+            SapAcqDevice device = null;
+            var constructorError = string.Empty;
+            var constructorTimer = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                device = factory();
+            }
+            catch (Exception exception)
+            {
+                constructorError = exception.GetType().Name;
+            }
+
+            var constructorMs = constructorTimer.ElapsedMilliseconds;
+            var initialized = false;
+            var created = false;
+            var createError = string.Empty;
+            long? createMs = null;
+            if (device != null)
+            {
+                var createTimer = System.Diagnostics.Stopwatch.StartNew();
                 try
                 {
-                    if (device.Initialized || device.Create())
-                    {
-                        return device;
-                    }
+                    initialized = device.Initialized;
+                    created = initialized || device.Create();
                 }
-                catch
+                catch (Exception exception)
                 {
+                    createError = exception.GetType().Name;
                 }
+                createMs = createTimer.ElapsedMilliseconds;
+            }
 
+            AppLogger.Log(
+                "AcqDevice variant location=" + FormatSapLocation(location)
+                + " name=" + variantName
+                + " constructorMs=" + constructorMs
+                + " createMs=" + (createMs.HasValue ? createMs.Value.ToString() : "not-run")
+                + " initialized=" + initialized
+                + " created=" + created
+                + " constructorError=" + (string.IsNullOrEmpty(constructorError) ? "none" : constructorError)
+                + " createError=" + (string.IsNullOrEmpty(createError) ? "none" : createError));
+
+            if (created)
+            {
+                return device;
+            }
+
+            if (device != null)
+            {
                 try
                 {
                     device.Dispose();
@@ -2488,78 +2574,6 @@ namespace CameraCaptureApp.Services
             }
 
             return null;
-        }
-
-        private SapAcqDevice TryBuildAndCreateConfiguredAcqDevice(SapLocation location)
-        {
-            var deviceConfigFile = string.IsNullOrWhiteSpace(_settings.DeviceFeatureConfigFilePath)
-                ? _configFileName
-                : _settings.DeviceFeatureConfigFilePath;
-            var device = TryBuildAcqDevice(() => new SapAcqDevice(location, deviceConfigFile));
-            if (device != null)
-            {
-                try
-                {
-                    if (device.Initialized || device.Create())
-                    {
-                        return device;
-                    }
-                }
-                catch
-                {
-                }
-
-                try
-                {
-                    device.Dispose();
-                }
-                catch
-                {
-                }
-            }
-
-            return TryBuildAndCreateAcqDevice(location);
-        }
-
-        private IEnumerable<SapAcqDevice> BuildAcqDeviceVariants(SapLocation location)
-        {
-            SapAcqDevice device;
-
-            device = TryBuildAcqDevice(() => new SapAcqDevice(location, _configFileName));
-            if (device != null)
-            {
-                yield return device;
-            }
-
-            device = TryBuildAcqDevice(() => new SapAcqDevice(location));
-            if (device != null)
-            {
-                yield return device;
-            }
-
-            device = TryBuildAcqDevice(() => new SapAcqDevice(location, true));
-            if (device != null)
-            {
-                yield return device;
-            }
-
-            device = TryBuildAcqDevice(() => new SapAcqDevice(location, false));
-            if (device != null)
-            {
-                yield return device;
-            }
-        }
-
-        private static SapAcqDevice TryBuildAcqDevice(Func<SapAcqDevice> factory)
-        {
-            try
-            {
-                return factory();
-            }
-            catch
-            {
-                return null;
-            }
         }
 
         private static bool IsRelatedServerName(string primaryServerName, string candidateServerName)
