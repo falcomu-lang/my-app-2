@@ -14,18 +14,16 @@ Repository: `https://github.com/falcomu-lang/my-app-2`
 - Main project: `CameraCaptureApp/CameraCaptureApp.csproj`
 - Target framework: `.NET Framework 4.7.2`
 - Target platform: `x64`
-- Current handoff date: `2026-09-07`
-- Latest pushed feature commit referenced by this handoff: `e923d96 Keep software trigger frame trigger disabled`
-- Latest verified local changes not yet pushed:
-  - None.
+- Current handoff date: `2026-10-13`
+- Latest pushed commit: `8e6b375 Prefer no-config device for matched camera`
 
-Latest verified local build command:
+Known local build command from a previous successful build:
 
 ```powershell
 & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\amd64\MSBuild.exe" ".\CameraCaptureApp.sln" /p:Configuration=Debug /p:Platform="Any CPU" /p:GenerateResourceMSBuildArchitecture=CurrentArchitecture /m:1
 ```
 
-Latest local build result: `0 warning / 0 error`
+The latest camera-device constructor-order change has not been rebuilt or re-tested on the target hardware yet.
 
 ## What Is Working Now
 
@@ -68,6 +66,22 @@ Latest local build result: `0 warning / 0 error`
   - Main image pan smoothness is now acceptable after the preview-during-drag change.
   - Gray waveform generation speed for large loaded images is now acceptable after batched tile sampling.
 - Shutdown/connect-failure cleanup now guards Sapera cleanup calls so a Sapera DLL load failure does not bubble directly to the UI thread during cleanup.
+
+## Camera Multi-Adapter Routing And Reconnect
+
+- The two frame grabbers expose separate acquisition servers and attached-camera feature resources:
+  - Card 1's reported server identifier `Xtium-CL_MX4_1` maps to `CameraLink_1#0`; its reported AcqDevice resource name is `Xtium-CL_MX4_1_Serial_0`.
+  - Card 2's reported server identifier `Xtium-CL_MX4_2` maps to `CameraLink_2#0`; its reported AcqDevice resource name is `Xtium-CL_MX4_2_Serial_0`.
+- `IsAcqDeviceResourceForAcquisition()` associates a feature resource with an acquisition server by exact name or the `<acquisition server>_` resource-name prefix. This avoids routing both application copies to a global `CameraLink_1#0` path.
+- The user confirmed that Exposure and Gain can be controlled independently when each application copy selects its corresponding frame grabber.
+- For a resource-name-matched AcqDevice, `TryInitializeAcqDevice()` now tries `new SapAcqDevice(location)` (`no-config`) first. If that does not create the device, it retains the config-file and boolean constructor fallbacks. Other paths retain their existing configured/generic fallback behavior.
+- This order was chosen from pre-change reconnect measurements:
+  - Card 1: `config-file` Create took about `2407 ms` and failed; `no-config` Create took about `2522 ms` and succeeded.
+  - Card 2: `config-file` Create took about `94 ms` and failed; `no-config` Create took about `107 ms` and succeeded.
+  - A representative pre-change reconnect showed `ensureAcqDeviceMs=5524` / `790` and `totalMs=5966` / `808` for cards 1 / 2.
+- The ordering change should bypass the known failed `config-file` attempt on the matched path. It does not eliminate the slower successful `no-config` Create observed on card 1.
+- The user considers the remaining connection-time difference acceptable for now and does not currently request further performance tuning. No post-`8e6b375` hardware timing has been reported, so the expected reduction is not yet verified.
+- If this issue is revisited, compare one reconnect cycle per application and keep the timestamped `AcqDevice variant`, `AcqDevice probe`, `Notebook feature timing`, and `Connect timing` lines together.
 
 ## Gray Waveform Feature
 
@@ -504,10 +518,10 @@ Latest local build result: `0 warning / 0 error`
 
 Important diagnostic outputs:
 
-- `CameraCaptureApp\bin\Debug\logs\last_requested_settings.txt`
+- `<application base directory>\logs\last_requested_settings.txt`
   - Written when `ApplySettings()` receives UI settings.
   - Shows requested exposure/gain/length/internal line rate before hardware writes.
-- `CameraCaptureApp\bin\Debug\logs\last_apply_params.txt`
+- `<application base directory>\logs\last_apply_params.txt`
   - Written when parameters are applied during connect/reconnect.
   - Shows Sapera write attempts, readbacks, and attached-camera feature results.
 - `live_features_*.txt`
@@ -515,6 +529,10 @@ Important diagnostic outputs:
   - Used to inspect attached-camera feature names and access modes.
 - `live_features_failed_*.txt`
   - Exported when `SapAcqDevice` live feature probing is unavailable.
+- `<application base directory>\logs\app.log`
+  - The application creates this beside its executable; each separate application folder has its own log.
+  - Camera initialization entries include `AcqDevice variant`, `AcqDevice probe`, `Notebook feature timing`, and `Connect timing`.
+  - `Notebook feature timing` separates AcqDevice preparation, line-rate, exposure, gain, trigger, and feature-update time.
 
 Diagnostic/probing cleanup already performed:
 
@@ -589,7 +607,7 @@ Important limitation:
 
 ## Recommended Next Steps
 
-1. Test the latest `main` on the real LSI-8181/camera machine after this handoff update.
+1. No additional camera initialization tuning is currently requested. If resumed, first rebuild commit `8e6b375` into both runtime folders and collect timestamped reconnect diagnostics before changing the constructor order again.
 2. Align Sapera runtime versions before deeper camera debugging:
    - Option A: install Sapera `9.12` runtime/SDK on the field machine to match the development machine.
    - Option B: rebuild the app against Sapera `8.6` DLLs if the field machine must remain on `8.6`.
